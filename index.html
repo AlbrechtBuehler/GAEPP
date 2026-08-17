@@ -638,11 +638,15 @@ body.readonly td.bearbeitbar input,body.readonly .feld input,body.readonly .feld
   pointer-events:none;opacity:.65}
 
 /* --- Beträge dürfen nicht abgeschnitten werden -----------------------
-   Die Monatsspalten sind 78 px breit (Formensprache L). Der groesste Wert
-   im Budget ist der 13. Monatslohn mit 10'900.46 — neun Zeichen. Bei 12 px
-   Schrift und 8 px Polster passt das nicht; die Zahl wurde beschnitten.
-   Statt die Spalte zu verbreitern (dann rollt die Tabelle bei 1600 px wieder
-   seitlich) sitzen Schrift und Polster eine Spur enger. */
+   Die Monatsspalten waren 78 px breit (Formensprache L). Der groesste Wert
+   im Budget ist fuenfstellig mit Rappen und Tausendertrennung — neun
+   Zeichen. Bei 12 px Schrift und 8 px Polster passt das nicht; die Zahl
+   wurde beschnitten. Statt die Spalte zu verbreitern (dann rollt die
+   Tabelle bei 1600 px wieder seitlich) sitzen Schrift und Polster eine
+   Spur enger.
+   Der konkrete Betrag stand hier frueher im Klartext und ist am 17.08.2026
+   entfernt worden: Diese Datei ist die oeffentliche Huelle, und A-78 gilt
+   auch fuer Kommentare. */
 table.gross .n{font-size:11.5px;padding:0 5px}
 table.gross td.bearbeitbar input{font-size:11.5px;padding:0 4px}
 table.gross tr.zeile-gesamt > td,table.gross thead tr.zeile-frei td{font-size:12px}
@@ -753,7 +757,10 @@ const MON_LANG  = ['Januar','Februar','März','April','Mai','Juni','Juli','Augus
 const TAGE      = [31,28,31,30,31,30,31,31,30,31,30,31];
 const SCHLUESSEL_DATEN = 'gaepp.v1';        /* wird nie gehoben (Datenanbindung) */
 const SCHLUESSEL_GH    = 'gaepp.github';
-const SCHEMA_APP = 2;                        /* Stand dieser App (A-88) */
+const SCHEMA_APP = 3;                        /* Stand dieser App (A-88). Von 2 auf 3 am 17.08.2026:
+   die Entitaet «rechnungen» traegt seither ein Feld fuer die Verbindlichkeit
+   (F-01). Eine aeltere Fassung der App laedt diese Datei nur noch lesend und
+   kann sie nicht ueberschreiben — genau dafuer ist die Nummer da. */
 const DATEI_IM_REPO = 'gaepp-daten.json';
 
 /* ---- Zahlen und Datum, Schweizer Konventionen ------------------------ */
@@ -881,7 +888,7 @@ async function ghPull(still) {
     if (!uebernehmen(geladen)) return false;
     _sig = undefined;
     setSync('ok', 'Geladen ' + hhmm());
-    if (!still) { zeichne(); tagessicherung(); }
+    if (!still) { zeichne(); tagessicherung({ ohneGeste:true }); }
     return true;
   } catch (err) {
     setSync('err', String(err.message || err));
@@ -949,11 +956,18 @@ function gespiegelteRate(gruppe, j, m) {
 /* ---- Gespiegelte Zeile «Rechnungen» (A-92) --------------------------
    Summe der ungedeckten Rechnungen mit Faelligkeit in diesem Monat.
    Eine gedeckte Rechnung wird aus dem Rueckstellungstopf bezahlt und
-   stuende sonst zweimal im Budget. */
+   stuende sonst zweimal im Budget.
+   Dasselbe gilt seit dem 17.08.2026 fuer eine Rechnung, die an einer
+   Verbindlichkeit haengt (F-01): Ihre Rate steht bereits in der
+   gespiegelten Zeile ihrer Gruppe. Wer sie hier mitzaehlt, zaehlt
+   denselben Franken zweimal. */
+function rechnungImBudget(r) {
+  return !r.gedeckt && !r.verbId;
+}
 function gespiegelteRechnung(j, m) {
   return rd(D.rechnungen.reduce((s, r) => {
     const f = ymOf(r.faelligkeit);
-    return (!r.gedeckt && f.j === j && f.m === m) ? s + r.betrag : s;
+    return (rechnungImBudget(r) && f.j === j && f.m === m) ? s + r.betrag : s;
   }, 0));
 }
 /* ---- Monatswert einer Budgetzeile ----------------------------------- */
@@ -1102,6 +1116,9 @@ function istLaufenderMonat(j, m) { const h = ymOf(heuteISO()); return j === h.j 
 function mindertFreies(r, j, m) {
   const f = ymOf(r.faelligkeit);
   if (r.status !== 'offen' || r.gedeckt) return false;
+  /* F-01: Eine Glaeubigerrechnung mindert das freie Geld nicht — ihre Rate
+     ist im Budget schon eingeplant und laeuft ueber das Schuldenkonto. */
+  if (r.verbId) return false;
   if (f.j !== j || f.m !== m) return false;
   const k = konto(r.kontoId);
   return !k || !!k.frei;
@@ -2097,9 +2114,11 @@ async function pdfText(datei) {
 }
 
 /* ---- Aus dem Text die Angaben herausfischen ------------------------- */
-/* Zwei Stufen: «weich» behaelt Punkt, Komma und Apostroph — sonst wird aus
-   121.90 die Zahl 121 90 und der Betrag ist nicht mehr zu finden. «hart»
-   wirft alles weg und dient nur dem Namensabgleich. */
+/* Zwei Stufen: «weich» behaelt Punkt, Komma und Apostroph — sonst zerfaellt
+   ein Betrag in zwei Zahlen und ist nicht mehr zu finden. «hart» wirft alles
+   weg und dient nur dem Namensabgleich.
+   Hier stand frueher ein Betrag aus Albrechts Rechnungen als Beispiel; er ist
+   am 17.08.2026 entfernt worden (A-78 gilt auch fuer Kommentare). */
 function weich(s) {
   return String(s).toLowerCase()
     .replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/é|è|ê/g,'e').replace(/ß/g,'ss')
@@ -2158,7 +2177,10 @@ function belegLesen(text, dateiname) {
   /* --- Rechnungssteller: Abgleich gegen die gepflegte Liste --- */
   let best = null;
   D.steller.filter(s => s.aktiv !== false && s.id !== 'st_sonstige').forEach(s => {
-    /* Auch Teilnamen: «Cembra - Yoursmoke» findet «cembra». */
+    /* Auch Teilnamen: Bei einem zusammengesetzten Firmennamen genuegt ein
+       Wort daraus, sofern es mindestens vier Zeichen hat. Das laengste
+       gefundene Wort gewinnt. (Das Beispiel an dieser Stelle nannte einen
+       echten Rechnungssteller und ist am 17.08.2026 entfernt worden.) */
     ohneAkzent(s.name).split(' ').filter(w => w.length >= 4).forEach(wort => {
       if (hart.includes(wort) && (!best || wort.length > best.laenge))
         best = { s, laenge: wort.length };
@@ -2263,9 +2285,12 @@ function blattVerwaltung() {
           nächsten Lohneingang, nicht bis Monatsende.</p></div>
       <div class="vw-karte"><h3>OneDrive-Ordner</h3>
         <p class="meldung" id="vwOrdner">${_ordner ? 'Freigegeben: ' + _ordner.name : 'Keine Freigabe. Belege und Tagessicherung werden nicht abgelegt.'}</p>
+        ${_ordnerRuege ? `<p class="meldung err" id="vwOrdnerRuege">${_ordnerRuege}</p>` : ''}
+        <p class="meldung" id="vwSicherung">${sicherungText()}</p>
         <div style="margin-top:9px"><button class="knopf klein" id="btnOrdner">Ordner freigeben</button></div>
-        <p class="meldung" style="margin-top:8px">Gib den GÄPP-Ordner frei. GÄPP schreibt die Belege
-          nach <b>03 - Dokumente</b> und die Tagessicherung nach <b>02 -&nbsp; DB Backup</b>.
+        <p class="meldung" style="margin-top:8px">Gib den <b>GÄPP-Ordner</b> frei — nicht einen
+          Ordner darin. GÄPP schreibt die Belege nach <b>04 - Rechnungsablage</b>, getrennt nach
+          Jahr, und die Tagessicherung nach <b>02 -&nbsp; DB Backup</b>.
           Funktioniert in Chrome und Edge, nicht in Firefox oder Safari.</p></div>
       <div class="vw-karte"><h3>Budgetjahre
         <button class="knopf klein" id="btnJahrNeu">Jahr anlegen</button></h3>
@@ -2298,13 +2323,20 @@ function blattRechnungZeigen(id) {
         ${feld('Konto', k ? k.nr + ' ' + k.name : '—')}
       </div>
       <table class="journal"><tbody>
-        <tr><td>Position</td><td class="r">${z ? kategorie(z.kategorieId).name + ' | ' + z.bezeichnung : '—'}</td></tr>
+        ${r.verbId ? `<tr><td>Gläubiger</td><td class="r">${
+          (verbind(r.verbId) || {}).bezeichnung || '—'} — die Rate steht schon im Budget,
+          deshalb zählt diese Rechnung dort nicht noch einmal. Beim Abhaken sinkt der
+          Schuldenstand.</td></tr>` : ''}
+        <tr><td>Position</td><td class="r">${r.verbId
+          ? '— nicht nötig, die Rechnung hängt am Gläubiger'
+          : (z ? kategorie(z.kategorieId).name + ' | ' + z.bezeichnung : '—')}</td></tr>
         <tr><td>Rückstellung</td><td class="r">${r.gedeckt
           ? 'ja — wird aus dem Rückstellungstopf bezahlt und mindert weder das freie Geld noch die Budgetzeile'
           : 'nein'}</td></tr>
         <tr><td>Mindert «Frei per Monatsende»</td><td class="r">${
           mindertFreies(r, ymOf(r.faelligkeit).j, ymOf(r.faelligkeit).m)
-            ? 'ja' : 'nein — ' + (r.gedeckt ? 'Rückstellung' : 'wird nicht von einem freien Konto bezahlt')}</td></tr>
+            ? 'ja' : 'nein — ' + (r.verbId ? 'Rate eines Gläubigers, steht schon im Budget'
+                                : r.gedeckt ? 'Rückstellung' : 'wird nicht von einem freien Konto bezahlt')}</td></tr>
         ${r.notiz ? `<tr><td>Notiz</td><td class="r">${r.notiz}</td></tr>` : ''}
         <tr><td>Beleg</td><td class="r">${r.belegDatei
           ? `${r.belegDatei} <button class="knopf klein" data-beleg="${r.id}">Öffnen</button>`
@@ -2329,7 +2361,7 @@ function blattRechnung(id) {
   const g = (!r && _gelesen && !_gelesen.laeuft) ? _gelesen : null;
   const e = r || { stellerId: (g && g.stellerId) || '', betrag: (g && g.betrag) || '',
                    faelligkeit: (g && g.faelligkeit) || heuteISO(), zeileId:'rech_betrag',
-                   gedeckt:false, status:'offen', kontoId:'kred',
+                   gedeckt:false, status:'offen', kontoId:'kred', verbId:'',
                    notiz: g ? [g.nummer ? 'Rechnung ' + g.nummer : '',
                                g.referenz ? 'Referenz ' + g.referenz : ''].filter(Boolean).join(' · ') : '' };
   let belegZeile;
@@ -2359,8 +2391,15 @@ function blattRechnung(id) {
         <input type="date" id="rFaellig" value="${e.faelligkeit}"></div>
       <div class="feld"><label>Zahlungskonto</label>
         <select id="rKonto">${kontoOptionen(e.kontoId)}</select></div>
+      <div class="feld voll"><label>Gehört zu Gläubiger</label>
+        <select id="rVerb">${verbindOptionen(e.verbId)}</select></div>
       <div class="feld voll"><label>Position</label>
         <select id="rZeile">${positionRechnung(e.zeileId)}</select></div>
+      <div class="feld voll"><span class="meldung">Eine Rechnung von einem Gläubiger —
+        Kartenkonto, Inkasso, Steuervereinbarung — ist keine neue Ausgabe: Ihre Rate steht
+        schon im Budget. Wähl den Gläubiger, dann zählt sie <b>nicht</b> in die Budgetzeile
+        «Rechnungen», die Position wird nicht gebraucht, das Zahlungskonto setzt GÄPP selbst —
+        und beim Abhaken sinkt der Schuldenstand um den bezahlten Betrag.</span></div>
       <div class="feld haken voll"><input type="checkbox" id="rGedeckt" ${e.gedeckt?'checked':''}>
         <label for="rGedeckt">Rückstellung — wird aus dem Rückstellungstopf bezahlt</label></div>
       <div class="feld voll"><span class="meldung">Mit Häkchen mindert die Rechnung weder
@@ -2370,6 +2409,24 @@ function blattRechnung(id) {
       <div class="aktion"><button class="knopf primaer" id="btnRechSpeichern">${r?'Ändern':'Erfassen'}</button>
         <span class="hint" id="rHint"></span></div>
     </div>` };
+}
+/* F-01: Zu welcher Verbindlichkeit gehoert die Rechnung? Leer heisst: zu
+   keiner — dann verhaelt sie sich wie jede andere Rechnung.
+   Bis zum 17.08.2026 gab es dieses Feld nicht. Die Monatsrechnung eines
+   Kartenkontos war damit nicht sauber erfassbar: Sie fand keine passende
+   Position, stand mit ihrem Betrag ein zweites Mal im Budget neben der
+   Rate desselben Glaeubigers, und beim Abhaken blieb der Schuldenstand
+   stehen, weil die erzeugte Buchung keine Verbindlichkeit kannte.
+   Ein Feld schliesst alle drei Luecken. */
+function verbindOptionen(sel) {
+  const liste = D.verbindlichkeiten.filter(v => v.aktiv !== false);
+  const nach = {};
+  GRUPPEN.forEach(g => { nach[g.id] = liste.filter(v => v.gruppe === g.id); });
+  return `<option value="">— keiner, das ist eine gewöhnliche Rechnung —</option>` +
+    GRUPPEN.filter(g => nach[g.id].length).map(g =>
+      `<optgroup label="${g.name}">` + nach[g.id].map(v =>
+        `<option value="${v.id}" ${sel === v.id ? 'selected' : ''}>${v.bezeichnung}</option>`
+      ).join('') + `</optgroup>`).join('');
 }
 function positionRechnung(sel) {
   const opts = [];
@@ -2424,8 +2481,61 @@ function blattSerie(kontoId) {
    Belegablage und Tagessicherung (E-12, E-13)
    Ein Browser darf nicht frei ins Dateisystem schreiben. Er darf es,
    wenn der Mensch ihm einen Ordner ausdruecklich freigibt.
+
+   Am 17.08.2026 an drei Stellen ueberarbeitet:
+
+   A0  GAEPP legte den gesuchten Unterordner blind an — auch dann, wenn
+       der freigegebene Ordner selbst schon der gesuchte war. Wer
+       «03 - Dokumente» freigab, bekam «03 - Dokumente\03 - Dokumente».
+       Jetzt wird beim Freigeben geprueft, ob wirklich der GAEPP-Ordner
+       gewaehlt wurde, und gesagt, wenn nicht.
+
+   A1  Belege liegen nach Jahr getrennt in «04 - Rechnungsablage»; das
+       Jahr kommt aus der Faelligkeit. Beim Buchen der Zahlung wandert
+       der Beleg in den Unterordner «Bezahlt».
+
+   F-03 Die Tagessicherung lief beim Start der App und scheiterte dort
+       lautlos: Ein Browser erteilt eine Ordnerberechtigung nur nach
+       einer Nutzergeste, und beim Start gibt es keine. Sie hat deshalb
+       nie geschrieben. Jetzt fragt sie beim Start gar nicht erst,
+       sondern holt nach, sobald geklickt wird — und sagt, wenn sie
+       nicht schreiben konnte. Eine Sicherung, die lautlos ausfaellt,
+       ist gefaehrlicher als gar keine, weil man sich auf sie verlaesst.
    =================================================================== */
-let _ordner = null;
+
+/* Woran GAEPP seinen eigenen Ordner erkennt (A0). */
+const GAEPP_UNTERORDNER = ['00 - Inbox', '01 - APP', '02 -  DB Backup',
+                           '03 - Dokumente', '04 - Rechnungsablage', '05 Archiv'];
+const ORD_BELEGE    = '04 - Rechnungsablage';
+const ORD_SICHERUNG = '02 -  DB Backup';
+const ORD_BEZAHLT   = 'Bezahlt';
+
+let _ordner     = null;
+let _ordnerRuege = null;   /* A0: was am freigegebenen Ordner nicht stimmt */
+let _sichOffen  = false;   /* F-03: Sicherung wartet auf eine Nutzergeste */
+let _sichFehler = null;    /* F-03: warum sie zuletzt nicht schreiben konnte */
+
+/* ---- A0: Ist das wirklich der GAEPP-Ordner? ------------------------- */
+async function ordnerPruefen(h) {
+  if (!h) return null;
+  if (GAEPP_UNTERORDNER.includes(h.name)) {
+    return 'Du hast «' + h.name + '» freigegeben — das ist ein Ordner *innerhalb* von GÄPP. ' +
+           'GÄPP braucht den GÄPP-Ordner selbst, sonst legt es seine Ordner ein zweites Mal an. ' +
+           'Gib bitte den Ordner «GÄPP» frei.';
+  }
+  try {
+    let treffer = 0;
+    for await (const [name, eintrag] of h.entries()) {
+      if (eintrag.kind === 'directory' && GAEPP_UNTERORDNER.includes(name)) treffer++;
+    }
+    if (treffer < 2) {
+      return 'In «' + h.name + '» stehen die GÄPP-Ordner nicht. Wenn das der richtige Ordner ' +
+             'ist, legt GÄPP sie beim ersten Schreiben an — sonst gib bitte den Ordner ' +
+             '«GÄPP» frei.';
+    }
+  } catch (err) { return null; }   /* nicht lesbar: keine Behauptung aufstellen */
+  return null;
+}
 
 async function ordnerFreigeben() {
   if (!window.showDirectoryPicker) {
@@ -2433,7 +2543,9 @@ async function ordnerFreigeben() {
   }
   try {
     _ordner = await window.showDirectoryPicker({ mode:'readwrite' });
+    _ordnerRuege = await ordnerPruefen(_ordner);
     await ordnerMerken(_ordner);
+    if (_ordnerRuege) alert(_ordnerRuege);
     if (_blatt && _blatt.art === 'verwaltung') blattZeichnen();
   } catch (err) { /* abgebrochen */ }
 }
@@ -2457,18 +2569,42 @@ async function ordnerHolen() {
     const h = await new Promise(ok => { const t = db.transaction('h','readonly');
       const q = t.objectStore('h').get('ordner'); q.onsuccess = () => ok(q.result); });
     if (!h) return null;
-    const p = await h.queryPermission({ mode:'readwrite' });
-    if (p === 'granted') return h;
+    await h.queryPermission({ mode:'readwrite' });
     return h;                     /* Bestaetigungsklick kann noch noetig sein */
   } catch (err) { return null; }
 }
-async function unterordner(name) {
+
+/* opt.ohneGeste: nur fragen, was ohne Nutzergeste erlaubt ist (F-03).
+   opt.nichtAnlegen: den Ordner nicht erzeugen, nur oeffnen, wenn er da ist. */
+async function unterordner(name, opt) {
   if (!_ordner) return null;
+  opt = opt || {};
   try {
     if ((await _ordner.queryPermission({ mode:'readwrite' })) !== 'granted') {
+      /* F-03: Ohne Nutzergeste lehnt der Browser requestPermission ab. Beim
+         Start wird deshalb gar nicht erst gefragt — es wird nachgeholt. */
+      if (opt.ohneGeste) return null;
       if ((await _ordner.requestPermission({ mode:'readwrite' })) !== 'granted') return null;
     }
-    return await _ordner.getDirectoryHandle(name, { create:true });
+    /* A0: Ist der freigegebene Ordner selbst schon der gesuchte, wird nicht
+       gedoppelt. Das ist das Netz unter der Pruefung beim Freigeben. */
+    if (_ordner.name === name) return _ordner;
+    return await _ordner.getDirectoryHandle(name, { create: !opt.nichtAnlegen });
+  } catch (err) { return null; }
+}
+
+/* ---- A1: Jahresordner und «Bezahlt» --------------------------------- */
+function belegJahr(r) {
+  const d = (r && r.faelligkeit) || heuteISO();
+  return String(d).slice(0, 4);
+}
+async function belegOrdner(jahr, bezahlt, opt) {
+  const wurzel = await unterordner(ORD_BELEGE, opt);
+  if (!wurzel) return null;
+  try {
+    const j = await wurzel.getDirectoryHandle(String(jahr), { create: !(opt && opt.nichtAnlegen) });
+    if (!bezahlt) return j;
+    return await j.getDirectoryHandle(ORD_BEZAHLT, { create: !(opt && opt.nichtAnlegen) });
   } catch (err) { return null; }
 }
 function belegName(datei, stellerName, betrag, datum) {
@@ -2499,8 +2635,8 @@ async function belegVergessen(id) {
       t.objectStore('h').delete('beleg:' + id); t.oncomplete = ok; });
   } catch (err) {}
 }
-async function belegSchreiben(datei, name) {
-  const ord = await unterordner('03 - Dokumente');
+async function belegSchreiben(datei, name, jahr) {
+  const ord = await belegOrdner(jahr || heuteISO().slice(0,4), false);
   if (!ord) return false;
   try {
     const fh = await ord.getFileHandle(name, { create:true });
@@ -2515,7 +2651,7 @@ async function belegeNachreichen() {
   for (const r of D.rechnungen.filter(x => x.belegOffen)) {
     const g = await belegAusSpeicher(r.id);
     if (!g) continue;
-    if (await belegSchreiben(g.blob, g.name)) {
+    if (await belegSchreiben(g.blob, g.name, belegJahr(r))) {
       r.belegDatei = g.name; r.belegOffen = false;
       await belegVergessen(r.id); n++;
     }
@@ -2523,38 +2659,117 @@ async function belegeNachreichen() {
   if (n) persist();
   return n;
 }
+/* Wo ein Beleg liegen kann — in dieser Reihenfolge gesucht. Der flache
+   Wurzelordner steht mit drin, weil dort die Belege von vor dem Umbau
+   liegen; sie werden nicht von selbst einsortiert. */
+async function belegHandle(r) {
+  const jahr = belegJahr(r);
+  const orte = [
+    () => belegOrdner(jahr, true,  { nichtAnlegen:true }),
+    () => belegOrdner(jahr, false, { nichtAnlegen:true }),
+    () => unterordner(ORD_BELEGE,  { nichtAnlegen:true })
+  ];
+  for (const hol of orte) {
+    const ord = await hol();
+    if (!ord) continue;
+    try { return { ordner: ord, datei: await ord.getFileHandle(r.belegDatei) }; }
+    catch (err) { /* hier nicht — naechster Ort */ }
+  }
+  return null;
+}
 async function belegOeffnen(id) {
   const r = D.rechnungen.find(x => x.id === id);
   if (!r) return;
   if (r.belegDatei) {
-    const ord = await unterordner('03 - Dokumente');
-    if (ord) {
+    const gefunden = await belegHandle(r);
+    if (gefunden) {
       try {
-        const fh = await ord.getFileHandle(r.belegDatei);
-        const f = await fh.getFile();
+        const f = await gefunden.datei.getFile();
         window.open(URL.createObjectURL(f), '_blank');
         return;
-      } catch (err) { /* liegt nicht im Ordner — unten weiterversuchen */ }
+      } catch (err) { /* unten weiterversuchen */ }
     }
   }
   const g = await belegAusSpeicher(id);
   if (g) { window.open(URL.createObjectURL(g.blob), '_blank'); return; }
   alert('Der Beleg ist gerade nicht erreichbar. Gib den GÄPP-Ordner in der Verwaltung frei.');
 }
+/* A1: Beim Buchen der Zahlung wandert der Beleg nach «Bezahlt».
+   Verschieben kann Chrome mit move(). Wo das fehlt, wird kopiert — und
+   erst geloescht, wenn das Schreiben nachweislich geklappt hat. */
+async function belegNachBezahlt(r) {
+  if (!r || !r.belegDatei) return false;
+  const gefunden = await belegHandle(r);
+  if (!gefunden) return false;
+  const ziel = await belegOrdner(belegJahr(r), true);
+  if (!ziel) return false;
+  if (gefunden.ordner === ziel) return true;          /* liegt schon richtig */
+  try {
+    if (typeof gefunden.datei.move === 'function') {
+      await gefunden.datei.move(ziel);
+      return true;
+    }
+    const f = await gefunden.datei.getFile();
+    const neu = await ziel.getFileHandle(r.belegDatei, { create:true });
+    const w = await neu.createWritable();
+    await w.write(await f.arrayBuffer()); await w.close();
+    const probe = await (await ziel.getFileHandle(r.belegDatei)).getFile();
+    if (probe.size !== f.size) return false;          /* nicht loeschen, wenn unklar */
+    await gefunden.ordner.removeEntry(r.belegDatei);
+    return true;
+  } catch (err) { return false; }
+}
+
+/* ---- F-03: Tagessicherung ------------------------------------------- */
 /* Beim ersten Oeffnen am Tag eine Sicherung — eine Sicherung, an die man
    denken muss, ist im Ernstfall drei Monate alt. */
-async function tagessicherung() {
-  if (!D || _ro) return;
+async function tagessicherung(opt) {
+  if (!D || _ro) return false;
   const heute = heuteISO();
-  if (localStorage.getItem('gaepp.sicherung') === heute) return;
-  const ord = await unterordner('02 -  DB Backup');
-  if (!ord) return;
+  if (localStorage.getItem('gaepp.sicherung') === heute) {
+    _sichOffen = false; _sichFehler = null; return true;
+  }
+  const ord = await unterordner(ORD_SICHERUNG, opt);
+  if (!ord) {
+    /* Ohne Geste ist das kein Fehler, sondern ein «spaeter». Mit Geste
+       schon: dann fehlt die Freigabe wirklich. */
+    _sichOffen = true;
+    _sichFehler = (opt && opt.ohneGeste) ? null
+                : 'GÄPP konnte die Tagessicherung nicht ablegen — der GÄPP-Ordner ist nicht freigegeben.';
+    return false;
+  }
   try {
     const fh = await ord.getFileHandle('GAEPP-Daten-' + heute + '.json', { create:true });
     const w = await fh.createWritable();
     await w.write(JSON.stringify(D, null, 1)); await w.close();
     localStorage.setItem('gaepp.sicherung', heute);
-  } catch (err) {}
+    _sichOffen = false; _sichFehler = null;
+    return true;
+  } catch (err) {
+    _sichOffen = true;
+    _sichFehler = 'GÄPP konnte die Tagessicherung nicht schreiben: ' + (err.message || err);
+    return false;
+  }
+}
+/* Nachholen, sobald eine Nutzergeste vorliegt (F-03). Wird aus dem
+   Klick-Handler gerufen und laeuft hoechstens einmal je Sitzung an. */
+function sicherungNachholen() {
+  if (!_sichOffen || !_ordner) return;
+  _sichOffen = false;
+  tagessicherung().then(ok => { if (!ok && _sichFehler) sicherungMelden(); });
+}
+function sicherungMelden() {
+  const el = document.getElementById('vwSicherung');
+  if (el) el.textContent = sicherungText();
+}
+/* Was der Mensch ueber den Stand der Sicherung wissen muss. */
+function sicherungText() {
+  const letzte = localStorage.getItem('gaepp.sicherung');
+  if (_sichFehler) return _sichFehler;
+  if (letzte === heuteISO()) return 'Tagessicherung: heute abgelegt.';
+  if (!letzte) return 'Tagessicherung: bisher keine abgelegt. Gib dafür den GÄPP-Ordner frei.';
+  const tage = Math.round((new Date(heuteISO()) - new Date(letzte)) / 86400000);
+  return 'Tagessicherung: zuletzt am ' + letzte + (tage > 1 ? ' — das ist ' + tage + ' Tage her.' : '.');
 }
 /* Der Ausgang fuer den Menschen (A-89) */
 function jsonAb() {
@@ -3342,7 +3557,8 @@ function blattHandbuch() {
        schon bereit und war nie Teil deines freien Betrags.</p></div>
 
     <div class="regel"><h3>2. Mit Häkchen «Rückstellung» mindert sie gar nichts</h3>
-    <p>Für manche Rechnungen legst du jeden Monat etwas zurück — Zahnarzt, Franchise, Serafe.
+    <p>Für manche Rechnungen legst du jeden Monat etwas zurück — Zahnarzt, Franchise,
+       Radio- und Fernsehabgabe.
        Setzt du beim Erfassen das Häkchen <b>Rückstellung</b>, zählt die Rechnung weder gegen
        dein freies Geld noch in die Budgetzeile «Rechnungen». Sonst stünde sie zweimal da.
        <b>Du entscheidest das je Rechnung</b>, nicht die Position.</p></div>
@@ -3445,6 +3661,11 @@ function uebertragen(zId, m) {
 
 /* ---- Klicks --------------------------------------------------------- */
 document.addEventListener('click', async ev => {
+  /* F-03: Die Tagessicherung braucht eine Nutzergeste, sonst verweigert der
+     Browser die Ordnerberechtigung. Beim Start gibt es keine — hier ist die
+     erste. Laeuft hoechstens einmal je Sitzung an. */
+  sicherungNachholen();
+
   /* --- Bericht: eine Zeile anklicken blendet sie aus, und alles zieht mit.
      Steht vor der Knopf-Auswahl unten, weil eine Tabellenzeile kein Knopf ist. --- */
   const bzeile = ev.target.closest('#berichtVorschau tr.bz');
@@ -3710,6 +3931,19 @@ document.addEventListener('dblclick', ev => {
   ev.preventDefault();
   uebertragen(td.dataset.z, +td.dataset.m);
 });
+/* Enter uebernimmt den Wert — nicht erst das Verlassen des Feldes.
+   Bis zum 17.08.2026 wurde eine Zelle erst beim Wegklicken gespeichert.
+   Wer Enter drueckte, sah den alten Wert zurueckkommen und hielt die Zelle
+   fuer nicht bearbeitbar. Genau so ist es Albrecht mit den Raten gegangen. */
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter') return;
+  const feld = ev.target;
+  if (!feld || feld.tagName !== 'INPUT') return;
+  if (!feld.closest('td.bearbeitbar')) return;
+  ev.preventDefault();
+  feld.dispatchEvent(new Event('change', { bubbles: true }));
+  feld.blur();
+});
 document.addEventListener('change', ev => {
   if (ev.target.name === 'ber') { berEinlesen(); blattZeichnen(); return; }
   if (ev.target.id === 'rSteller' && ev.target.value === '__neu') {
@@ -3847,31 +4081,53 @@ async function rechnungSpeichern() {
   const vorhanden = $('#rId') ? D.rechnungen.find(x => x.id === $('#rId').value) : null;
   const r = vorhanden || { id: neueId('r'), status:'offen', belegDatei:null, belegOffen:false };
   r.stellerId = st; r.betrag = rd(betrag); r.faelligkeit = faellig;
-  r.zeileId = $('#rZeile').value; r.gedeckt = $('#rGedeckt').checked;
-  r.kontoId = $('#rKonto').value; r.notiz = $('#rNotiz').value.trim();
+  r.gedeckt = $('#rGedeckt').checked; r.notiz = $('#rNotiz').value.trim();
+  /* F-01: Haengt die Rechnung an einem Glaeubiger, braucht sie keine
+     Budgetposition — die Rate steht schon im Budget —, und ihr Zahlungskonto
+     ist das der Verbindlichkeit. Beides setzt GAEPP selbst, damit hier nichts
+     stehen bleibt, was der Rechnung widerspricht. */
+  r.verbId = ($('#rVerb') && $('#rVerb').value) || null;
+  if (r.verbId) {
+    const v = verbind(r.verbId);
+    r.zeileId = null;
+    r.kontoId = (v && v.kontoId) || 'schuld';
+  } else {
+    r.zeileId = $('#rZeile').value;
+    r.kontoId = $('#rKonto').value;
+  }
   if (!vorhanden) D.rechnungen.push(r);
   /* Ein Beleg geht nie verloren: erst in den Ordner, sonst in den Zwischenspeicher (E-12). */
   if (_belegDatei) {
     const name = belegName(_belegDatei, steller(st).name, r.betrag, faellig);
-    if (await belegSchreiben(_belegDatei, name)) { r.belegDatei = name; r.belegOffen = false; }
+    if (await belegSchreiben(_belegDatei, name, belegJahr(r))) { r.belegDatei = name; r.belegOffen = false; }
     else { await belegMerken(r.id, _belegDatei, name); r.belegDatei = null; r.belegOffen = true; }
     _belegDatei = null;
   }
   _gelesen = null;
   persist(); blattZu();
 }
-/* «Bezahlt markieren» erzeugt die Zahlungsbuchung (Albrecht, 17.08.2026) */
-function rechnungBezahlen(r) {
+/* «Bezahlt markieren» erzeugt die Zahlungsbuchung (Albrecht, 17.08.2026).
+   Zwei Aenderungen vom Abend desselben Tages:
+   F-01 Die Buchung traegt die Verbindlichkeit mit. Sie stand hier fest auf
+        null — deshalb blieb der Schuldenstand nach dem Abhaken stehen,
+        obwohl das Geld geflossen war.
+   A1   Der Beleg wandert in den Unterordner «Bezahlt». */
+async function rechnungBezahlen(r) {
   const eingabe = prompt('Wann wurde sie bezahlt?', heuteISO());
   if (eingabe === null) return;              /* abgebrochen */
   const datum = /^\d{4}-\d{2}-\d{2}$/.test(eingabe) ? eingabe : heuteISO();
   D.buchungen.push({ id:neueId('b'), datum, ganzerMonat:false, kontoId:r.kontoId, art:'ausgabe',
-    betrag:r.betrag, gegenkontoId:null, zeileId:r.zeileId, text:steller(r.stellerId).name,
-    serieId:null, rechnungId:r.id, verbId:null, sparzielId:null,
+    betrag:r.betrag, gegenkontoId:null, zeileId:r.verbId ? null : r.zeileId,
+    text: r.verbId ? ('Rate ' + ((verbind(r.verbId) || {}).bezeichnung || '')).trim()
+                   : steller(r.stellerId).name,
+    serieId:null, rechnungId:r.id, verbId:r.verbId || null, sparzielId:null,
     belegDatei:r.belegDatei, belegOffen:false });
   r.status = 'bezahlt';
   persist();
   if (_blatt && _blatt.art === 'rechnungzeigen') blattZeichnen(); else zeichne();
+  /* Der Beleg wandert erst danach — eine misslungene Ablage darf die
+     Zahlung nicht aufhalten (E-12). */
+  if (await belegNachBezahlt(r)) { /* liegt jetzt unter «Bezahlt» */ }
 }
 function vwUmbenennen(arg) {
   const [art, id] = arg.split(':');
@@ -3976,7 +4232,7 @@ async function start() {
   zeichne();
   if (GH.repo && GH.token && !window.GAEPP_FROZEN) { await ghPull(); }
   else setSync('lokal', D ? 'Lokal — kein Repo verbunden' : 'Noch keine Daten');
-  if (D) { _sig = JSON.stringify(D); tagessicherung(); }
+  if (D) { _sig = JSON.stringify(D); tagessicherung({ ohneGeste:true }); }
   /* Ein Blatt, das beim Neuladen offen war, geht nicht wieder auf — die Ansicht
      soll beim Start ruhig sein. Der Zeitraum und die Klappzustaende bleiben. */
   S.blatt = null;
