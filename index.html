@@ -1486,7 +1486,8 @@ function verbindTabelle() {
     rows += `<tr class="zeile-luft"><td colspan="${sp.length+4}"></td></tr>`;
     rows += `<tr class="zeile-sub" data-gruppe="${g.id}"><td class="klappzelle namenszelle">
         <button class="klappkopf" aria-expanded="${!zu}" data-klapp="g_${g.id}">
-          <span class="chev">▾</span><span class="t">${g.name}</span></button></td>
+          <span class="chev">▾</span><span class="t">${g.name}</span></button>
+        ${alle || _ro ? '' : `<button class="kat-add" type="button" data-vadd="${g.id}">Gläubiger hinzufügen</button>`}</td>
       <td class="n">${fmt0(rd(liste.reduce((a,v)=>a+verbindStandHeute(v),0)))}</td><td class="n"></td>
       ${sp.map(s => `<td class="n ${s.jetzt?'jetzt':''}">${zu ? fmt0(rd(liste.reduce((a,v)=>a+zahl(v,s),0))) : ''}</td>`).join('')}
       <td class="n"></td></tr>`;
@@ -1623,7 +1624,7 @@ function blattZeichnen() {
     konto: blattKonto, schuld: blattSchuld, sparziel: blattSparziel,
     sync: blattSync, verwaltung: blattVerwaltung, bericht: blattBericht,
     handbuch: blattHandbuch, rechnung: blattRechnung, serie: blattSerie,
-    rechnungzeigen: blattRechnungZeigen
+    rechnungzeigen: blattRechnungZeigen, glaeubiger: blattGlaeubiger
   }[_blatt.art];
   if (!f) { console.warn('Kein Blatt für', _blatt.art); return; }
   const b = f(_blatt.id);
@@ -1881,6 +1882,7 @@ function blattSchuld(id) {
         <span class="diff ${diff ? 'ab' : ''}" id="schulddiff">${diff === null ? '–' : fmt(diff)}</span>
         ${diff ? `<button class="knopf klein" id="btnUebertrag">Übertragen</button>` : ''}
       </div>
+      <button class="knopf klein" data-gaend="${v.id}">Ändern</button>
       <button class="knopf klein" data-bericht="schuld:${v.id}">Bericht</button>
       <button class="knopf" data-zu>Schliessen</button>`
   };
@@ -2793,6 +2795,62 @@ function jsonAuf() {
 }
 
 /* ===================================================================
+   F-07: Einen Gläubiger anlegen, ändern, ausblenden.
+   Bis zum 17.08.2026 gab es das nicht — die Verwaltung konnte
+   Kategorien, Rechnungssteller und Sparziele anlegen, Verbindlichkeiten
+   nicht. In einer App, deren Zweck die Entschuldung ist. Genau dieses
+   fehlende Bauteil hat dazu gefuehrt, dass eine neue Steuerschuld als
+   unsichtbarer Zuschlag auf eine bestehende Zeile geschrieben wurde,
+   statt als eigene Zeile zu entstehen.
+   =================================================================== */
+function blattGlaeubiger(arg) {
+  /* arg ist entweder «neu:<gruppe>» oder die id einer Verbindlichkeit. */
+  const neu = String(arg || '').startsWith('neu:');
+  const v = neu ? null : verbind(arg);
+  const gruppe = neu ? String(arg).slice(4) : (v ? v.gruppe : 'privat');
+  const e = v || { bezeichnung:'', gruppe, anfangsstand:'', anfangsdatum: heuteISO(),
+                   zinssatz:'', gebuehr:'', kontoId:'schuld', hinweis:'', vereinbarungBis:'' };
+  return {
+    titel: v ? 'Gläubiger ändern' : 'Gläubiger anlegen',
+    kennung: v ? 'Verbindlichkeit · ' + (GRUPPEN.find(g=>g.id===v.gruppe)||{}).name : null,
+    koerper: `<div class="maske">
+      ${v ? `<input type="hidden" id="gId" value="${v.id}">` : ''}
+      <div class="feld voll"><label>Bezeichnung</label>
+        <input type="text" id="gName" value="${(e.bezeichnung||'').replace(/"/g,'&quot;')}"
+               placeholder="z.B. Steuern 2026"></div>
+      <div class="feld"><label>Gruppe</label>
+        <select id="gGruppe">${GRUPPEN.map(g =>
+          `<option value="${g.id}" ${e.gruppe===g.id?'selected':''}>${g.name}</option>`).join('')}</select></div>
+      <div class="feld"><label>Zahlungskonto</label>
+        <select id="gKonto">${kontoOptionen(e.kontoId || 'schuld')}</select></div>
+      <div class="feld"><label>Anfangssaldo</label>
+        <input class="num" id="gStand" type="text" inputmode="decimal"
+               value="${e.anfangsstand !== '' && e.anfangsstand != null ? fmt(e.anfangsstand) : ''}"></div>
+      <div class="feld"><label>Stand per</label>
+        <input type="date" id="gDatum" value="${e.anfangsdatum || heuteISO()}"></div>
+      <div class="feld"><label>Monatszins %</label>
+        <input class="num" id="gZins" type="text" inputmode="decimal"
+               value="${e.zinssatz != null && e.zinssatz !== '' ? e.zinssatz : ''}" placeholder="leer = zinsfrei"></div>
+      <div class="feld"><label>Monatsgebühr</label>
+        <input class="num" id="gGebuehr" type="text" inputmode="decimal"
+               value="${e.gebuehr != null && e.gebuehr !== '' ? fmt(e.gebuehr) : ''}" placeholder="leer = keine"></div>
+      <div class="feld"><label>Vereinbarung bis</label>
+        <input type="date" id="gBis" value="${e.vereinbarungBis || ''}"></div>
+      <div class="feld voll"><label>Hinweis — woher der Stand stammt</label>
+        <input type="text" id="gHinweis" value="${(e.hinweis||'').replace(/"/g,'&quot;')}"
+               placeholder="z.B. Schlussabrechnung vom 04.06.2026"></div>
+      <div class="feld voll"><span class="meldung">Der Stand wird von hier an gerechnet:
+        Anfangssaldo minus deine gebuchten Zahlungen plus Erhöhungen. Die Raten trägst du
+        anschliessend in der Verbindlichkeitentabelle ein — Monat für Monat, wie beim Budget.</span></div>
+      <div class="aktion"><button class="knopf primaer" id="btnGlaeubigerSpeichern">${v?'Ändern':'Anlegen'}</button>
+        <span class="hint" id="gHint"></span></div>
+    </div>`,
+    fuss: (v ? `<button class="knopf klein" data-gaus="${v.id}">Ausblenden</button>` : '') +
+          `<button class="knopf" data-zu>Schliessen</button>`
+  };
+}
+
+/* ===================================================================
    GAEPP — Berichte, Export und Handbuch.
 
    Fuenf Berichte, jeder mit einem Satz, was er zeigt. Zeitraum und
@@ -3675,7 +3733,7 @@ document.addEventListener('click', async ev => {
     '[data-blattreiter],[data-art],[data-krich],[data-takt],[data-sart],[data-zu],[data-weg],[data-add],' +
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
-    '[data-rechauf],#ablage,button');
+    '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],#ablage,button');
   if (!t) return;
 
   /* --- Kachel oeffnet ihr Blatt --- */
@@ -3809,6 +3867,7 @@ document.addEventListener('click', async ev => {
 
   /* --- Rechnungen --- */
   if (t.id === 'btnRechNeu')       { _belegDatei = null; _gelesen = null; return blattAuf('rechnung', null); }
+  if (t.id === 'btnGlaeubigerSpeichern') return glaeubigerSpeichern();
   if (t.id === 'btnRechSpeichern') return rechnungSpeichern();
   if (t.dataset.rweg) {
     if (!frage('Diese Rechnung endgültig löschen?')) return;
@@ -3830,6 +3889,16 @@ document.addEventListener('click', async ev => {
   if (t.dataset.rechauf) { _belegDatei = null; _gelesen = null;
     return blattAuf('rechnung', t.dataset.rechauf, null, _blatt && _blatt.art === 'rechnungzeigen'); }
   if (t.id === 'ablage' || t.closest('#ablage')) return belegWaehlen();
+
+  /* --- F-07: Glaeubiger anlegen, aendern, ausblenden --- */
+  if (t.dataset.vadd)  { ev.stopPropagation(); return blattAuf('glaeubiger', 'neu:' + t.dataset.vadd); }
+  if (t.dataset.gaend) return blattAuf('glaeubiger', t.dataset.gaend);
+  if (t.dataset.gaus)  {
+    const v = verbind(t.dataset.gaus);
+    if (!frage('«' + v.bezeichnung + '» ausblenden? Die Zeile verschwindet aus den Tabellen; '
+             + 'ihre Zahlen bleiben erhalten und lassen sich wieder einblenden.')) return;
+    v.aktiv = false; persist(); blattZu(); return zeichne();
+  }
 
   /* --- Verwaltung --- */
   if (t.dataset.vwum)  return vwUmbenennen(t.dataset.vwum);
@@ -4242,6 +4311,37 @@ async function start() {
 function appQuelltext() { const s = document.getElementById('gaeppApp'); return s ? s.textContent : ''; }
 Object.defineProperty(window, 'APP_QUELLTEXT', { get: appQuelltext });
 document.addEventListener('DOMContentLoaded', start);
+
+
+/* ---- F-07: Glaeubiger speichern -------------------------------------
+   Angelegt wird mit Anfangssaldo und Datum; der Stand rechnet sich von da
+   an aus gebuchten Zahlungen und Erhoehungen (E-14). Die Raten traegt
+   Albrecht danach in der Tabelle ein, Monat fuer Monat.
+   Ohne dieses Bauteil landete eine neue Schuld frueher als unsichtbarer
+   Zuschlag auf einer fremden Zeile. */
+function glaeubigerSpeichern() {
+  const name = ($('#gName').value || '').trim();
+  if (!name) { $('#gHint').textContent = 'Ohne Bezeichnung geht es nicht.'; return; }
+  const stand = zahl($('#gStand').value);
+  const zins  = $('#gZins').value.trim()    === '' ? null : zahl($('#gZins').value);
+  const geb   = $('#gGebuehr').value.trim() === '' ? null : rd(zahl($('#gGebuehr').value));
+  const alt   = $('#gId') ? verbind($('#gId').value) : null;
+  const v = alt || { id: neueId('v'), raten: {}, erhoehungen: [], aktiv: true,
+                     auszugswert: null, auszugsdatum: null, vertreter: '', nominal: null };
+  v.bezeichnung  = name;
+  v.gruppe       = $('#gGruppe').value;
+  v.kontoId      = $('#gKonto').value;
+  v.anfangsstand = rd(stand);
+  v.anfangsdatum = $('#gDatum').value || heuteISO();
+  v.zinssatz     = zins;
+  v.gebuehr      = geb;
+  v.vereinbarungBis = $('#gBis').value || null;
+  v.hinweis      = ($('#gHinweis').value || '').trim();
+  /* Eine von Hand angelegte Zeile ist genau so belegt, wie ihr Hinweis sagt. */
+  v.herkunft     = v.hinweis ? 'belegt' : 'geschaetzt';
+  if (!alt) D.verbindlichkeiten.push(v);
+  persist(); blattZu(); zeichne();
+}
 
 </script>
 </body>
