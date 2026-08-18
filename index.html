@@ -53,6 +53,15 @@ body{
 }
 .reiter button:hover{color:var(--ink)}
 .reiter button[aria-selected="true"]{font-size:15px;font-weight:700;color:var(--ink);border-bottom-color:var(--accent)}
+/* U-27: Eine Zahl am Reiter. Sie beantwortet die Frage, die man sonst nur
+   durch Anklicken beantworten koennte — «liegt hier etwas?». Deshalb steht
+   sie nur da, wenn wirklich etwas da ist: eine dauerhafte «0» waere ein
+   Fleck, den das Auge nach drei Tagen nicht mehr liest. Die Ziffer traegt
+   NICHT die Reiterfarbe, sonst konkurriert sie mit der Beschriftung. */
+.reiterzahl{display:inline-block;min-width:16px;padding:0 5px;margin-left:1px;
+  border-radius:999px;background:var(--soft);color:var(--muted);
+  font-size:10.5px;font-weight:600;line-height:16px;text-align:center;vertical-align:1.5px}
+.reiter button[aria-selected="true"] .reiterzahl{background:var(--accent);color:var(--onaccent)}
 
 /* ===================================================================
    FORM 2 — SCHALTER. Zwei oder drei Zustaende derselben Sache.
@@ -636,6 +645,44 @@ table.gross thead th.jetzt,table.gross thead td.jetzt{background:#332c22;color:v
 tr.zeile-daten:hover .zeile-weg,.zeile-weg:focus,
 tr.zeile-kat:hover .kat-add,tr.zeile-sub:hover .kat-add,.kat-add:focus{opacity:1}
 
+/* ---- U-28: der Griff zum Umordnen -----------------------------------
+   Dieselbe Regel wie beim Ausblenden-Knopf daneben: unsichtbar, bis der
+   Zeiger oder der Fokus die Zeile erreicht. Er sitzt links im Polster
+   der Namensspalte — dort ist Platz, den nichts anderes braucht, und er
+   ist der Ort, an dem eine Greifleiste erwartet wird.
+   Gezeichnet wird er aus einem Verlauf statt aus einem Schriftzeichen:
+   ein Braille- oder Punktezeichen haengt an der Schrift, und in dieser
+   App ist die Schrift eine geladene. Drei Striche sind drei Striche. */
+.zeilengriff{
+  position:absolute;left:5px;top:50%;transform:translateY(-50%);
+  width:15px;height:17px;border:1px solid transparent;border-radius:4px;
+  cursor:grab;opacity:0;display:block;
+}
+.zeilengriff::before{
+  content:'';position:absolute;left:3px;right:3px;top:4px;height:7px;
+  background:repeating-linear-gradient(to bottom,var(--muted) 0 1px,transparent 1px 3px);
+}
+.zeilengriff:hover{border-color:var(--accent)}
+.zeilengriff:hover::before{background:repeating-linear-gradient(to bottom,var(--accent) 0 1px,transparent 1px 3px)}
+.zeilengriff:focus{opacity:1;outline:1px solid var(--accent);outline-offset:1px}
+tr.zeile-daten:hover .zeilengriff{opacity:1}
+/* Im Baum gibt es keine Polsterspalte — der Griff steht rechts der
+   Fuehrungslinie, im Einzug des Namens, und damit an derselben Stelle
+   relativ zur Position wie in der Tabelle. */
+.zeilengriff.imbaum{left:calc(var(--pad) + 66px);width:14px;height:16px}
+.knoten.n3:hover .zeilengriff{opacity:1}
+
+/* Beim Ziehen: die genommene Zeile tritt zurueck, die Ziellinie sagt, wo
+   sie landet. Die Linie ist ein Innenschatten und KEIN Rahmen — ein
+   Rahmen wuerde die Zeile um zwei Pixel hoeher machen, und die Tabelle
+   zappelte bei jedem Wechsel des Ziels. */
+body.zieht-zeile,body.zieht-zeile *{cursor:grabbing !important;user-select:none}
+tr.zeile-daten.zieht-mich > td,.knoten.n3.zieht-mich{opacity:.45}
+tr.zeile-daten.zieh-vor > td{box-shadow:inset 0 2px 0 0 var(--accent)}
+tr.zeile-daten.zieh-nach > td{box-shadow:inset 0 -2px 0 0 var(--accent)}
+.knoten.n3.zieh-vor{box-shadow:inset 0 2px 0 0 var(--accent)}
+.knoten.n3.zieh-nach{box-shadow:inset 0 -2px 0 0 var(--accent)}
+
 /* Zellen */
 td.bearbeitbar{padding:0;position:relative}
 td.bearbeitbar input{
@@ -732,6 +779,61 @@ td.namenszelle .weg{display:none;font-size:10.5px;color:var(--muted);margin-left
 .dialog-kopf h2{font-size:16px;font-weight:600;letter-spacing:-.015em}
 .dialog-koerper{padding:12px var(--pad) var(--pad);display:flex;flex-direction:column;gap:12px}
 .dialog-fuss{display:flex;gap:8px;justify-content:flex-end;padding:13px var(--pad);border-top:1px solid var(--line)}
+/* U-26: Die Dokumentzeile im Schuldblatt. Verweise sind Marken, kein
+   Fliesstext — sonst liest man ueber sie hinweg, und genau dort sucht
+   man sie, wenn man eine Zahlung erfasst.
+   U-27: Sie ist zum Wegweiser geworden. Gepflegt wird im Reiter, hier
+   steht nur noch, was da ist. */
+.dokzeile{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;
+  padding-top:9px;border-top:1px solid var(--hairline)}
+.dokmarke{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.dokchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--rule);
+  border-radius:999px;padding:2px 4px 2px 11px;font-size:12px}
+.dokchip:hover{border-color:var(--accent)}
+.dokchip a{color:var(--ink);text-decoration:none}
+.dokchip a:hover{color:var(--accent)}
+.dokchip a::before{content:'↗';font-size:10px;color:var(--muted);margin-right:5px}
+.dokweg{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;
+  line-height:1;padding:2px 5px;border-radius:999px}
+.dokweg:hover{color:var(--err);background:var(--soft)}
+.dokbelegmarke{font-size:11.5px;color:var(--muted);padding-left:9px;
+  border-left:2px solid var(--rule)}
+/* U-27 — der Reiter «Dokumente». Eine Liste, kein Marken-Gedraenge: hier ist
+   Platz, und wer hier steht, will die ganze Adresse sehen, nicht drei
+   abgeschnittene Chips nebeneinander. */
+.dokliste{display:flex;flex-direction:column;gap:0;margin:2px 0 0}
+.dokeintrag{display:flex;align-items:baseline;gap:10px;padding:9px 2px;
+  border-bottom:1px solid var(--hairline)}
+.dokeintrag:first-child{border-top:1px solid var(--hairline)}
+.dokeintrag .dokna{flex:1 1 auto;min-width:0}
+.dokeintrag .dokna b{font-size:13.5px;font-weight:600;display:block}
+.dokeintrag .dokadr{display:block;font-size:11.5px;color:var(--muted);
+  font-family:'IBM Plex Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dokeintrag .dokwerk{flex:0 0 auto;display:flex;gap:6px;align-items:center}
+/* Der abgelegte Beleg ist KEIN Verweis (siehe Kommentar bei dokReiterHtml).
+   Der Unterschied muss man sehen, nicht lesen: eigener Kasten, eigene
+   Marke, keine Zeile in der Verweisliste. */
+.dokbeleg{display:flex;align-items:baseline;gap:10px;margin:2px 0 16px;padding:11px 13px;
+  border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--soft)}
+.dokbeleg .dokna{flex:1 1 auto;min-width:0}
+.dokbeleg .dokna b{font-size:13.5px;font-weight:600;display:block}
+.dokbeleg .dokadr{display:block;font-size:11.5px;color:var(--muted)}
+.dokbeleg .dokwerk{flex:0 0 auto}
+.dokgruppe{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  margin:18px 0 6px}
+.dokgruppe:first-child{margin-top:2px}
+/* Die Erfassung steht UNTER der Liste und ist immer offen — kein Knopf,
+   der erst ein Formular aufklappt. Zwei Felder rechtfertigen keinen Klick
+   davor, und ein aufgeklapptes Feld erinnert daran, dass man etwas
+   hinterlegen kann. */
+.dokneu{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:14px;
+  padding-top:13px;border-top:1px solid var(--line)}
+.dokneu .feldchen{display:flex;flex-direction:column;gap:4px}
+.dokneu .feldchen.breit{flex:1 1 260px;min-width:0}
+.dokneu label{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.dokneu input{background:var(--bg);border:1px solid var(--rule);border-radius:var(--radius-sm);
+  color:var(--ink);font-family:inherit;font-size:12.5px;padding:7px 9px;width:100%}
+.dokneu input:focus{outline:none;border-color:var(--accent)}
 .dlg-lead{font-size:13px;color:var(--muted)}
 .dlg-lead b{color:var(--ink);font-size:15px}
 .dlg-zeile{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -794,7 +896,7 @@ td.namenszelle .weg{display:none;font-size:10.5px;color:var(--muted);margin-left
   .t-budget th:nth-child(2),.t-budget td:nth-child(2),
   .t-verbind th:nth-child(2),.t-verbind td:nth-child(2){display:none}
   /* Auf dem Telefon wird gelesen, nicht umgebaut */
-  .kat-add,.zeile-weg{display:none}
+  .kat-add,.zeile-weg,.zeilengriff{display:none}
   .klappkopf{max-width:150px}
 }
 .journal tbody tr[data-jz]:focus{outline:1px solid var(--accent);outline-offset:-2px}
@@ -1586,6 +1688,18 @@ function normalisieren(d) {
      leer — sonst muesste jede Lesestelle den Fall «gar nicht da» neben
      dem Fall «leer» mitdenken, und die eine, die es vergisst, wirft. */
   d.verbindlichkeiten.forEach(v => { if (!Array.isArray(v.dokumente)) v.dokumente = []; });
+  /* U-27: Dasselbe Feld bei den Rechnungen. Eine Rechnung hat ihren Beleg —
+     das ist die Datei im Ordner, die GAEPP selbst abgelegt hat. Daneben
+     gibt es das, was um sie herum liegt: Mahnung, Ratenzusage, Schriftwechsel.
+     Dafuer ist dieses Feld da, und es heisst genau so wie bei den
+     Verbindlichkeiten, weil es dasselbe ist. */
+  d.rechnungen.forEach(r => { if (!Array.isArray(r.dokumente)) r.dokumente = []; });
+  /* U-28: Und dasselbe Feld bei den Konten. Was zu einem Konto gehoert, ist
+     anderer Art als bei einer Schuld — Kontoauszuege, der Bankvertrag, das
+     Merkblatt zur Kontofuehrung —, aber es ist dieselbe Frage: eine Adresse,
+     unter der etwas liegt. Deshalb dasselbe Feld und dasselbe Bauteil statt
+     eines zweiten, das nach einem halben Jahr anders aussieht. */
+  d.konten.forEach(k => { if (!Array.isArray(k.dokumente)) k.dokumente = []; });
   if (d.meta.lohntag       === undefined) d.meta.lohntag       = 25;
   if (d.meta.waehrung      === undefined) d.meta.waehrung      = 'CHF';
   if (d.meta.schemaVersion === undefined) d.meta.schemaVersion = SCHEMA_APP;
@@ -1833,7 +1947,18 @@ function verbindLauf(v, bisJ, bisM, mitPlan) {
       return (b.verbId === v.id && d.j === j && d.m === m) ? x + b.betrag : x; }, 0));
     /* Der Stand kennt nur gebuchte Zahlungen. Die Prognose rechnet ab dem laufenden
        Monat mit den geplanten Raten weiter — was noch nicht passiert ist, ist kein Ist. */
-    const kuenftig = (j > h.j) || (j === h.j && m >= h.m);
+    /* U-29: Bis hierher zog die Prognose eine geplante Rate NUR ab dem
+       laufenden Monat ab — vergangene Monate zaehlten nur, was gebucht war.
+       Fuer eine App, in der Jahrgaenge nacherfasst werden, ist das falsch:
+       Wer einen Ratenplan fuer Januar bis Juli eintraegt, sieht am
+       Jahresende trotzdem die ungetilgte Schuld und haelt das Werkzeug fuer
+       kaputt. Es war kaputt.
+       Die Prognose rechnet jetzt jeden Monat mit dem Plan. Eine gebuchte
+       Zahlung hat weiter Vorrang — sie steht in der Zeile darunter zuerst,
+       und nur wo keine steht, greift die Rate. Doppelt gezaehlt wird nichts.
+       Der STAND (mitPlan=false) bleibt unberuehrt: er kennt nach wie vor
+       ausschliesslich gebuchte Zahlungen. Ist und Plan bleiben getrennt —
+       die Trennung sitzt jetzt dort, wo sie hingehoert, im Aufrufer. */
     /* Der Schnitt bei null steht HIER und nur hier, und er gilt nur fuer die
        geplante Rate. Begruendung, in dieser Reihenfolge geprueft:
        — Eine gebuchte Ueberzahlung bleibt sichtbar. Sie ist eine Tatsache: der
@@ -1862,7 +1987,7 @@ function verbindLauf(v, bisJ, bisM, mitPlan) {
        Steigt der Stand spaeter durch eine Erhoehung wieder ueber null, greift
        beides sofort wieder — die Erhoehungen stehen oben in der Schleife. */
     const roh = s < 0.005 ? s : s * (1 + z/100) + g;
-    const ab = gebucht || (mitPlan && kuenftig ? Math.min(rate(v, j, m), Math.max(0, roh)) : 0);
+    const ab = gebucht || (mitPlan ? Math.min(rate(v, j, m), Math.max(0, roh)) : 0);
     s = rd(roh - ab);
     m++; if (m === 12) { m = 0; j++; }
     if (j > bisJ + 60) break;
@@ -2077,8 +2202,38 @@ function zeitSchritt(d) {
   }
   zeichne();
 }
+/* ---- U-30: die Jahrgaenge an einer Stelle ---------------------------
+   Object.keys(D.budget).map(Number).sort() steht ein Dutzend Mal wortgleich
+   im Quelltext. Solange nur jahrAnlegen() daran schrieb, war das harmlos —
+   die Liste wuchs, und jede Stelle bekam es mit. Seit ein Jahrgang auch
+   VERSCHWINDEN kann, ist es die Frage, die man nur einmal beantworten will.
+   Umgestellt sind hier die drei Stellen, an denen ein leeres Budget zu
+   undefined und damit zu NaN wuerde: die Spaltenkoepfe, das Zeitende und
+   der Kalender. Die uebrigen bleiben stehen, weil sie summieren oder
+   filtern — dort ist die leere Liste die richtige Antwort. Wer sie
+   spaeter mitnimmt, aendert nichts, ausser dass es kuerzer wird.
+   .sort() ohne Vergleicher waere hier ein Fehler, der erst 2100 auffiele
+   (Zeichenkettenordnung); der Vergleicher steht deshalb ausdruecklich da. */
+function budgetJahre() {
+  return Object.keys(D.budget || {}).map(Number).filter(j => !isNaN(j)).sort((a, b) => a - b);
+}
+/* Der Anzeigezustand ueberlebt die Daten: S liegt im localStorage, D kommt
+   aus GitHub oder aus einer Datei. S.jahr kann deshalb auf einen Jahrgang
+   zeigen, den es nicht (mehr) gibt — nach «Jahrgang löschen», nach einem Pull,
+   nach dem Laden einer anderen Datei. Was dann passierte, war nicht ein Absturz,
+   sondern etwas Schlimmeres: die Budgettabelle zeigte lauter Nullen, und die
+   erste eingetippte Zahl legte den Jahrgang ueber budgetSetzen still WIEDER AN.
+   Ein Jahr, das jemand geloescht hat, kaeme so durch die Hintertuer zurueck.
+   Gefangen wird zum naechstgelegenen vorhandenen Jahrgang: naeher als
+   «immer der erste» und ohne Vorliebe fuer vorwaerts oder rueckwaerts. */
+function jahrFangen() {
+  const j = budgetJahre();
+  if (!j.length || j.indexOf(S.jahr) >= 0) return false;
+  S.jahr = j.reduce((a, b) => Math.abs(b - S.jahr) < Math.abs(a - S.jahr) ? b : a);
+  return true;
+}
 function zeichneKalender() {
-  const jahre = Object.keys(D.budget).map(Number).sort();
+  const jahre = budgetJahre();
   $('#jahre').innerHTML = jahre.map(j =>
     `<button data-j="${j}" aria-pressed="${j===S.jahr}">${j}</button>`).join('');
   $('#monate').innerHTML = MON.map((n,i) =>
@@ -2112,8 +2267,12 @@ function kachelHtml(o) {
 function zeitEnde() {
   if (S.zeitraum === 'monat') return { j: S.jahr, m: S.monat };
   if (S.zeitraum === 'jahr')  return { j: S.jahr, m: 11 };
-  const jahre = Object.keys(D.budget).map(Number).sort();
-  return { j: jahre[jahre.length-1], m: 11 };
+  const jahre = budgetJahre();
+  /* U-30: Ohne den Rueckfall liefert «Alle Jahre» bei leerem Budget undefined,
+     und daraus wird in kontosaldo() und verbindLauf() ein NaN, das durch jede
+     Kachel wandert. Ein Budget ohne Jahrgaenge ist kein Sonderfall mehr,
+     seit man den letzten loeschen kann. */
+  return { j: jahre.length ? jahre[jahre.length-1] : S.jahr, m: 11 };
 }
 /* ===================================================================
    DASHBOARD (U-5)
@@ -2342,7 +2501,13 @@ function zeichneKacheln() {
     ? verbindPrognose(v, e.j, e.m) : standPer(v, e.j, e.m)), 0));
 
   $('#inhalt').innerHTML =
-    sektion('Konten', konten, null, false, kTotal,
+    /* U-30: Der Leertext stand hier auf null — bei null Konten war der Bereich
+       einfach leer, und wer mit einer leeren Datei anfing, sah eine Seite ohne
+       Inhalt und ohne Hinweis, wo es weitergeht. Derselbe Satz wie bei den
+       Sparzielen darunter, weil es dieselbe Lage ist. */
+    sektion('Konten', konten, 'Noch kein Konto angelegt. Du legst eines in der Verwaltung '
+      + 'unter «Struktur» an — Konto trägt Kategorie trägt Position, in dieser Reihenfolge.',
+      false, kTotal,
       kListe.length + ' Konten · davon frei verfügbar ' + fmt(kFrei)) +
     sektion('Schulden', schulden, null, true, sTotal,
       vAktiv.length + ' Gläubiger · Raten diesen Monat ' +
@@ -2741,6 +2906,266 @@ document.addEventListener('keydown', ev => {
   spaltenbreiten();
 });
 
+/* ===================================================================
+   U-28 — Zeilen innerhalb einer Kategorie ordnen
+   -------------------------------------------------------------------
+   Albrechts Satz war: «ich moechte gerne innerhalb einer Kategorie die
+   Zeilen manuell anordnen koennen.» Die Daten konnten es laengst —
+   `zeilen` tragen ein `rang`, und zeilenVon() sortiert danach. Gefehlt
+   hat nur der Weg, dieses Feld zu aendern.
+
+   ZWEI WEGE, WEIL SIE VERSCHIEDENE FRAGEN BEANTWORTEN
+   In der Budgettabelle steht die Zeile neben ihren Zahlen: dort faellt
+   auf, dass zwei zusammengehoerende Posten auseinanderstehen, und dort
+   soll man es auch beheben koennen, ohne die Arbeit zu verlassen. Im
+   Verwaltungsbaum steht die Struktur ohne Zahlen und ohne Eingabefelder:
+   dort raeumt man auf. Beide schreiben dasselbe Feld ueber dieselbe
+   Funktion — zwei Oberflaechen, eine Wahrheit.
+
+   RANGVERGABE: NACH JEDEM ZUG DIE GANZE KATEGORIE NEU, IN ZEHNERSCHRITTEN
+   Die Raenge im Bestand sind gewachsen: 1..29 quer ueber fuenf
+   Kategorien, daneben eine Kategorie mit 100..102 und zwei, die wieder
+   bei 1 anfangen. Gelesen wird `rang` NUR innerhalb einer Kategorie
+   (zeilenVon, vwBaum, zeilenWahl, die Liste der Ausgeblendeten, die
+   Berichte) — nachgesehen an jeder einzelnen Stelle. Eine Neuvergabe je
+   Kategorie kann deshalb nichts anderswo umstellen.
+   Zehnerschritte statt 1,2,3: sie kosten in der Datei nichts und lassen
+   eine spaetere Einfuegung zwischen zwei Zeilen zu, OHNE die ganze
+   Kategorie neu zu schreiben. Bei einer Datei, in der jede Aenderung ein
+   Git-Commit ist, ist der Unterschied zwischen «ein Feld geaendert» und
+   «acht Felder geaendert» im Verlauf lesbar.
+   `data-add` (Zeile hinzufuegen) setzt weiterhin max+Schritt und haengt
+   damit hinten an — das war schon so und bleibt richtig.
+
+   EIN ZUG, EIN SCHREIBVORGANG
+   Waehrend des Ziehens wird NICHTS geschrieben: die Bewegung setzt eine
+   CSS-Klasse, mehr nicht. Erst das Loslassen ruft zeileEinordnen(), und
+   das ruft merkeStand() einmal, vergibt alle Raenge und ruft persist()
+   einmal. Ein persist() je Zwischenschritt waere ein Push je Mausbewegung.
+   Aendert der Zug die Reihenfolge nicht (losgelassen, wo sie herkam),
+   wird gar nichts geschrieben — auch kein Rueckgaengig angeboten.
+
+   WAS NICHT PASSIERT
+   Keine Zeile wechselt die Kategorie. Der Zug gilt nur im Block der
+   eigenen Kategorie; ausserhalb gibt es kein Ziel, und das Loslassen tut
+   nichts. `kategorieId` wird von hier aus nie geschrieben — eine Zeile
+   umzuhaengen zoege Budgetwerte, Buchungen und Rechnungen mit und ist
+   eine andere Entscheidung als eine Reihenfolge.
+   Und die Summen aendern sich nicht: katSumme und saldoBudgetiert
+   addieren, und Addition kennt keine Reihenfolge.
+   =================================================================== */
+const RANG_SCHRITT = 10;
+
+/* Alle Zeilen einer Kategorie in der Reihenfolge, in der sie gelten —
+   auch die, die in diesem Jahr nicht sichtbar sind oder gerade
+   weggefaltet wurden. Umgeordnet wird auf DIESER Liste, nicht auf der
+   gezeigten: sonst verlieren die versteckten Zeilen beim naechsten Zug
+   ihren Platz zwischen den sichtbaren. */
+function zeilenOrdnung(katId) {
+  return D.zeilen.filter(z => z.kategorieId === katId)
+                 .sort((a, b) => (a.rang || 0) - (b.rang || 0));
+}
+/* Die eine Stelle, an der `rang` geschrieben wird.
+   `vorId` sagt, VOR welche Zeile die genommene rueckt; null heisst ans
+   Ende. Die Antwort ist wahr, wenn sich etwas geaendert hat — nur dann
+   ist gespeichert worden, und nur dann muss der Rufer neu zeichnen. */
+function zeileEinordnen(zId, vorId) {
+  if (_ro) return false;
+  const z = zeile(zId);
+  /* Eine gespiegelte Zeile hat keinen Platz zu vergeben: ihre Zahlen
+     kommen aus den Ratenplaenen oder den Rechnungen, und ihre Stellung
+     ist eine Folge, keine Entscheidung. Sie behaelt ihren Platz in der
+     Liste und wird bei der Neuvergabe mitgezaehlt — nur anfassen laesst
+     sie sich nicht. */
+  if (!z || gespiegelt(z)) return false;
+  const liste = zeilenOrdnung(z.kategorieId);
+  if (!liste.some(x => x.id === zId)) return false;
+  const rest = liste.filter(x => x.id !== zId);
+  let pos = rest.length;
+  if (vorId != null) {
+    /* Ein Ziel ausserhalb der eigenen Kategorie wird ABGELEHNT, nicht
+       umgehaengt. Die Ablehnung steht hier und nicht nur in der
+       Oberflaeche: die beiden Ziehwege und der Tastaturweg rufen alle
+       hierher, und eine Regel, die an drei Stellen gilt, gehoert an eine. */
+    pos = rest.findIndex(x => x.id === vorId);
+    if (pos < 0) return false;
+  }
+  rest.splice(pos, 0, z);
+  if (rest.every((x, i) => x === liste[i])) return false;
+  merkeStand('Zeile «' + z.bezeichnung + '» umgestellt');
+  rest.forEach((x, i) => { x.rang = (i + 1) * RANG_SCHRITT; });
+  persist();
+  return true;
+}
+/* Ein Schritt heisst: ueber den naechsten SICHTBAREN Nachbarn hinweg.
+   Ein Schritt in der vollen Liste waere in der gefalteten Tabelle ein
+   Schritt ins Unsichtbare — man drueckt, und es sieht aus, als geschehe
+   nichts. `sichtbar` ist die Folge der Kennungen, wie sie gerade dasteht. */
+function zeileSchieben(zId, richtung, sichtbar) {
+  const z = zeile(zId);
+  if (!z || _ro || gespiegelt(z)) return false;
+  const liste = zeilenOrdnung(z.kategorieId);
+  const drin = (sichtbar && sichtbar.length ? sichtbar : liste.map(x => x.id))
+                 .filter(id => liste.some(x => x.id === id));
+  const j = drin.indexOf(zId);
+  if (j < 0) return false;
+  if (richtung < 0) return j === 0 ? false : zeileEinordnen(zId, drin[j - 1]);
+  if (j === drin.length - 1) return false;
+  /* Hinter den Nachbarn heisst: vor das, was in der VOLLEN Liste auf ihn
+     folgt — sonst uebergeht der Schritt eine versteckte Zeile. */
+  const rest = liste.filter(x => x.id !== zId);
+  const nach = rest[rest.findIndex(x => x.id === drin[j + 1]) + 1];
+  return zeileEinordnen(zId, nach ? nach.id : null);
+}
+/* Der Griff. Kein <button>: der Klickverteiler unten faengt jeden
+   Knopf ab, und ein Griff loest keine Aktion aus, sondern haelt eine.
+   Fokussierbar ist er trotzdem — Alt+Pfeil braucht einen Ort, an dem
+   man stehen kann, ohne in einer Eingabezelle zu sein. */
+function zeilenGriff(z, imBaum) {
+  if (_ro || gespiegelt(z)) return '';
+  return `<span class="zeilengriff${imBaum ? ' imbaum' : ''}" data-griff="${z.id}"
+    role="button" tabindex="0" aria-label="Reihenfolge von ${htmlAttr(z.bezeichnung)} ändern"
+    title="Ziehen ordnet die Zeile innerhalb ihrer Kategorie um · Alt+Pfeil hoch/runter tut dasselbe"></span>`;
+}
+/* Welche Zeilen dieser Kategorie gerade dastehen, in der Reihenfolge des
+   Bildes. Zugeklappte und weggefaltete zaehlen nicht mit. */
+function zeilenImBild(katId, wurzel) {
+  return [...(wurzel || document).querySelectorAll('[data-zkat="' + katId + '"]')]
+    .filter(el => !el.classList.contains('zugeklappt') && el.offsetParent !== null)
+    .map(el => el.dataset.zeile);
+}
+
+let _zzieh = null;
+/* Die Vermessung geschieht EINMAL beim Aufnehmen und nicht bei jeder
+   Bewegung: getBoundingClientRect ueber vierzig Zeilen je Mausereignis
+   waere derselbe Fehler wie ein zeichne() je Mausereignis (U-25). */
+function ziehAufnehmen(zId) {
+  const z = zeile(zId);
+  if (!z || _ro || gespiegelt(z)) return null;
+  const kat = z.kategorieId;
+  const griff = document.querySelector('[data-griff="' + zId + '"]');
+  if (!griff) return null;
+  const wurzel = griff.closest('table.gross') || griff.closest('.baum');
+  if (!wurzel) return null;
+  const reihen = [...wurzel.querySelectorAll('[data-zkat="' + kat + '"]')]
+    .filter(el => !el.classList.contains('zugeklappt') && el.offsetParent !== null)
+    .map(el => { const r = el.getBoundingClientRect();
+                 return { id: el.dataset.zeile, el, mitte: r.top + r.height / 2 }; });
+  if (!reihen.length) return null;
+  /* Das Band, in dem der Zug gilt: der ganze Block der Kategorie, vom
+     Kategoriekopf bis zur Summenzeile (im Baum der Ast). Grosszuegig
+     absichtlich — wer auf die Ueberschrift zielt, meint «nach oben», wer
+     auf die Summe zielt, meint «ans Ende». Ausserhalb gibt es kein Ziel. */
+  const kopf = wurzel.querySelector('tr.zeile-kat[data-kat="' + kat + '"], .ast.kategorie[data-kat="' + kat + '"]');
+  const fuss = wurzel.querySelector('tr.zeile-summe[data-katsumme="' + kat + '"]');
+  const r0 = reihen[0].el.getBoundingClientRect();
+  const rN = reihen[reihen.length - 1].el.getBoundingClientRect();
+  return { id: zId, kat, wurzel, reihen, ziel: undefined,
+           band: { oben: kopf ? kopf.getBoundingClientRect().top : r0.top,
+                   unten: fuss ? fuss.getBoundingClientRect().bottom
+                        : kopf ? kopf.getBoundingClientRect().bottom : rN.bottom } };
+}
+function ziehZielSetzen(y) {
+  const z = _zzieh; if (!z) return;
+  let ziel;                                    /* undefined = kein Ziel */
+  if (y >= z.band.oben && y <= z.band.unten) {
+    ziel = null;
+    for (const r of z.reihen) if (y < r.mitte) { ziel = r.id; break; }
+  }
+  if (ziel === z.ziel) return;
+  z.ziel = ziel;
+  ziehLinieZeichnen();
+}
+function ziehLinieZeichnen() {
+  document.querySelectorAll('.zieh-vor,.zieh-nach')
+    .forEach(e => e.classList.remove('zieh-vor', 'zieh-nach'));
+  const z = _zzieh;
+  if (!z || z.ziel === undefined) return;
+  if (z.ziel === null) z.reihen[z.reihen.length - 1].el.classList.add('zieh-nach');
+  else { const r = z.reihen.find(x => x.id === z.ziel); if (r) r.el.classList.add('zieh-vor'); }
+}
+document.addEventListener('mousedown', ev => {
+  const gr = ev.target.closest && ev.target.closest('[data-griff]');
+  if (!gr || ev.button !== 0 || _ro) return;
+  /* Verhindert, dass der Zug den Zeilennamen markiert — und den Fokus-
+     wechsel, den ein mousedown sonst selbst ausloest. Der Fokus wird
+     weiter unten gesetzt, nach dem blur und in der richtigen Reihenfolge. */
+  ev.preventDefault();
+  const zId = gr.dataset.griff;
+  /* FALLGRUBE: Die Budgettabelle besteht aus Eingabefeldern. Steht in
+     einem eine halb getippte Zahl, ist sie weg, sobald zeichne() das DOM
+     ersetzt — das change-Ereignis kaeme nie. Dieselbe Reihenfolge wie
+     beim Tastaturweg (U-16) und beim Vollbild (U-25): erst den Fokus
+     loesen, damit gespeichert wird, dann weitermachen.
+     Und weil dieses blur() ein zeichne() ausloesen KANN (die Zahl aendert
+     Summen und Faltung), wird erst DANACH vermessen — der Griff, an dem
+     der Zeiger haengt, ist dann ein anderes Element. */
+  const a = document.activeElement;
+  if (a && a.closest && a.closest('td.bearbeitbar')) a.blur();
+  const z = ziehAufnehmen(zId);
+  if (!z) return;
+  _zzieh = z;
+  document.body.classList.add('zieht-zeile');
+  const mich = z.reihen.find(r => r.id === zId);
+  if (mich) mich.el.classList.add('zieht-mich');
+  ziehZielSetzen(ev.clientY);
+});
+document.addEventListener('mousemove', ev => {
+  if (!_zzieh) return;
+  /* Wie beim Spaltengreifer: wer ausserhalb des Fensters loslaesst,
+     sendet kein mouseup hierher. ev.buttons sagt, was wirklich gehalten
+     wird — steht es auf null, ist der Zug vorbei. */
+  if (!ev.buttons) return zeilenzugBeenden();
+  ziehZielSetzen(ev.clientY);
+});
+function zeilenzugBeenden() {
+  const z = _zzieh; if (!z) return;
+  _zzieh = null;
+  document.body.classList.remove('zieht-zeile');
+  document.querySelectorAll('.zieh-vor,.zieh-nach,.zieht-mich')
+    .forEach(e => e.classList.remove('zieh-vor', 'zieh-nach', 'zieht-mich'));
+  /* Kein Ziel heisst: ausserhalb der eigenen Kategorie losgelassen. Dann
+     geschieht nichts — keine Aenderung, kein Schreibvorgang, kein
+     Rueckgaengig. Der Zug ist abgelehnt, nicht halb ausgefuehrt. */
+  if (z.ziel !== undefined && zeileEinordnen(z.id, z.ziel)) zeichne();
+  const g = document.querySelector('[data-griff="' + z.id + '"]');
+  if (g) g.focus();
+}
+document.addEventListener('mouseup', zeilenzugBeenden);
+
+/* ---- Tastatur: Alt+Pfeil hoch/runter --------------------------------
+   Gewaehlt gegen zwei Pfeilknoepfe am Griff, und zwar aus zwei Gruenden:
+   Erstens kosten zwei Knoepfe je Zeile bei siebenunddreissig Positionen
+   vierundsiebzig zusaetzliche Tabstopps in einer Tabelle, deren Zweck
+   schnelles Eintragen ist — dieselbe Rechnung, aus der beim Spalten-
+   greifer vier fokussierbare Griffe statt zwanzig wurden.
+   Zweitens wirkt Alt+Pfeil UEBERALL IN DER ZEILE, also auch mitten in
+   einer Eingabezelle: Albrecht tippt eine Zahl, sieht, dass die Zeile
+   falsch steht, und stellt sie um, ohne die Hand von der Tastatur zu
+   nehmen. Ein Knopf am Zeilenanfang koennte das nicht.
+   Alt+Pfeil ist frei: der Weg durch die Tabelle (U-16) benutzt die
+   Pfeile OHNE Alt, und der Browser bindet Alt+hoch/runter nicht. */
+document.addEventListener('keydown', ev => {
+  if (!ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
+  const richtung = ev.key === 'ArrowUp' ? -1 : ev.key === 'ArrowDown' ? 1 : 0;
+  if (!richtung) return;
+  const el = ev.target && ev.target.closest && ev.target.closest('[data-zeile][data-zkat]');
+  if (!el) return;
+  ev.preventDefault();
+  if (_ro) return;
+  const zId = el.dataset.zeile, kat = el.dataset.zkat;
+  /* Dieselbe Reihenfolge wie beim Ziehen und aus demselben Grund. */
+  const a = document.activeElement;
+  const td = a && a.closest ? a.closest('td.bearbeitbar') : null;
+  const zurueck = td ? zellSchluessel(td) : null;
+  if (td) a.blur();
+  if (zeileSchieben(zId, richtung, zeilenImBild(kat))) zeichne();
+  /* Der Fokus geht dahin zurueck, wo er war: in dieselbe Zelle derselben
+     Zeile — die gibt es nach dem Umstellen noch, sie steht nur woanders. */
+  if (zurueck) { _ziel = zurueck; zielFokus(); }
+  else { const g = document.querySelector('[data-griff="' + zId + '"]'); if (g) g.focus(); }
+});
+
 /* Jede zweite sichtbare Datenzeile bekommt den leisen Streifen. Zugeklappte
    Zeilen zaehlen nicht mit — sonst reisst das Muster beim Aufklappen. */
 function zebra() {
@@ -2753,7 +3178,14 @@ function zebra() {
 }
 function spaltenKoepfe() {
   if (S.zeitraum === 'alle') {
-    const jahre = Object.keys(D.budget).map(Number).sort();
+    const jahre = budgetJahre();
+    /* U-30: Keine Spalte heisst keine Tabelle — der Kopf haette dann nur noch
+       die vier festen Zellen, und die Ansicht «Alle Jahre» waere nicht mehr
+       bedienbar, obwohl die Daten da sind. Solange es ueberhaupt einen
+       Jahrgang gibt, ist das unmoeglich; loescht jemand den letzten, steht
+       hier der Jahrgang, auf dem der Zeiger sitzt, und die Tabelle bleibt
+       ein Ort, an dem sich etwas eintragen laesst. */
+    if (!jahre.length) return [{ key:S.jahr, label:String(S.jahr), jetzt:false }];
     return jahre.map(j => ({ key:j, label:String(j), jetzt:false }));
   }
   return MON.map((n,i) => ({ key:i, label:n, jetzt: S.zeitraum === 'monat' && i === S.monat }));
@@ -2955,8 +3387,14 @@ function budgetTabelle() {
          die Spalten der Jahre, in denen sie noch galt. */
       const hier = zeileSicht(z, S.jahr);
       const soll = hier ? zeilenSoll(z, S.jahr) : null;
-      rows += `<tr class="zeile-daten ${zu?'zugeklappt':''} ${gesp?'gespiegelt':''}" data-zeile="${z.id}">
-        <td class="namenszelle"><span class="nz" data-zblatt="${z.id}"
+      /* U-28: data-zkat statt data-kat. Der Name data-kat ist an der
+         Kategoriezeile vergeben, und die Sprungliste sucht mit
+         $('[data-kat="…"]') das ERSTE Vorkommen — mit demselben Namen an
+         siebenunddreissig Datenzeilen waere das eine Falle, die erst beim
+         naechsten Umbau zuschnappt. */
+      rows += `<tr class="zeile-daten ${zu?'zugeklappt':''} ${gesp?'gespiegelt':''}"
+        data-zeile="${z.id}" data-zkat="${k.id}">
+        <td class="namenszelle">${zeilenGriff(z)}<span class="nz" data-zblatt="${z.id}"
           title="${gesp ? 'Zeigt, woher diese Zahlen kommen' : 'Stammdaten, Verlauf und Jahre'}">${z.bezeichnung}</span>
           <span class="weg">${zahlungsweg(z)}</span>
           ${gesp || !hier ? '' : `<button class="zeile-weg" type="button" data-weg="${z.id}">ab ${S.jahr} ausblenden</button>`}</td>
@@ -2978,7 +3416,9 @@ function budgetTabelle() {
       ${reihe(sp, s => `<td class="n ${s.jetzt?'jetzt':''}"></td>`)}
       <td class="n"></td></tr>`;
 
-    rows += `<tr class="zeile-summe ${zu?'zugeklappt':''}">
+    /* U-28: Die Summenzeile traegt ihre Kategorie, damit der Zug weiss, wo
+       der Block aufhoert — bis dorthin gilt «ans Ende», danach nichts mehr. */
+    rows += `<tr class="zeile-summe ${zu?'zugeklappt':''}" data-katsumme="${k.id}">
       <td>Summe ${k.name}</td><td></td><td class="n"></td>
       ${reihe(sp, s => `<td class="n ${s.jetzt?'jetzt':''}">${fmt0(katW(k,s))}</td>`)}
       <td class="n">${fmt0(spAlle.reduce((a,s)=>a+katW(k,s),0))}</td></tr>`;
@@ -3188,6 +3628,11 @@ function rechnungTabelle() {
 /* ---- Der Zeichner --------------------------------------------------- */
 function zeichne() {
   if (!D) { zeichneLeerstart(); return; }
+  /* U-30: vor allem anderen — der Zeiger muss auf einem Jahrgang stehen, den
+     es gibt. Hier und nicht in den einzelnen Zeichenfunktionen, weil sonst die
+     eine, die es vergisst, still auf einem toten Jahrgang rechnet. Der
+     Normalfall kostet einen Object.keys und einen indexOf. */
+  jahrFangen();
   zeichneKopf();
   $('#inhalt').dataset.modus = S.modus === 'tabellen' ? 'tabellen' : 'kacheln';
   /* Nur im Dashboard weicht die Kopfzeile — dort stehen die Zahlen gross (U-13). */
@@ -3253,6 +3698,12 @@ function blattZeichnen() {
   const f = {
     konto: blattKonto, schuld: blattSchuld, sparziel: blattSparziel,
     zeile: blattZeile,
+    /* U-30: Die Kontomaske ist eine eigene Blattart und nicht ein fuenfter
+       Reiter im Kontoblatt. Das Kontoblatt braucht ein bestehendes Konto —
+       es rechnet Saldo, Journal und Bankabgleich. Beim Anlegen gibt es das
+       Konto noch nicht, und ein Reiter, der einmal ohne sein Objekt aufgeht,
+       ist eine Sonderbehandlung an vier Stellen statt einer Blattart. */
+    kontomaske: blattKontoMaske,
     sync: blattSync, bericht: blattBericht,
     handbuch: blattHandbuch, rechnung: blattRechnung, serie: blattSerie,
     rechnungzeigen: blattRechnungZeigen, glaeubiger: blattGlaeubiger
@@ -3287,15 +3738,28 @@ function blattKonto(id) {
   const k = konto(id);
   const reiter = _blatt.reiter || 'buchen';
   _blatt.reiter = reiter;
-  const koerper = reiter === 'buchen'  ? maskeBuchung(k)
-                : reiter === 'journal' ? journal(k)
-                :                        verlauf(k);
+  /* U-28: «dokumente» kommt HINTEN dazu und schiebt nichts. Buchen steht
+     zuerst, weil dort gearbeitet wird; Journal und Verlauf sind die beiden
+     Rueckblicke. Die Unterlagen sind der seltenste Griff von vieren und
+     stehen deshalb zuletzt — die eingespielte Reihenfolge der drei
+     bestehenden Reiter bleibt Zeichen fuer Zeichen, wie sie war.
+     KEIN Wegweiser wie bei Schuld und Rechnung: dort ist er noetig, weil
+     der Reiter neben einer Erfassungsmaske liegt, in der man ihn uebersieht
+     (das war der Befund aus U-26). Hier steht die Zahl am Reiter selbst im
+     Blick, und der einzige Ort, an dem ein Wegweiser Platz haette, waere
+     die Buchungsmaske — die Stelle, an der Albrecht taeglich tippt und in
+     der jede Zeile mehr eine Zeile zu viel ist. */
+  const koerper = reiter === 'buchen'    ? maskeBuchung(k)
+                : reiter === 'journal'   ? journal(k)
+                : reiter === 'dokumente' ? dokReiterHtml('konto', k.id)
+                :                          verlauf(k);
   const bw = letzterBankwert(k);
   const saldo = kontosaldo(k.id, S.jahr, S.monat);
   const diff = bw ? rd(bw.wert - saldo) : null;
   return {
     weit: true, kennung: 'Konten · ' + k.nr + ' · ' + zeitTitel(), titel: k.name,
-    reiter: [['buchen','Buchen'],['journal','Journal'],['verlauf','Verlauf']],
+    reiter: [['buchen','Buchen'],['journal','Journal'],['verlauf','Verlauf'],
+             ['dokumente', dokReiterName('konto', k)]],
     koerper,
     fuss: `<div class="abgleich" style="margin-left:14px">
         <div class="feld"><label>Bankauszug</label>
@@ -3305,6 +3769,11 @@ function blattKonto(id) {
         <span class="diff ${diff ? 'ab' : ''}" id="bankdiff">${diff === null ? '–' : fmt(diff)}</span>
         ${diff ? `<button class="knopf klein" id="btnAusbuchen">Ausbuchen</button>` : ''}
       </div>
+      <!-- U-30: Bis hierher hatte das Kontoblatt kein «Ändern». Nummer,
+           Rolle, IBAN, Anfangssaldo, Bereich und vor allem der Haken «frei»
+           waren nur in der JSON zu erreichen — an dem Ort, an dem man das
+           Konto täglich vor sich hat, an keinem einzigen. -->
+      <button class="knopf klein" data-kaend="${k.id}">Ändern</button>
       <button class="knopf klein" data-bericht="konto:${k.id}">Bericht</button>
       <button class="knopf klein" id="btnNaechstes">Nächstes Konto</button>
       <button class="knopf" data-zu>Schliessen</button>`
@@ -3530,15 +3999,21 @@ function blattSchuld(id) {
   const v = verbind(id);
   const reiter = _blatt.reiter || 'zahlung';
   _blatt.reiter = reiter;
-  const koerper = reiter === 'zahlung' ? maskeZahlung(v)
-                : reiter === 'tilgung' ? tilgung(v)
-                :                        schuldVerlauf(v);
+  const koerper = reiter === 'zahlung'   ? maskeZahlung(v)
+                : reiter === 'tilgung'   ? tilgung(v)
+                : reiter === 'dokumente' ? dokReiterHtml('verbind', v.id)
+                :                          schuldVerlauf(v);
   const st = verbindStandHeute(v);
   const diff = v.auszugswert !== null && v.auszugswert !== undefined ? rd(v.auszugswert - st) : null;
   return {
     weit: true, kennung: GRUPPEN.find(g=>g.id===v.gruppe).name + ' · ' + zeitTitel(),
     titel: v.bezeichnung,
-    reiter: [['zahlung','Zahlung'],['tilgung','Tilgung'],['verlauf','Verlauf']],
+    /* U-27: Dokumente stehen hinten, nicht vorn. Der Reiter, auf dem das
+       Blatt aufgeht, muss der sein, auf dem am haeufigsten gearbeitet
+       wird — das ist die Zahlung. Die Zahl am vierten Reiter genuegt,
+       damit man von dort aus sieht, ob es sich lohnt hinzugehen. */
+    reiter: [['zahlung','Zahlung'],['tilgung','Tilgung'],['verlauf','Verlauf'],
+             ['dokumente', dokReiterName('verbind', v)]],
     koerper,
     fuss: `<div class="abgleich" style="margin-left:14px">
         <div class="feld"><label>Gläubigerauszug</label>
@@ -3549,6 +4024,11 @@ function blattSchuld(id) {
         ${diff ? `<button class="knopf klein" id="btnUebertrag">Übertragen</button>` : ''}
       </div>
       <button class="knopf klein" data-gaend="${v.id}">Ändern</button>
+      <!-- U-30: «Löschen» steht neben «Ändern», weil beides derselbe Griff ist:
+           dieser Gläubiger stimmt so nicht. Bis U-30 endete der Griff bei
+           «Ausblenden» — die Kaskade aus U-22 konnte eine Verbindlichkeit
+           längst, nur bot sie niemand an. -->
+      <button class="knopf klein gefahr" data-vwloesch="verbindlichkeit:${v.id}">Löschen</button>
       <button class="knopf klein" data-bericht="schuld:${v.id}">Bericht</button>
       <button class="knopf" data-zu>Schliessen</button>`
   };
@@ -3573,13 +4053,233 @@ function blattSchuld(id) {
    eigenen Fenster.
    =================================================================== */
 function dokUrlOk(u) { return /^https?:\/\//i.test(String(u || '').trim()); }
-function dokumenteHtml(v) {
-  const dok = (v.dokumente || []).filter(d => d && dokUrlOk(d.url));
-  if (!dok.length) return '';
-  return `<p class="notiz" id="schuldDok" style="margin-top:8px"><b>Dokumente</b> ${dok.map(d =>
-    `<a class="doklink" href="${htmlAttr(d.url)}" target="_blank" rel="noopener"
-       >${htmlText(d.name || d.url)}</a>`).join(' · ')}</p>`;
+/* U-26: Die Dokumente wurden bis hierher nur im Blatt «Gläubiger ändern»
+   gepflegt — und dort erst beim Klick auf «Ändern» gespeichert. Wer den
+   Link eintippte und danach «Schliessen» drueckte, verlor ihn ohne
+   Meldung. Genau so ist es Albrecht ergangen.
+
+   U-27: Aus der einen Zeile im Zahlungsreiter ist ein eigener Reiter
+   geworden. Der Grund ist derselbe Fehler in kleinerer Form: eine Zeile
+   im Kopfblock einer Erfassungsmaske uebersieht man. Was einen eigenen
+   Ort verdient, bekommt einen eigenen Ort — und die Zahl am Reiter sagt
+   von aussen, ob dort etwas liegt, ohne dass man hineinsehen muss.
+
+   Erfasst wird IM REITER, nicht in einem Dialog und nicht im Formular
+   darueber. Der Knopf schreibt sofort nach D und ruft davor merkeStand().
+   Das ist die Lehre aus U-26 und sie gilt hier doppelt: ein Reiter, den
+   man verlaesst, ohne etwas abzuschicken, ist noch leichter zu verlassen
+   als eine Maske.
+
+   Zwei Traeger, ein Bauteil: eine Verbindlichkeit und eine Rechnung
+   haben dasselbe Feld `dokumente` und verdienen deshalb nicht zwei
+   Ansichten, die auseinanderlaufen. `art` sagt nur, wo nachgeschlagen
+   wird — alles andere ist gleich.
+
+   Das Blatt «Gläubiger ändern» behaelt seine eigene Liste; wer dort ist,
+   soll sie nicht suchen muessen. Beide schreiben in dasselbe Feld. */
+function dokTraeger(art, id) {
+  return art === 'rechnung' ? (D.rechnungen.find(x => x.id === id) || null)
+       : art === 'verbind'  ? (verbind(id) || null)
+       : art === 'konto'    ? (konto(id) || null) : null;
 }
+/* ---- U-28: was die Erfassung als Beispiel vorschlaegt ----------------
+   Der Platzhalter ist kein Schmuck, er ist eine Anleitung: er sagt, was
+   fuer eine Art Sache hier hineingehoert. Bei einer Schuld ist das eine
+   Zahlungsvereinbarung, bei einem Konto ein Kontoauszug — und ausdruecklich
+   NICHT ein Zugang. Ein Platzhalter «Zugangsdaten» waere eine Einladung,
+   und die Datei geht ueber GitHub. Der Hinweis darunter sagt es noch
+   einmal in Worten, weil ein Platzhalter verschwindet, sobald man tippt. */
+const DOK_BEISPIEL = { verbind:'Zahlungsvereinbarung 2026', rechnung:'Mahnung vom 12.08.2026',
+                       konto:'Kontoauszug Dezember 2026' };
+/* «verbind:v1» und «verbind:v1:3» — art steht vorn, der Index hinten, die
+   Kennung dazwischen. Zerlegt wird von aussen nach innen, damit eine
+   Kennung mit Doppelpunkt darin nichts zerreisst. */
+function dokSchl(s) {
+  const t = String(s || ''), a = t.indexOf(':');
+  return { art: t.slice(0, a), id: t.slice(a + 1) };
+}
+function dokSchlI(s) {
+  const t = String(s || ''), a = t.indexOf(':'), z = t.lastIndexOf(':');
+  return { art: t.slice(0, a), id: t.slice(a + 1, z), i: +t.slice(z + 1) };
+}
+/* Gefiltert wird bei JEDEM Zeichnen, nicht nur beim Speichern: eine Datei,
+   die ueber GitHub zurueckkommt, kann einen `javascript:`-Eintrag tragen,
+   den diese App nie gesehen hat. */
+function dokListe(o) { return ((o && o.dokumente) || []).filter(d => d && dokUrlOk(d.url)); }
+/* Hat die Rechnung einen Beleg? Zwei Zustaende zaehlen gleich: abgelegt und
+   im Zwischenspeicher wartend — in beiden Faellen liegt etwas da. */
+function dokHatBeleg(art, o) { return art === 'rechnung' && !!(o.belegDatei || o.belegOffen); }
+/* Die Zahl am Reiter zaehlt, was der Reiter zeigt — bei einer Rechnung also
+   die Verweise UND den abgelegten Beleg. Sie beantwortet nicht die Frage
+   «wie viele Verweise», sondern «liegt hier etwas». Eine Rechnung, deren
+   einziger Inhalt der Beleg ist, muesste sonst ohne Zahl dastehen, und
+   genau dann waere der Reiter wieder das, was er nicht sein soll: eine
+   Stelle, in die man erst hineinsehen muss. */
+function dokAnzahl(art, o) { return dokListe(o).length + (dokHatBeleg(art, o) ? 1 : 0); }
+function dokReiterName(art, o) {
+  const n = dokAnzahl(art, o);
+  return 'Dokumente' + (n ? ` <span class="reiterzahl">${n}</span>` : '');
+}
+/* Lesbar gekuerzt, vollstaendig im title. Ein Freigabelink von OneDrive ist
+   zweihundert Zeichen lang und sagt auf den ersten sechzig alles, was man
+   zum Wiedererkennen braucht; der Rest gehoert in den Tooltip, nicht in
+   die Zeile. */
+function dokKurz(u) {
+  const s = String(u || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  if (s.length <= 62) return s;
+  const wirt = s.slice(0, s.indexOf('/') < 0 ? s.length : s.indexOf('/'));
+  let letzt = s.slice(s.lastIndexOf('/') + 1);
+  if (letzt.length > 38) letzt = letzt.slice(0, 37) + '…';
+  return wirt + '/…/' + letzt;
+}
+/* ---- U-27: der Reiter selbst ---------------------------------------
+   Beleg und Verweis stehen nebeneinander und sind trotzdem zwei Dinge —
+   deshalb zwei Kaesten mit zwei Ueberschriften und nicht eine Liste:
+
+   Der BELEG ist eine Datei, die GAEPP selbst in den OneDrive-Ordner
+   geschrieben, nach eigenem Muster benannt und beim Bezahlen nach
+   «Bezahlt» weitergezogen hat. GAEPP kennt ihren Namen, ihren Ort und
+   ihren Zustand; «Entfernen» hiesse hier, eine Datei zu loeschen.
+
+   Ein VERWEIS ist eine Adresse, die Albrecht eingetippt hat. GAEPP legt
+   nichts ab, prueft nichts nach und weiss nicht, ob dahinter noch etwas
+   liegt (U-22). «Entfernen» nimmt die Adresse weg, nicht das Dokument.
+
+   Wuerde man beide in eine Liste werfen, stuende neben dem Beleg ein
+   Entfernen-Knopf, der etwas anderes tut als der daneben. Das ist die
+   gefaehrlichste Art von Aehnlichkeit. */
+function dokReiterHtml(art, id) {
+  const o = dokTraeger(art, id);
+  if (!o) return '<p class="meldung">Dazu gibt es nichts mehr.</p>';
+  const schl = art + ':' + o.id;
+  const dok = dokListe(o);
+  const roh = (o.dokumente || []);
+  /* Verworfene Eintraege werden gezaehlt, nicht verschwiegen: wer einen
+     Verweis hinterlegt hat und ihn nicht sieht, sucht sonst im Falschen. */
+  const verworfen = roh.length - dok.length;
+  const eintraege = dok.map((d, i) => `<div class="dokeintrag">
+      <span class="dokna"><b><a class="doklink" href="${htmlAttr(d.url)}" target="_blank"
+          rel="noopener">${htmlText(d.name || d.url)}</a></b>
+        <span class="dokadr" title="${htmlAttr(d.url)}">${htmlText(dokKurz(d.url))}</span></span>
+      ${_ro ? '' : `<span class="dokwerk">
+        <button class="knopf klein" type="button" data-dokumb="${schl}:${i}">Umbenennen</button>
+        <button class="knopf klein" type="button" data-dokloesch="${schl}:${i}">Entfernen</button>
+      </span>`}</div>`).join('');
+  return (art === 'rechnung' ? `<p class="dokgruppe">Abgelegter Beleg</p>
+    ${o.belegDatei || o.belegOffen ? `<div class="dokbeleg" id="rechBeleg">
+        <span class="dokna"><b>${htmlText(o.belegDatei || 'Beleg')}</b>
+          <span class="dokadr">${o.belegDatei
+            ? 'liegt im GÄPP-Ordner — von GÄPP abgelegt, benannt und beim Bezahlen mitgezogen'
+            : 'liegt im Zwischenspeicher und wird abgelegt, sobald der Ordner freigegeben ist'}</span></span>
+        <span class="dokwerk"><button class="knopf klein" data-beleg="${o.id}">Öffnen</button></span>
+      </div>` : `<p class="meldung" id="rechBelegLeer">Kein Beleg hinterlegt. Der Beleg kommt
+        beim Erfassen der Rechnung dazu — GÄPP legt ihn selbst im Ordner ab.</p>`}
+    <p class="dokgruppe">Verweise</p>` : '')
+  + `<div class="dokliste" id="dokListe">${eintraege}</div>
+    ${dok.length ? '' : '<p class="meldung">Noch kein Verweis hinterlegt.</p>'}
+    ${verworfen ? `<p class="meldung fehler">${verworfen} Eintrag${verworfen > 1 ? 'e' : ''} in der
+      Datei wird nicht gezeigt: die Adresse beginnt nicht mit http:// oder https://.</p>` : ''}
+    ${_ro ? '<p class="meldung">Schreibgeschützt — hier lässt sich nichts hinterlegen.</p>' : `
+    <div class="dokneu">
+      <div class="feldchen breit"><label for="dokNeuName">Bezeichnung</label>
+        <input class="dokfeld" type="text" id="dokNeuName"
+               placeholder="${DOK_BEISPIEL[art] || 'Bezeichnung'}"></div>
+      <div class="feldchen breit"><label for="dokNeuUrl">Adresse</label>
+        <input class="dokfeld" type="text" id="dokNeuUrl" placeholder="https://…"></div>
+      <div class="feldchen"><button class="knopf primaer" type="button"
+        data-dokneu="${schl}">Hinterlegen</button></div>
+    </div>
+    <p class="meldung" id="dokNeuHint">GÄPP legt nichts ab und prüft nichts nach — es merkt sich
+      nur den Verweis, und zwar sofort. Bei OneDrive ist das der Freigabelink, nicht der Pfad
+      im Explorer.</p>
+    ${art === 'konto' ? `<p class="meldung" id="dokKeinZugang">Kontoauszüge, Bankvertrag,
+      Korrespondenz — <b>keine Zugangsdaten</b>. Diese Datei liegt in einem Git-Repository
+      und wird bei jeder Änderung ganz neu geschrieben; was einmal darin stand, steht in der
+      Historie weiter.</p>` : ''}`}`;
+}
+/* ---- U-27: der Wegweiser im Zahlungsreiter --------------------------
+   Er zeigt, was hinterlegt ist, und fuehrt zum Reiter — mehr nicht.
+   Erfassen und Entfernen standen bis U-26 hier; sie sind weggefallen,
+   weil dieselbe Sache an zwei Stellen gepflegt zwei Wahrheiten sind,
+   sobald eine der beiden Stellen einmal nicht mitgezogen wird. */
+function dokWegweiser(art, id) {
+  const o = dokTraeger(art, id);
+  if (!o) return '';
+  const dok = dokListe(o);
+  const links = dok.map(d =>
+    `<span class="dokchip"><a href="${htmlAttr(d.url)}" target="_blank" rel="noopener"
+       >${htmlText(d.name || d.url)}</a></span>`).join('');
+  /* Bei einer Rechnung stand der Beleg bis U-27 in der Uebersichtstafel. Er
+     steht jetzt im Reiter — hier bleibt nur die Nachricht, dass es ihn gibt.
+     Sie sieht bewusst NICHT aus wie eine Verweismarke: der Beleg ist kein
+     Verweis, und wer hier auf einen Klick hofft, bekaeme sonst keinen. */
+  const beleg = art === 'rechnung'
+    ? `<span class="dokbelegmarke">${o.belegDatei ? 'Beleg abgelegt'
+        : o.belegOffen ? 'Beleg liegt bereit' : 'kein Beleg'}</span>` : '';
+  return `<div class="dokzeile" id="${art === 'rechnung' ? 'rechDok' : 'schuldDok'}">
+    <span class="dokmarke">Dokumente</span>
+    ${links || '<span class="meldung">noch keine hinterlegt</span>'}
+    ${beleg}
+    <button class="knopf klein" type="button" data-blattreiter="dokumente"
+      >Im Reiter «Dokumente»${_ro ? ' ansehen' : ' pflegen'}</button>
+  </div>`;
+}
+/* Speichern heisst hier: jetzt. merkeStand() steht vor der ersten
+   Mutation, persist() danach, blattZeichnen() zeichnet den Reiter mit dem
+   neuen Eintrag und dem wieder leeren Formular. Wer danach das Blatt
+   schliesst, verliert nichts — das ist der ganze Punkt. */
+function dokAnlegen(schluessel) {
+  const { art, id } = dokSchl(schluessel);
+  const o = dokTraeger(art, id); if (!o || _ro) return;
+  const n = ($('#dokNeuName').value || '').trim(), u = ($('#dokNeuUrl').value || '').trim();
+  if (!dokUrlOk(u)) {
+    const h = $('#dokNeuHint');
+    if (h) { h.textContent = 'Die Adresse muss mit http:// oder https:// beginnen.';
+             h.classList.add('fehler'); }
+    const f = $('#dokNeuUrl'); if (f) f.focus();
+    return;
+  }
+  merkeStand('Verweis hinterlegt');
+  if (!Array.isArray(o.dokumente)) o.dokumente = [];
+  o.dokumente.push({ name: n || u, url: u });
+  persist(); blattZeichnen();
+  /* Der Fokus geht zurueck ins erste Feld: wer einen Verweis hinterlegt,
+     hat meistens noch einen zweiten in der Zwischenablage. */
+  setTimeout(() => { const f = $('#dokNeuName'); if (f) f.focus(); }, 0);
+}
+function dokUmbenennen(schluessel) {
+  const { art, id, i } = dokSchlI(schluessel);
+  const o = dokTraeger(art, id); if (!o || _ro) return;
+  const d = (o.dokumente || [])[i]; if (!d) return;
+  const neu = prompt('Wie soll der Verweis heissen? Die Adresse bleibt, wie sie ist.', d.name || '');
+  if (neu === null) return;
+  const t = neu.trim(); if (!t || t === d.name) return;
+  merkeStand('Verweis umbenannt');
+  d.name = t;
+  persist(); blattZeichnen();
+}
+function dokLoeschen(schluessel) {
+  const { art, id, i } = dokSchlI(schluessel);
+  const o = dokTraeger(art, id); if (!o || _ro) return;
+  const d = (o.dokumente || [])[i]; if (!d) return;
+  if (!frage('Verweis «' + (d.name || d.url) + '» entfernen? Das Dokument selbst bleibt, wo es liegt.')) return;
+  merkeStand('Verweis entfernt');
+  o.dokumente.splice(i, 1);
+  persist(); blattZeichnen();
+}
+/* Zwei Felder und ein Knopf sind ein Formular, auch ohne <form>. Enter
+   muss dort tun, was der Knopf tut — sonst tippt man die Adresse, drueckt
+   Enter, und nichts geschieht. Der Zuhoerer haengt an der Klasse des
+   Feldes, nicht am Blatt: das Blatt wird bei jeder Aenderung neu
+   gezeichnet, ein Zuhoerer daran waere nach dem ersten Verweis weg. */
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter') return;
+  const f = ev.target;
+  if (!f || !f.classList || !f.classList.contains('dokfeld')) return;
+  const k = $('[data-dokneu]'); if (!k) return;
+  ev.preventDefault();
+  dokAnlegen(k.dataset.dokneu);
+});
 function maskeZahlung(v) {
   const st = verbindStandHeute(v);
   const r = rate(v, S.jahr, S.monat);
@@ -3593,7 +4293,7 @@ function maskeZahlung(v) {
     </div>
     ${v.zahlung && v.zahlung.iban ? `<p class="notiz"><b>Zahlung an</b> ${v.zahlung.iban}${
        v.zahlung.referenz ? ' · Referenz ' + v.zahlung.referenz : ''}</p>` : ''}
-    ${dokumenteHtml(v)}
+    ${dokWegweiser('verbind', v.id)}
     ${v.hinweis ? `<p class="notiz" style="margin-top:8px">${v.hinweis}</p>` : ''}
     <div class="maske" style="margin-top:14px">
       <div class="feld"><label>Datum</label><input type="date" id="zDatum" value="${heuteISO()}"></div>
@@ -4256,14 +4956,26 @@ function vwBaum() {
         <span class="name">${k.name}</span>
         <span class="rolle">${k.rolle || ''}</span>
         <span class="zahl">${kats.length} ${kats.length === 1 ? 'Kategorie' : 'Kategorien'} · ${nZ} ${nZ === 1 ? 'Position' : 'Positionen'}</span>
-        <span class="zw"><button class="knopf klein" data-vwum="konto:${k.id}">Umbenennen</button>
+        <!-- U-30: «Ändern» ERSETZT «Umbenennen» und kommt nicht dazu. Zwei
+             Gruende, in dieser Reihenfolge:
+             Der Name steht in der Maske, gleich als drittes Feld — ein
+             zweiter Weg zu demselben Feld ist eine zweite Stelle, an der
+             er geschrieben wird, und die eine davon prueft nichts.
+             Und: die Knoepfe stehen in derselben Zeile wie «2 Kategorien ·
+             7 Positionen». Ein vierter Knopf schnitte diese Angabe auf
+             «2 K» zusammen — der Preis fuer einen Griff, den der neue
+             ohnehin mitbringt. Kategorie und Position behalten ihr
+             «Umbenennen»: sie haben keine solche Maske. -->
+        <span class="zw"><button class="knopf klein" data-kaend="${k.id}">Ändern</button>
           <button class="knopf klein" data-vwaus="konto:${k.id}">${k.aktiv === false ? 'Einblenden' : 'Ausblenden'}</button>
           <button class="knopf klein gefahr" data-vwloesch="konto:${k.id}">Löschen</button></span>
       </div>
       ${kZu ? '' : kats.map(c => {
         const zeilen = D.zeilen.filter(z => z.kategorieId === c.id).sort((a,b) => a.rang - b.rang);
         const cZu = zu.includes('c_' + c.id);
-        return `<div class="ast kategorie ${katSicht(c, S.jahr) ? '' : 'aus'}">
+        /* U-28: Der Ast traegt seine Kategorie — er ist das Band, in dem
+           ein Zug gilt. Ausserhalb gibt es kein Ziel. */
+        return `<div class="ast kategorie ${katSicht(c, S.jahr) ? '' : 'aus'}" data-kat="${c.id}">
           <div class="knoten n2">
             <button class="auf" data-vwklapp="c_${c.id}" aria-expanded="${!cZu}"><span class="chev">▾</span></button>
             <span class="name">${c.name}</span>
@@ -4282,8 +4994,9 @@ function vwBaum() {
                geschieht, weil die Kategorie die Zeile weiter wegnimmt. Also
                steht dort der Grund statt des Knopfs. */
             const nurKat = z.ausAb == null && !katSicht(c, S.jahr);
-            return `<div class="knoten n3 ${zeileSicht(z, S.jahr) ? '' : 'aus'}">
-              <span class="name">${z.bezeichnung}</span>
+            return `<div class="knoten n3 ${zeileSicht(z, S.jahr) ? '' : 'aus'}"
+              data-zeile="${z.id}" data-zkat="${c.id}">
+              ${zeilenGriff(z, true)}<span class="name">${z.bezeichnung}</span>
               <span class="rolle">${zahlungsweg(z) || (gesp ? 'gespiegelt' : '')}${ausAbText(z) ? ' · ' + ausAbText(z) : ''}</span>
               <span class="zahl num">${gesp ? '—' : fmt0(soll) || ''}</span>
               <span class="zw">${gesp ? '<span class="meldung">kommt von anderswo</span>'
@@ -4305,6 +5018,12 @@ function vwInhalt(seite) {
       <span class="meldung">Jedes Konto trägt seine Kategorien, jede Kategorie ihre Positionen.
         Die Zahl rechts ist das Soll ${S.jahr}.</span>
       <span class="vw-werkzeug">
+        <!-- U-30: «Konto anlegen» steht VOR «Kategorie anlegen» — der Baum
+             liest sich von oben nach unten (Konto trägt Kategorie trägt
+             Position), und die Knöpfe folgen ihm. Ohne diesen Knopf war der
+             Baum eine Ansicht ohne Wurzel: man konnte jede Ebene anlegen
+             ausser der obersten. -->
+        <button class="knopf klein" data-vwneu="konto">Konto anlegen</button>
         <button class="knopf klein" data-vwneu="kategorie">Kategorie anlegen</button>
         <button class="knopf klein" id="btnBaumAlle">${(S.vwZu||[]).length ? 'Alle aufklappen' : 'Alle zuklappen'}</button>
       </span></div>
@@ -4380,7 +5099,12 @@ function vwInhalt(seite) {
           <span class="j">${j}</span>
           <span class="e">${nZ ? nZ + (nZ === 1 ? ' Zeile' : ' Zeilen') : 'keine Zeile'} mit Werten${
             nR ? ' · ' + nR + (nR === 1 ? ' Ratenplan' : ' Ratenpläne') : ''}</span>
-          <span class="zw"><button class="knopf klein gefahr" data-jleer="${j}">Leeren</button></span>
+          <!-- U-30: Zwei Knöpfe, zwei Fragen. «Leeren» setzt die Zahlen auf
+               null und lässt den Jahrgang stehen; «Löschen» nimmt den Jahrgang
+               selbst weg. Bis U-30 gab es nur den ersten — ein verschriebenes
+               Jahr war für immer da. -->
+          <span class="zw"><button class="knopf klein gefahr" data-jleer="${j}">Leeren</button>
+            <button class="knopf klein gefahr" data-jweg="${j}">Löschen</button></span>
         </div>`;
       }).join('')}
       <p class="meldung" style="margin-top:12px"><b>Die Ratenpläne der Verbindlichkeiten werden
@@ -4418,7 +5142,14 @@ function zeichneVerwaltung() {
     </div>`;
 }
 
-/* ---- Das Blatt einer Rechnung: alles, was dazugehoert, an einer Stelle --- */
+/* ---- Das Blatt einer Rechnung: alles, was dazugehoert, an einer Stelle ---
+   U-27: Das Blatt hatte bis hierher KEINE Reiter — alles stand in einer
+   Tafel untereinander, der Beleg als vorletzte Zeile darin. Damit wohnten
+   Beleg und Zusatzunterlagen an zwei Orten, sobald es Zusatzunterlagen
+   gab. Es bekommt jetzt zwei Reiter nach dem Vorbild von blattSchuld:
+   was die Rechnung IST (Übersicht) und was zu ihr GEHOERT (Dokumente).
+   Die Belegzeile ist aus der Tafel verschwunden und steht nur noch im
+   zweiten Reiter — eine Angabe an zwei Stellen ist eine zu viel. */
 function blattRechnungZeigen(id) {
   const r = D.rechnungen.find(x => x.id === id);
   if (!r) return { titel:'Rechnung', koerper:'<p class="meldung">Diese Rechnung gibt es nicht mehr.</p>' };
@@ -4426,10 +5157,9 @@ function blattRechnungZeigen(id) {
   const gr = st && st.gruppeId ? D.stellerGruppen.find(g => g.id === st.gruppeId) : null;
   const buch = D.buchungen.filter(b => b.rechnungId === r.id);
   const feld = (k2, v2) => `<span class="wert"><span class="k">${k2}</span><span class="v" style="font-size:15px">${v2}</span></span>`;
-  return {
-    kennung: 'Rechnung · ' + (gr ? gr.name : 'ohne Gruppe'),
-    titel: (st ? st.name : '?') + ' · ' + fmt(r.betrag),
-    koerper: `<div class="kennzahlen">
+  const reiter = _blatt.reiter === 'dokumente' ? 'dokumente' : 'uebersicht';
+  _blatt.reiter = reiter;
+  const uebersicht = `<div class="kennzahlen">
         ${feld('Betrag', fmt(r.betrag))}
         ${feld('Fällig', r.faelligkeit.split('-').reverse().join('.'))}
         ${feld('Status', r.status === 'offen' ? '<span class="off">offen</span>' : 'bezahlt')}
@@ -4451,15 +5181,15 @@ function blattRechnungZeigen(id) {
             ? 'ja' : 'nein — ' + (r.verbId ? 'Rate eines Gläubigers, steht schon im Budget'
                                 : r.gedeckt ? 'Rückstellung' : 'wird nicht von einem freien Konto bezahlt')}</td></tr>
         ${r.notiz ? `<tr><td>Notiz</td><td class="r">${r.notiz}</td></tr>` : ''}
-        <tr><td>Beleg</td><td class="r">${r.belegDatei
-          ? `${r.belegDatei} <button class="knopf klein" data-beleg="${r.id}">Öffnen</button>`
-          : (r.belegOffen
-              ? `<span class="off">liegt im Zwischenspeicher</span>
-                 <button class="knopf klein" data-beleg="${r.id}">Öffnen</button>`
-              : 'kein Beleg hinterlegt')}</td></tr>
         ${buch.length ? buch.map(b => `<tr><td>Zahlung</td><td class="r">${
           b.datum.split('-').reverse().join('.')} · ${fmt(b.betrag)} ab ${konto(b.kontoId).name}</td></tr>`).join('') : ''}
-      </tbody></table>`,
+      </tbody></table>
+      ${dokWegweiser('rechnung', r.id)}`;
+  return {
+    kennung: 'Rechnung · ' + (gr ? gr.name : 'ohne Gruppe'),
+    titel: (st ? st.name : '?') + ' · ' + fmt(r.betrag),
+    reiter: [['uebersicht','Übersicht'], ['dokumente', dokReiterName('rechnung', r)]],
+    koerper: reiter === 'dokumente' ? dokReiterHtml('rechnung', r.id) : uebersicht,
     fuss: `<span class="schalter" role="group" style="margin-right:auto">
         <button data-rst="${r.id}:offen"   aria-pressed="${r.status==='offen'}">offen</button>
         <button data-rst="${r.id}:bezahlt" aria-pressed="${r.status==='bezahlt'}">bezahlt</button></span>
@@ -4968,9 +5698,138 @@ function blattGlaeubiger(arg) {
       <div class="aktion"><button class="knopf primaer" id="btnGlaeubigerSpeichern">${v?'Ändern':'Anlegen'}</button>
         <span class="hint" id="gHint"></span></div>
     </div>`,
-    fuss: (v ? `<button class="knopf klein" data-gaus="${v.id}">Ausblenden</button>` : '') +
+    /* U-30: Ausblenden und Loeschen stehen nebeneinander, und das ist Absicht.
+       Sie beantworten zwei verschiedene Fragen — «ich will die Zeile nicht mehr
+       sehen» und «diesen Glaeubiger hat es nie gegeben» —, und bis U-30 gab es
+       auf die zweite gar keine Antwort: abhaengige('verbindlichkeit', …) konnte
+       die Kaskade seit U-22, aber KEIN Knopf im ganzen Quelltext bot sie an.
+       Wer einen falsch angelegten Glaeubiger loswerden wollte, blendete ihn aus
+       und trug ihn danach in jeder Summe als Null mit. */
+    fuss: (v ? `<button class="knopf klein" data-gaus="${v.id}">Ausblenden</button>
+                <button class="knopf klein gefahr" data-vwloesch="verbindlichkeit:${v.id}">Löschen</button>` : '') +
           `<button class="knopf" data-zu>Schliessen</button>`
   };
+}
+
+/* ===================================================================
+   U-30 — Ein Konto anlegen und ändern
+   -------------------------------------------------------------------
+   GAEPP konnte bis zum 18.08.2026 KEIN Konto anlegen. `data-vwneu` gab
+   es fuer Kategorie, Rechnungssteller und Sparziel — die drei kleinsten
+   Stammdaten. Das Konto, an dem alles haengt (Kategorie, Buchung,
+   Rechnung, Verbindlichkeit, Sparziel), war nur ueber die JSON zu
+   erreichen. Damit war GAEPP mit einer leeren Datei nicht einrichtbar:
+   die App setzt acht Konten voraus, die sie selbst nicht herstellen kann.
+
+   BLATT UND NICHT PROMPT — die Entscheidung und ihr Grund:
+   vwNeu() fragt mit prompt(), und fuer «Bezeichnung» reicht das. Ein Konto
+   hat acht Felder. Eine Kette aus acht prompt()-Fenstern hat kein Zurueck
+   (Abbrechen im sechsten wirft die ersten fuenf weg), keine Vorschau, keine
+   Vorgabe, die man sieht, und vor allem keinen Platz fuer den Satz, der
+   `frei` erklaert. Genau dieses Feld entscheidet ueber «verfügbar» und
+   «pro Tag» — die beiden Zahlen, wegen denen Albrecht die App taeglich
+   oeffnet. Ein Haken ohne Erklaerung waere hier der teuerste Klick der
+   ganzen App. Also dieselbe Bauart wie blattGlaeubiger (F-07): ein Blatt
+   mit einer Maske, dieselben Felder fuer Anlegen und Aendern, dieselben
+   Knoepfe in der Fusszeile.
+
+   `sektion` steht als Auswahl und nicht als Haken, weil sie zwei Orte
+   benennt und keinen Zustand: 'konten' erscheint im Bereich Konten und
+   zaehlt in dessen Summe, 'reserve' steht unten in der eigenen Sektion.
+   =================================================================== */
+function naechsteKontoNr() {
+  /* Die Nummer ist nicht die Kennung — sie ist das, was auf der Kachel und in
+     jeder Auswahlliste vorn steht. Vorgeschlagen wird die naechste freie, damit
+     niemand die Liste durchzaehlen muss; ueberschreiben laesst sie sich. */
+  const n = D.konten.map(k => parseInt(k.nr, 10)).filter(x => !isNaN(x));
+  return String((n.length ? Math.max(...n) : 0) + 1).padStart(2, '0');
+}
+function blattKontoMaske(arg) {
+  const neu = String(arg || '') === 'neu';
+  const k = neu ? null : konto(arg);
+  const e = k || { nr: naechsteKontoNr(), name:'', rang: Math.max(0, ...D.konten.map(x => x.rang || 0)) + 1,
+                   sektion:'konten', frei:true, rolle:'', anfangsstand:'', iban:'' };
+  return {
+    titel: k ? 'Konto ändern' : 'Konto anlegen',
+    kennung: k ? 'Konto ' + k.nr : null,
+    koerper: `<div class="maske">
+      ${k ? `<input type="hidden" id="kId" value="${htmlAttr(k.id)}">` : ''}
+      <div class="feld"><label>Nummer</label>
+        <input type="text" id="kNr" value="${htmlAttr(e.nr)}" placeholder="z.B. 09"></div>
+      <div class="feld"><label>Reihenfolge</label>
+        <input class="num" id="kRang" type="text" inputmode="numeric" value="${htmlAttr(e.rang)}"></div>
+      <div class="feld voll"><label>Name</label>
+        <input type="text" id="kName" value="${htmlAttr(e.name)}" placeholder="z.B. Haushaltkonto"></div>
+      <div class="feld"><label>Bereich</label>
+        <select id="kSektion">
+          <option value="konten" ${e.sektion !== 'reserve' ? 'selected' : ''}>Konten</option>
+          <option value="reserve" ${e.sektion === 'reserve' ? 'selected' : ''}>Reserve</option>
+        </select></div>
+      <div class="feld"><label>Anfangssaldo</label>
+        <input class="num" id="kStand" type="text" inputmode="decimal"
+               value="${e.anfangsstand !== '' && e.anfangsstand != null ? fmt(e.anfangsstand) : ''}"></div>
+      <div class="feld voll"><label>Rolle — wozu das Konto da ist</label>
+        <input type="text" id="kRolle" value="${htmlAttr(e.rolle)}"
+               placeholder="z.B. laufende Ausgaben"></div>
+      <div class="feld voll"><label>IBAN</label>
+        <input type="text" id="kIban" value="${htmlAttr(e.iban)}" placeholder="CH.."></div>
+      <div class="feld haken voll"><input type="checkbox" id="kFrei" ${e.frei ? 'checked' : ''}>
+        <label for="kFrei">Das Geld auf diesem Konto ist frei verfügbar</label></div>
+      <div class="feld voll"><span class="meldung"><b>Der Haken ist das wichtigste Feld dieser Maske.</b>
+        Nur Konten mit Haken zählen in «verfügbar» und damit in «pro Tag» — die beiden Zahlen
+        oben im Kopf. Ein Konto <b>ohne</b> Haken ist gebundenes Geld: Rückstellungen,
+        Kreditoren, alles, was schon jemandem gehört. Es steht weiter in der Liste und in der
+        Kontosumme, aber es erhöht nicht, was du heute ausgeben kannst.</span></div>
+      <div class="feld voll"><span class="meldung"><b>Bereich</b> entscheidet, wo die Kachel steht:
+        «Konten» oben im gleichnamigen Bereich und in dessen Summe, «Reserve» unten in der
+        eigenen Sektion. <b>Reihenfolge</b> ist die Zahl, nach der sortiert wird —
+        kleiner steht weiter vorn.</span></div>
+      <div class="aktion"><button class="knopf primaer" id="btnKontoSpeichern">${k ? 'Ändern' : 'Anlegen'}</button>
+        <span class="hint" id="kHint"></span></div>
+    </div>`,
+    fuss: (k ? `<button class="knopf klein" data-vwaus="konto:${k.id}">${k.aktiv === false ? 'Einblenden' : 'Ausblenden'}</button>
+                <button class="knopf klein gefahr" data-vwloesch="konto:${k.id}">Löschen</button>` : '') +
+          `<button class="knopf" data-zu>Schliessen</button>`
+  };
+}
+function kontoSpeichern() {
+  const hint = t => { const h = $('#kHint'); if (h) h.textContent = t; };
+  /* A-88: Im Schreibschutz ist merkeStand() still. Eine Maske, die dann trotzdem
+     schriebe, legte ein Konto ohne Netz an — und in eine Datei, die die App gar
+     nicht versteht. Der Riegel steht hier und nicht nur im CSS: die Felder sind
+     dort abgeschaltet, der Knopf war es nie. */
+  if (_ro) return hint('GÄPP ist schreibgeschützt und legt nichts an.');
+  const name = ($('#kName').value || '').trim();
+  if (!name) return hint('Ohne Namen geht es nicht.');
+  let nr = ($('#kNr').value || '').trim();
+  if (!nr) return hint('Ohne Nummer geht es nicht — sie steht auf jeder Kachel und vorn in jeder Auswahlliste.');
+  /* Zweistellig, aber nur wenn es eine Zahl ist: «03» soll nicht als «3» neben
+     «04» stehen. Wer eine Nummer wie «K1» will, behaelt sie. */
+  if (/^\d+$/.test(nr)) nr = nr.padStart(2, '0');
+  const alt = $('#kId') ? konto($('#kId').value) : null;
+  if (D.konten.some(x => x.nr === nr && x !== alt))
+    return hint('Die Nummer ' + nr + ' trägt schon ein anderes Konto. Zwei gleiche Nummern '
+              + 'liessen sich in den Auswahllisten nicht auseinanderhalten.');
+  const rangRoh = ($('#kRang').value || '').trim();
+  const rang = rangRoh === '' ? Math.max(0, ...D.konten.map(x => x.rang || 0)) + 1 : parseInt(rangRoh, 10);
+  if (isNaN(rang)) return hint('Die Reihenfolge muss eine Zahl sein.');
+  /* Erste Anweisung nach der letzten Pruefung, vor der ersten Zuweisung (U-20). */
+  merkeStand(alt ? 'Konto «' + name + '» geändert' : 'Konto «' + name + '» angelegt');
+  /* bankwerte und dokumente entstehen leer und werden hier nie angefasst: der
+     Bankabgleich sitzt in der Fusszeile des Kontoblatts, die Unterlagen im
+     vierten Reiter. Eine Maske, die sie mitschriebe, waere die zweite Stelle
+     fuer dieselbe Zahl. */
+  const o = alt || { id: neueId('ko'), bankwerte: [], dokumente: [], aktiv: true };
+  o.nr = nr;
+  o.name = name;
+  o.rang = rang;
+  o.sektion = $('#kSektion').value === 'reserve' ? 'reserve' : 'konten';
+  o.frei = !!$('#kFrei').checked;
+  o.rolle = ($('#kRolle').value || '').trim();
+  o.iban = ($('#kIban').value || '').trim();
+  o.anfangsstand = rd(zahl($('#kStand').value));
+  if (!alt) D.konten.push(o);
+  persist(); blattZu(); zeichne();
 }
 
 /* ===================================================================
@@ -5657,8 +6516,9 @@ function tilgungsende(v) {
       if (d.j===j && d.m===m) s += (e.art==='minderung'?-e.betrag:e.betrag); });
     const gebucht = rd(D.buchungen.reduce((x,b) => { const d = ymOf(b.datum);
       return (b.verbId === v.id && d.j === j && d.m === m) ? x + b.betrag : x; }, 0));
-    const kuenftig = (j > h.j) || (j === h.j && m >= h.m);
-    s = rd(s * (1 + (v.zinssatz||0)/100) + (v.gebuehr||0) - (gebucht || (kuenftig ? rate(v, j, m) : 0)));
+    /* U-29: derselbe Schnitt wie in verbindLauf — der Tilgungsplan rechnet
+       jeden Monat mit der Rate, gebuchte Zahlungen haben Vorrang. */
+    s = rd(s * (1 + (v.zinssatz||0)/100) + (v.gebuehr||0) - (gebucht || rate(v, j, m)));
     if (s <= 0.005) return MON_LANG[m] + ' ' + j;
     m++; if (m===12) { m=0; j++; }
   }
@@ -6217,7 +7077,11 @@ function loeschenTun() {
   /* Ein offenes Blatt kann auf etwas zeigen, das es nicht mehr gibt — dann
      wirft blattZeichnen() beim naechsten Zeichnen. Zu damit, ohne Umweg
      ueber blattZu(): das wuerde den Stapel abarbeiten statt zu raeumen. */
-  const blattListe = { konto:'konten', zeile:'zeilen', sparziel:'sparziele',
+  /* U-30: kontomaske gehoert dazu — sie zeigt auf ein Konto wie das Kontoblatt.
+     Der Loeschknopf steht seit U-30 IN ihr; ohne diesen Eintrag bliebe die
+     Maske eines geloeschten Kontos offen stehen und wuerfe beim naechsten
+     Zeichnen. */
+  const blattListe = { konto:'konten', kontomaske:'konten', zeile:'zeilen', sparziel:'sparziele',
                        schuld:'verbindlichkeiten', glaeubiger:'verbindlichkeiten',
                        rechnungzeigen:'rechnungen', rechnung:'rechnungen' };
   if (_blatt && (a.treffer[blattListe[_blatt.art]] || []).indexOf(_blatt.id) >= 0) {
@@ -6277,6 +7141,90 @@ function jahrLeerenTun() {
   D.verbindlichkeiten.forEach(v => {
     if (v.raten && v.raten[k]) v.raten[k] = { soll: 0, m: Array(12).fill(0) };
   });
+  persist();
+  dialogZu();
+  zeichne();
+}
+
+/* ===================================================================
+   U-30 — Einen Budgetjahrgang ganz entfernen
+   -------------------------------------------------------------------
+   «Leeren» setzt auf null, der Jahrgang bleibt stehen. Das ist der
+   haeufigere Wunsch und deshalb der Knopf, der zuerst kam (U-22). Der
+   andere fehlte ganz: einen Jahrgang wieder LOSWERDEN. Wer sich beim
+   Anlegen um eine Stelle vertippt — 2072 statt 2027 —, hatte bis heute
+   keinen Weg zurueck. Der Jahrgang stand danach in jeder Jahresliste,
+   im Kalender, in der Ansicht «Alle Jahre» als eigene Spalte und in
+   jedem Export. Zurueckgenommen werden konnte er nur in der JSON.
+
+   ENTFERNT UND NICHT GELEERT heisst hier: der Behaelter geht weg, nicht
+   sein Inhalt. Der Unterschied ist derselbe wie bei jahrLeeren, nur
+   andersherum gelesen — «hier steht nichts» gegen «diesen Jahrgang gibt
+   es nicht». Die Ratenplaene dieses Jahrgangs gehen mit, aus demselben
+   Grund wie beim Leeren: ein Budgetjahr, das es nicht gibt, und darunter
+   weiterlaufende Raten waeren zwei Wahrheiten ueber dasselbe Jahr.
+
+   DER LETZTE JAHRGANG BLEIBT. Ohne ihn haette D.budget keinen Schluessel
+   mehr, und die Ansicht «Alle Jahre» keine einzige Spalte. Man koennte
+   das abfangen (spaltenKoepfe tut es seit U-30 auch), aber anbieten sollte
+   man es nicht: eine App ohne Budgetjahr ist keine, und der Weg zurueck
+   hiesse «Jahr anlegen» — mit allen Werten weg.
+
+   Die eigene Kaskade steht hier und nicht in abhaengige(): ein Jahrgang
+   ist kein Datensatz mit einer id, sondern ein Schluessel in zwei
+   Schluesselkarten (D.budget und v.raten). LOESCH_LISTE haette ihn nicht
+   aufnehmen koennen, ohne dass jede Zeile darin eine Ausnahme braucht.
+   Was er mit abhaengige() teilt, ist das Wichtigere: die Aufstellung
+   steht VOR dem Loeschen, und merkeStand() ist die erste Anweisung nach
+   der Bestaetigung.
+   =================================================================== */
+let _jahrWeg = null;
+function jahrLoeschen(j) {
+  const k = String(j);
+  if (!D.budget[k]) return;
+  const hatWert = o => !!o && ((o.soll || 0) !== 0 || (o.m || []).some(x => (x || 0) !== 0));
+  const zeilen = Object.keys(D.budget[k]).filter(z => hatWert(D.budget[k][z]));
+  const behaelter = Object.keys(D.budget[k]).length;
+  const raten = D.verbindlichkeiten.filter(v => v.raten && v.raten[k]);
+  const ratenWert = raten.filter(v => hatWert(v.raten[k]));
+  const letzter = budgetJahre().length <= 1;
+  _jahrWeg = { jahr: k };
+  const teile = [];
+  teile.push(behaelter + (behaelter === 1 ? ' Budgetzeile' : ' Budgetzeilen')
+             + (zeilen.length ? ', davon ' + zeilen.length + ' mit Werten' : ', alle auf null'));
+  if (raten.length)
+    teile.push(raten.length + (raten.length === 1 ? ' Ratenplan' : ' Ratenpläne')
+               + (ratenWert.length ? ', davon ' + ratenWert.length + ' mit Werten' : ', alle auf null'));
+  dialogAuf('Budgetjahr löschen', `
+    <p class="dlg-lead">Budgetjahr <b class="num">${k}</b></p>
+    <p class="meldung">Weg ist danach:</p>
+    <ul class="dlg-liste">${teile.map(t => `<li>${t}</li>`).join('')}</ul>
+    ${letzter
+      ? `<p class="dlg-warnung"><b>${k} ist der einzige Budgetjahrgang.</b><br>
+         Ohne Jahrgang hätte die Ansicht «Alle Jahre» keine Spalte und die Budgettabelle
+         keinen Ort, an dem etwas steht. Leg zuerst einen anderen Jahrgang an —
+         oder nimm «Leeren», wenn nur die Zahlen weg sollen.</p>`
+      : _ro
+      ? `<p class="dlg-warnung"><b>GÄPP ist schreibgeschützt.</b><br>
+         Die Datendatei ist neuer als diese App, und Rückgängig ist damit
+         abgeschaltet. Lade die neue Fassung der App.</p>`
+      : `<p class="meldung">Buchungen, Rechnungen und Gläubigerstände bleiben unberührt —
+         sie hängen an ihrem Datum, nicht am Budgetjahrgang. Weg ist nur, was für ${k}
+         <b>geplant</b> war. Rückgängig hält den Stand zwölf Sekunden.</p>`}`,
+    'Löschen', (letzter || _ro) ? null : jahrLoeschenTun, true);
+}
+function jahrLoeschenTun() {
+  /* Zweiter Riegel neben dem fehlenden Knopf — dieselbe Regel wie bei
+     loeschenTun(): die Funktion ist von aussen aufrufbar. */
+  if (_ro || !_jahrWeg || budgetJahre().length <= 1) return;
+  const k = _jahrWeg.jahr;
+  merkeStand('Budgetjahr ' + k + ' gelöscht');
+  delete D.budget[k];
+  D.verbindlichkeiten.forEach(v => { if (v.raten) delete v.raten[k]; });
+  /* Der Zeiger stand womoeglich genau auf diesem Jahrgang. Bliebe er stehen,
+     zeigte die Budgettabelle lauter Nullen — und die erste eingetippte Zahl
+     legte den geloeschten Jahrgang ueber budgetSetzen wieder an. */
+  jahrFangen();
   persist();
   dialogZu();
   zeichne();
@@ -6470,11 +7418,11 @@ document.addEventListener('click', async ev => {
       const k = $('#kalender'); zeichneKalender(); k.hidden = !k.hidden; return; }
     S.zeitraum = stufe.dataset.z; $('#kalender').hidden = true; return zeichne();
   }
-  const t = ev.target.closest('[data-oeffne],[data-tat],[data-klapp],[data-filter],[data-reiter],[data-bereich],[data-faltauf],[data-vwseite],[data-vwklapp],' +
+  const t = ev.target.closest('[data-oeffne],[data-tat],[data-klapp],[data-filter],[data-reiter],[data-bereich],[data-faltauf],[data-vwseite],[data-vwklapp],[data-dokneu],[data-dokumb],[data-dokloesch],' +
     '[data-blattreiter],[data-art],[data-krich],[data-takt],[data-sart],[data-zu],[data-weg],[data-add],' +
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
-    '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],' +
+    '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
     '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],#ablage,button');
   if (!t) return;
 
@@ -6559,6 +7507,12 @@ document.addEventListener('click', async ev => {
   /* U-22: Der Dialog traegt drei Fragen. Was der rechte Knopf tut, hat der
      gesetzt, der ihn aufgemacht hat — hier steht nur noch der Aufruf. */
   if (t.id === 'btnUeberTun') { if (_dlgTun) return _dlgTun(); return; }
+  /* U-27: Ein Schluessel statt zweier Argumente — die drei Knoepfe tragen
+     Traegerart, Kennung und Index in EINEM Attribut, damit die Stelle hier
+     nichts ueber die Bauart des Reiters wissen muss. */
+  if (t.dataset.dokneu)    return dokAnlegen(t.dataset.dokneu);
+  if (t.dataset.dokumb)    return dokUmbenennen(t.dataset.dokumb);
+  if (t.dataset.dokloesch) return dokLoeschen(t.dataset.dokloesch);
   if (t.id === 'btnSprung') return sprungliste(t);
   if (t.dataset.springziel) { const el = $(`[data-kat="${t.dataset.springziel}"]`);
     if (el) el.scrollIntoView({ block:'start' }); $('.sprung') && $('.sprung').remove(); return; }
@@ -6665,6 +7619,11 @@ document.addEventListener('click', async ev => {
   /* --- Rechnungen --- */
   if (t.id === 'btnRechNeu')       { _belegDatei = null; _gelesen = null; return blattAuf('rechnung', null); }
   if (t.id === 'btnGlaeubigerSpeichern') return glaeubigerSpeichern();
+  /* U-30: Konto anlegen und aendern. «Ändern» geht ueber das Kontoblatt UND
+     ueber den Baum auf — beides fuehrt in dieselbe Maske. */
+  if (t.id === 'btnKontoSpeichern') return kontoSpeichern();
+  if (t.dataset.kaend) { ev.stopPropagation();
+    return blattAuf('kontomaske', t.dataset.kaend, null, !!(_blatt && _blatt.art === 'konto')); }
   if (t.id === 'btnRechSpeichern') return rechnungSpeichern();
   if (t.dataset.rweg) {
     if (!frage('Diese Rechnung löschen?')) return;
@@ -6717,6 +7676,7 @@ document.addEventListener('click', async ev => {
      eine Kaskade laesst sich nicht in eine Zeile Rueckfrage fassen. */
   if (t.dataset.vwloesch) { const [a, i] = t.dataset.vwloesch.split(':'); return loeschenFragen(a, i); }
   if (t.dataset.jleer) return jahrLeeren(t.dataset.jleer);
+  if (t.dataset.jweg)  return jahrLoeschen(t.dataset.jweg);
   if (t.id === 'btnOrdner') {
     await ordnerFreigeben();
     const n = await belegeNachreichen();
@@ -6742,7 +7702,10 @@ document.addEventListener('click', async ev => {
   if (t.dataset.add) {
     const name = prompt('Bezeichnung der neuen Zeile in «' + kategorie(t.dataset.add).name + '»:');
     if (!name) return;
-    const rang = Math.max(0, ...D.zeilen.filter(z => z.kategorieId === t.dataset.add).map(z => z.rang || 0)) + 1;
+    /* U-28: derselbe Schritt wie beim Umordnen. Eine neue Zeile haengt
+       weiterhin hinten an — nur eben auf dem Raster, das ein spaeteres
+       Einfuegen dazwischen ohne Neuvergabe der ganzen Kategorie zulaesst. */
+    const rang = Math.max(0, ...D.zeilen.filter(z => z.kategorieId === t.dataset.add).map(z => z.rang || 0)) + RANG_SCHRITT;
     D.zeilen.push({ id: neueId('z'), kategorieId: t.dataset.add, bezeichnung: name.trim(),
       zahlungsweg:{ tag:null, art:'' }, gespiegeltAus:null, gegenrichtung:false, rang, ausAb:null });
     persist(); return zeichne();
@@ -6857,6 +7820,11 @@ function nachbarZelle(td, richtung) {
 }
 document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape' && !$('#dialogHg').hidden) { ev.preventDefault(); return dialogZu(); }
+  /* U-28: Alt+Pfeil hoch/runter gehoert dem Umordnen der Zeile und ist
+     dort schon abgearbeitet — dieser Zuhoerer haengt spaeter am selben
+     Knoten und wuerde den Zeiger sonst ein zweites Mal bewegen, und zwar
+     in einer Tabelle, die es nach dem Umordnen so nicht mehr gibt. */
+  if (ev.altKey) return;
   const feld = ev.target;
   if (!feld || feld.tagName !== 'INPUT') return;
   const td = feld.closest('td.bearbeitbar'); if (!td) return;
@@ -7082,7 +8050,11 @@ async function rechnungSpeichern() {
   if (!betrag) { $('#rHint').textContent = 'Ohne Betrag geht es nicht.'; return; }
   const faellig = $('#rFaellig').value || heuteISO();
   const vorhanden = $('#rId') ? D.rechnungen.find(x => x.id === $('#rId').value) : null;
-  const r = vorhanden || { id: neueId('r'), status:'offen', belegDatei:null, belegOffen:false };
+  /* U-27: `dokumente` entsteht mit der Rechnung, nicht erst beim ersten
+     Verweis — normalisieren() traegt es zwar nach, aber eine frisch
+     erfasste Rechnung laeuft bis zum naechsten Laden nicht durch. */
+  const r = vorhanden || { id: neueId('r'), status:'offen', belegDatei:null, belegOffen:false,
+                           dokumente: [] };
   r.stellerId = st; r.betrag = rd(betrag); r.faelligkeit = faellig;
   r.gedeckt = $('#rGedeckt').checked; r.notiz = $('#rNotiz').value.trim();
   /* F-01: Haengt die Rechnung an einem Glaeubiger, braucht sie keine
@@ -7195,19 +8167,56 @@ function vwAusblenden(arg) {
   persist(); blattZeichnen();
 }
 function vwNeu(art) {
+  /* U-30: Das Konto biegt vor dem prompt() ab — es bekommt ein Blatt, weil es
+     acht Felder hat und eines davon («frei») einen erklaerenden Satz braucht.
+     Die Abzweigung steht HIER und nicht im Klickverteiler, damit «anlegen»
+     ein einziger Einstieg bleibt: wer einen zweiten Knopf ergaenzt, findet
+     den Weg an derselben Stelle. */
+  if (art === 'konto') return blattAuf('kontomaske', 'neu');
   const name = prompt('Bezeichnung:');
   if (!name) return;
   if (art === 'kategorie') {
-    const kId = prompt('Welches Konto führt diese Kategorie? (Nummer, z.B. 03)', '03');
-    const k = D.konten.find(x => x.nr === String(kId).padStart(2,'0'));
-    D.kategorien.push({ id:neueId('k'), name:name.trim(), kontoId:k ? k.id : 'hhk', richtung:'aus',
-      rang: Math.max(...D.kategorien.map(x=>x.rang)) + 1, ausAb:null });
+    /* U-30: Zwei Fehler, die beide erst mit einer leeren Datei zünden — und
+       genau deshalb bis hierher niemandem aufgefallen sind.
+       ERSTENS die Vorgabe «hhk». Sie war die Kennung eines Kontos, das es in
+       einer gewachsenen Datei immer gab. In einer neuen gibt es sie nicht:
+       die Kategorie bekäme einen Verweis ins Leere, verschwände damit aus dem
+       Verwaltungsbaum (der nach Konten gruppiert) und stünde nur noch in der
+       Budgettabelle — sichtbar, aber ohne Ort. Gefangen wird jetzt auf das
+       erste Konto, und wo es gar keines gibt, entsteht keine Kategorie.
+       ZWEITENS Math.max(...[]) — das ist −Infinity, nicht 0. Die allererste
+       Kategorie einer leeren Datei bekam damit rang −Infinity; JSON.stringify
+       schreibt daraus `null`, und nach dem nächsten Laden sortiert die
+       Verwaltung nach einem Rang, den es nicht gibt. Derselbe Ausdruck steht
+       eine Zeile über der Kontomaske mit der 0 als Untergrenze. */
+    if (!D.konten.length) {
+      alert('Es gibt noch kein Konto. Eine Kategorie hängt immer an einem Konto — '
+          + 'leg zuerst eines an, mit «Konto anlegen» hier auf derselben Seite.');
+      return;
+    }
+    const kId = prompt('Welches Konto führt diese Kategorie? (Nummer, z.B. ' + D.konten[0].nr + ')',
+                       D.konten[0].nr);
+    if (kId === null) return;
+    const k = D.konten.find(x => x.nr === String(kId).padStart(2,'0')) || D.konten[0];
+    merkeStand('Kategorie «' + name.trim() + '» angelegt');
+    D.kategorien.push({ id:neueId('k'), name:name.trim(), kontoId:k.id, richtung:'aus',
+      rang: Math.max(0, ...D.kategorien.map(x => x.rang || 0)) + 1, ausAb:null });
   }
   if (art === 'steller') {
+    /* Dieselbe Sorte Annahme wie oben: stellerGruppen[0] gibt es nicht
+       zwangsläufig. Ohne Gruppe ist ein Rechnungssteller kein halber
+       Datensatz, sondern einer, der in keiner Liste auftaucht. */
+    if (!D.stellerGruppen.length) {
+      alert('Es gibt noch keine Rechnungssteller-Gruppe. Ohne sie liesse sich der '
+          + 'Steller nirgends einordnen.');
+      return;
+    }
+    merkeStand('Rechnungssteller «' + name.trim() + '» angelegt');
     D.steller.push({ id:neueId('st'), name:name.trim(), gruppeId:D.stellerGruppen[0].id, aktiv:true });
   }
   if (art === 'sparziel') {
     const ziel = zahl(prompt('Zielbetrag:', '0'));
+    merkeStand('Sparziel «' + name.trim() + '» angelegt');
     D.sparziele.push({ id:neueId('sp'), name:name.trim(), zielbetrag:rd(ziel), kontoId:null, aktiv:true });
   }
   persist(); blattZeichnen();
