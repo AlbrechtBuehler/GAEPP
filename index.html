@@ -3841,7 +3841,16 @@ function verbindTabelle() {
        aber auf der vollen Liste der Gruppe (ordListe), damit ein aus-
        geblendeter Glaeubiger seinen Platz zwischen den sichtbaren behaelt. */
     const liste = ordListe('verb', g.id).filter(v => v.aktiv !== false);
-    if (!liste.length) return;
+    /* U-36: Eine leere Gruppe fiel mitsamt ihrer Kopfzeile weg — und mit der
+       Kopfzeile der einzige Knopf, ueber den in der ganzen App ein Glaeubiger
+       entsteht. Bei leerer Datendatei war damit KEINE Verbindlichkeit
+       anlegbar: der Knopf haengt an der Gruppe, die Gruppe haengt an einem
+       Glaeubiger, und der erste Glaeubiger entsteht nur ueber den Knopf.
+       Die Verwaltung hilft nicht, sie fuehrt kein Register dafuer.
+       Jetzt bleibt die Kopfzeile stehen, solange die Tabelle bedienbar ist.
+       In «Alle Jahre» und im Lesemodus faellt sie weiter weg — dort gibt es
+       den Knopf ohnehin nicht, dort waere sie eine leere Zeile ohne Zweck. */
+    if (!liste.length && (alle || _ro)) return;
     const zu = S.zu.includes('g_' + g.id);
     rows += `<tr class="zeile-luft"><td colspan="${sp.length+4}"></td></tr>`;
     rows += `<tr class="zeile-sub" data-gruppe="${g.id}"><td class="klappzelle namenszelle">
@@ -3863,7 +3872,10 @@ function verbindTabelle() {
                <input type="text" value="${rate(v,S.jahr,s.key)?fmt(rate(v,S.jahr,s.key)):''}" placeholder="0.00" inputmode="decimal"></td>`)}
         <td class="n">${uebertrag(s => fmt0(stand(v, s)))}</td></tr>`;
     });
-    rows += `<tr class="zeile-summe ${zu?'zugeklappt':''}" data-gsumme="${g.id}"><td>Summe ${g.name}</td>
+    /* U-36: Eine Gruppe ohne Glaeubiger braucht keine Summenzeile — sie
+       stuende als zweite Null direkt unter der ersten und sagte nichts,
+       was die Kopfzeile nicht schon sagt. */
+    if (liste.length) rows += `<tr class="zeile-summe ${zu?'zugeklappt':''}" data-gsumme="${g.id}"><td>Summe ${g.name}</td>
       <td class="n">${fmt0(rd(liste.reduce((a,v)=>a+verbindStandHeute(v),0)))}</td><td class="n"></td>
       ${reihe(sp, s => `<td class="n ${s.jetzt?'jetzt':''}">${fmt0(rd(liste.reduce((a,v)=>a+zahl(v,s),0)))}</td>`)}
       <td class="n">${uebertrag(s => fmt0(rd(liste.reduce((a,v)=>a+stand(v,s),0))))}</td></tr>`;
@@ -8816,8 +8828,13 @@ function berEinlesen() {
 /* ---- Budgetjahr anlegen (A-86) — und dabei die Ratenplaene mitschreiben.
    Sonst stehen nach dem Jahreswechsel zehn Schulden ohne Raten da. ------ */
 function jahrAnlegen() {
-  const jahre = Object.keys(D.budget).map(Number).sort();
-  const vorschlag = jahre[jahre.length-1] + 1;
+  const jahre = Object.keys(D.budget).map(Number).filter(j => !isNaN(j)).sort((a, b) => a - b);
+  /* U-36: Ohne einen einzigen Jahrgang war jahre[jahre.length-1] undefined und
+     der Vorschlag damit NaN — die Maske bot «NaN» zum Bestaetigen an. Im leeren
+     Zustand ist das laufende Jahr der richtige Vorschlag; wer frueher beginnen
+     will, tippt seine Zahl darueber. Der Vergleicher in .sort() stand hier als
+     einziger Stelle nicht da (vgl. budgetJahre()). */
+  const vorschlag = jahre.length ? jahre[jahre.length-1] + 1 : new Date().getFullYear();
   const eingabe = prompt('Welches Jahr anlegen?', String(vorschlag));
   if (!eingabe) return;
   const j = parseInt(eingabe, 10);
