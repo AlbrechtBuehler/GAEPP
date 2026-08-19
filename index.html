@@ -506,6 +506,27 @@ table.klein.liste tr:hover td{background:var(--soft)}
 .sektion > h2 .h2-zu{color:var(--muted);letter-spacing:0;font-size:11.5px;text-transform:none;font-weight:400}
 .untertitel{font-size:12px;font-weight:500;color:var(--muted);margin:0 0 8px;display:flex;gap:10px;align-items:baseline}
 .untertitel .num{color:var(--err)}
+/* U-54: Der Klappkopf «Bezahlt» — Form 6 in der Gestalt der Zwischen-
+   ueberschrift. Kein neues Bauteil, ein Knopf um ein vorhandenes. */
+.untertitel.klapp{background:none;border:0;font:inherit;font-size:12px;font-weight:500;
+  color:var(--muted);cursor:pointer;padding:2px 0;width:100%;margin:16px 0 8px}
+.untertitel.klapp:hover{color:var(--ink)}
+.untertitel.klapp .chev{color:var(--accent);font-size:10px;flex:0 0 12px;text-align:left}
+.untertitel.klapp .num{color:var(--muted)}
+/* U-53: Die Gruppe der ueberfaelligen traegt Rot — sie ist die eine Stelle,
+   an der die Tafel selbst etwas meldet. */
+.untertitel.spaetkopf{color:var(--err)}
+/* Ein Gruppenkopf braucht Luft nach oben, sonst klebt er an den Kacheln der
+   Gruppe darueber und liest sich als deren Fusszeile. Der erste nicht — er
+   steht schon unter dem Tafelkopf. */
+.untertitel.rkopf{margin:18px 0 9px}
+.rollflaeche > .untertitel.rkopf:first-child{margin-top:4px}
+/* U-54: Bezahltes faellt um einen Rang (Formensprache H) und verschwindet
+   nicht. Keine zweite Kachelgroesse — dieselbe Kachel, leiser. */
+.kachel.erledigt .name,.kachel.erledigt .mitte .v,.kachel.erledigt .mitte .v.neg{color:var(--muted)}
+/* U-53: Eine ueberfaellige Rechnung sagt es in ihrem Label, nicht in der Zahl —
+   die Zahl traegt das Vorzeichen und sonst nichts (Formensprache F). */
+.kachel.spaet .mitte .k{color:var(--err)}
 .raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:var(--gap)}
 
 /* ===================================================================
@@ -1997,7 +2018,11 @@ let S = {                /* der Anzeigezustand — nur localStorage, nie in die 
      die es in der Arbeit nicht gibt — man liest und traegt im selben Griff ein.
      kOffen haelt die aufgeklappte Karte — leer heisst alle zu, das Gegenteil
      von S.zu bei der Tabelle. Dort ist Offen der Normalfall, hier Zu. */
-  kOffen: []
+  kOffen: [],
+  /* U-52 bis U-55: beides ist Ansicht und geht deshalb nie in die JSON.
+     rGrp haelt die Gruppierung der Rechnungstafel (Monat oder Steller),
+     rBezAuf die Klappe ueber dem Bezahlten. Zu ist der Normalfall. */
+  rGrp: 'monat', rBezAuf: false
 };
 let GH = { repo:'', branch:'main', token:'' };
 let _sig, _sha = null, _pushT = null, _ro = false;
@@ -2030,6 +2055,11 @@ function persistAnsicht() {
 function ansichtFangen() {
   if (!Array.isArray(S.kOffen)) S.kOffen = [];
   delete S.ansicht;
+  /* U-55: Ein Stand aus der Zeit vor dem 19.08.2026 kennt beide Felder nicht.
+     Object.assign laesst die Vorgabe dann stehen — aber nicht, wenn dort
+     einmal etwas anderes gelandet ist. Alles ausser 'steller' heisst Monat. */
+  if (S.rGrp !== 'steller') S.rGrp = 'monat';
+  S.rBezAuf = !!S.rBezAuf;
 }
 
 /* ===================================================================
@@ -3167,7 +3197,7 @@ function kachelHtml(o) {
   const balken = o.anteil === undefined ? '' :
     `<div class="balken"><div style="width:${Math.round(o.anteil*100)}%"></div></div>`;
   const etikett = o.ueberzogen ? '<span class="etikett">überzogen</span>' : '';
-  return `<article class="karte kachel" data-oeffne="${o.art}:${o.id}">
+  return `<article class="karte kachel${o.klasse ? ' ' + o.klasse : ''}" data-oeffne="${o.art}:${o.id}">
     <div>
       <span class="kennung">${o.kennung}</span>
       <button class="name" type="button">${o.name}</button>
@@ -5543,52 +5573,164 @@ function verbindKarteAuf(gid, liste) {
 }
 
 /* ---- Rechnungen ------------------------------------------------------ */
-/* Die Rechnungen stehen als Kacheln, nach Faelligkeitsmonat gruppiert —
-   dieselbe Anatomie wie Konto und Schuld, dieselbe Zwischenueberschrift wie
-   bei den Schulden. Ein Klick oeffnet das Blatt mit allem, was dazugehoert. */
-function rechnungTabelle() {
-  const liste = D.rechnungen.slice().sort((a,b) => a.faelligkeit < b.faelligkeit ? -1 : 1);
-  const monate = [];
+/* Die Rechnungen stehen als Kacheln, gruppiert — dieselbe Anatomie wie Konto
+   und Schuld, dieselbe Zwischenueberschrift wie bei den Schulden. Ein Klick
+   oeffnet das Blatt mit allem, was dazugehoert.
+
+   U-52 — Die Tafel folgt der Zeitwahl.
+   -------------------------------------------------------------------
+   Bis zum 19.08.2026 zeigte sie `D.rechnungen` ganz, in jeder Zoomstufe. Sie
+   war damit der einzige Bereich, der den Zeitblock der Seitenleiste nicht
+   las: im August standen die Rechnungen aller Monate da. Gefiltert wird nach
+   FAELLIGKEIT — dasselbe Datum, nach dem schon gruppiert wurde und mit dem
+   die Sammelzeile im Budget rechnet (gespiegelteRechnung(), istRechnungen()).
+   Zwei Bereiche, die dasselbe Wort «August» verschieden meinten, waeren
+   schlimmer als eine lange Liste.
+
+   U-53 — «Ueberfaellig» bleibt stehen.
+   -------------------------------------------------------------------
+   Der Preis des Filterns: Eine offene Rechnung aus dem Juli faellt im August
+   aus dem Bild. Ein Haushaltsbuch, das eine ueberfaellige Rechnung
+   wegfiltert, ist gefaehrlicher als eines, das zu viel zeigt. Sie steht
+   deshalb in einer eigenen Gruppe zuoberst, in Rot: offen, faellig vor heute,
+   und nicht ohnehin im gewaehlten Zeitraum. In «Alle Jahre» gibt es die
+   Gruppe nicht — dort ist jede Rechnung ohnehin da. Gemessen wird gegen
+   HEUTE und nicht gegen den gewaehlten Monat: «ueberfaellig» ist eine
+   Tatsache und keine Frage der Ansicht.
+
+   U-54 — Bezahltes steht unten, hinter einer Klappe.
+   -------------------------------------------------------------------
+   Klappkopf (Formensprache A, Form 6) und ausdruecklich KEINE zweite,
+   kleinere Kachelart: eine zweite Kachelgestalt fuer dieselbe Sache waere
+   eine zweite Form fuer eine Bedeutung und damit gegen G-2. Zu ist der
+   Normalfall; die Zahl im Kopf sagt, was dahinterliegt. Die Kacheln darin
+   tragen `erledigt` und fallen um einen Rang in `--muted` — dieselbe Regel
+   wie bei der gespiegelten Zeile (Formensprache H).
+
+   U-55 — Gruppieren nach Monat oder nach Rechnungssteller.
+   -------------------------------------------------------------------
+   Schalter (Form 2) im Tafelkopf, aber nur dort, wo er etwas zu sagen hat:
+   in einem einzelnen Monat waere die Monatsgruppe eine einzige Gruppe, und
+   ein Schalter, der nichts umsortiert, ist Laerm. Vorgabe ist Monat. Nach
+   Steller wird nach Summe absteigend sortiert — die Frage dahinter lautet
+   «wer kostet mich am meisten», nicht «wo steht das M». */
+
+function rechnungImZeitraum(r) {
+  if (S.zeitraum === 'alle') return true;
+  const f = ymOf(r.faelligkeit);
+  return S.zeitraum === 'jahr' ? f.j === S.jahr : (f.j === S.jahr && f.m === S.monat);
+}
+/* U-53: offen, faellig vor heute — und nicht schon im Bild. */
+function rechnungUeberfaellig(r) {
+  return r.status === 'offen' && r.faelligkeit < heuteISO() && !rechnungImZeitraum(r);
+}
+function rechnungTag(d) { return d.slice(8,10) + '.' + d.slice(5,7) + '.'; }
+
+function rechnungKachel(r, erledigt) {
+  const st = steller(r.stellerId), z = zeile(r.zeileId), k = konto(r.kontoId);
+  const beleg = r.belegDatei ? 'Beleg abgelegt'
+              : (r.belegOffen ? 'Beleg liegt bereit' : 'kein Beleg');
+  const spaet = r.status === 'offen' && r.faelligkeit < heuteISO();
+  return kachelHtml({
+    art:'rechnung', id:r.id,
+    klasse: erledigt ? 'erledigt' : (spaet ? 'spaet' : ''),
+    kennung: (k ? k.nr + ' ' + k.name : 'ohne Konto') + (r.gedeckt ? ' · Rückstellung' : ''),
+    name: st ? st.name : '?',
+    rolle: (z ? z.bezeichnung : '') + (r.notiz ? ' · ' + r.notiz : ''),
+    label: r.status !== 'offen' ? 'Bezahlt'
+         : (spaet ? 'Überfällig seit ' + rechnungTag(r.faelligkeit)
+                  : 'Offen, fällig ' + rechnungTag(r.faelligkeit)),
+    wert: r.betrag,
+    knopf: r.status === 'offen' ? 'Bezahlt' : 'Öffnen',
+    tat: r.status === 'offen' ? 'rstatus:' + r.id : 'rechnung:' + r.id,
+    meta: beleg });
+}
+/* U-55: Ein Gruppierer fuer beide Faelle. Zwei Schleifen, die sich nur im
+   Schluessel unterscheiden, waeren zwei Orte fuer dieselbe Sache (G-4). */
+function rechnungGruppen(liste, nachSteller) {
+  const g = [];
   liste.forEach(r => {
-    const s = r.faelligkeit.slice(0,7);
-    let g = monate.find(x => x.schl === s);
-    if (!g) monate.push(g = { schl:s, liste:[] });
-    g.liste.push(r);
+    const schl = nachSteller ? (r.stellerId || '_ohne') : r.faelligkeit.slice(0,7);
+    let x = g.find(y => y.schl === schl);
+    if (!x) g.push(x = { schl, titel:'', summe:0, liste:[] });
+    x.liste.push(r);
   });
-  const gruppen = monate.map(g => {
-    const y = ymOf(g.liste[0].faelligkeit);
-    const summe = rd(g.liste.reduce((s,r) => s + r.betrag, 0));
-    const offen = g.liste.filter(r => r.status === 'offen');
-    const kacheln = g.liste.map(r => {
-      const st = steller(r.stellerId), z = zeile(r.zeileId), k = konto(r.kontoId);
-      const beleg = r.belegDatei ? 'Beleg abgelegt'
-                  : (r.belegOffen ? 'Beleg liegt bereit' : 'kein Beleg');
-      return kachelHtml({
-        art:'rechnung', id:r.id,
-        kennung: (k ? k.nr + ' ' + k.name : 'ohne Konto') + (r.gedeckt ? ' · Rückstellung' : ''),
-        name: st ? st.name : '?',
-        rolle: (z ? z.bezeichnung : '') + (r.notiz ? ' · ' + r.notiz : ''),
-        label: r.status === 'offen' ? 'Offen, fällig am ' + r.faelligkeit.slice(8,10) + '.'
-                                    : 'Bezahlt',
-        wert: r.betrag,
-        knopf: r.status === 'offen' ? 'Bezahlt' : 'Öffnen',
-        tat: r.status === 'offen' ? 'rstatus:' + r.id : 'rechnung:' + r.id,
-        meta: beleg });
-    }).join('');
-    return `<h3 class="untertitel">${MON_LANG[y.m]} ${y.j}
-        <span class="num">${fmt(summe)}</span>
-        <span>${g.liste.length} ${g.liste.length===1?'Rechnung':'Rechnungen'}${
-          offen.length ? ' · ' + fmt(rd(offen.reduce((s,r)=>s+r.betrag,0))) + ' offen' : ' · alle bezahlt'}</span></h3>
-      <div class="raster">${kacheln}</div>`;
+  g.forEach(x => {
+    x.summe = rd(x.liste.reduce((s,r) => s + r.betrag, 0));
+    x.liste.sort((a,b) => a.faelligkeit < b.faelligkeit ? -1 : 1);
+    if (nachSteller) { const st = steller(x.schl); x.titel = st ? st.name : 'Ohne Rechnungssteller'; }
+    else { const y = ymOf(x.liste[0].faelligkeit); x.titel = MON_LANG[y.m] + ' ' + y.j; }
+  });
+  return nachSteller ? g.sort((a,b) => b.summe - a.summe)
+                     : g.sort((a,b) => a.schl < b.schl ? -1 : 1);
+}
+/* Kein «· X offen» mehr im Gruppenkopf: seit Offenes und Bezahltes getrennt
+   stehen, ist diese Zahl im offenen Teil IMMER die Summe daneben und im
+   bezahlten immer null. Eine Zahl, die nie etwas anderes sagen kann als die
+   danebenstehende, ist keine Auskunft (G-8). */
+function rechnungBlock(gruppen, erledigt) {
+  /* Im bezahlten Teil ist der Klappkopf selbst der Gruppenkopf, solange es
+     nur eine Gruppe gibt — im Monat ist das der Normalfall. Zwei Koepfe
+     uebereinander, die dieselbe Summe und dieselbe Zahl tragen, sind einer
+     zu viel. */
+  const ohneKopf = erledigt && gruppen.length === 1;
+  return gruppen.map(g => {
+    const kopf = ohneKopf ? '' : `<h3 class="untertitel rkopf">${g.titel}
+        <span class="num">${fmt(g.summe)}</span>
+        <span>${g.liste.length} ${g.liste.length===1?'Rechnung':'Rechnungen'}</span></h3>`;
+    return kopf + `<div class="raster">${g.liste.map(r => rechnungKachel(r, erledigt)).join('')}</div>`;
   }).join('');
+}
+
+function rechnungTabelle() {
+  const alle = D.rechnungen.slice().sort((a,b) => a.faelligkeit < b.faelligkeit ? -1 : 1);
+  const nachSteller = S.zeitraum !== 'monat' && S.rGrp === 'steller';
+  const summe = l => rd(l.reduce((s,r) => s + r.betrag, 0));
+
+  const imZeit  = alle.filter(rechnungImZeitraum);
+  const spaet   = alle.filter(rechnungUeberfaellig);
+  const offen   = imZeit.filter(r => r.status === 'offen');
+  const bezahlt = imZeit.filter(r => r.status !== 'offen');
+
+  /* U-53: nicht gruppiert — die Gruppe IST die Aussage, und ein zweiter
+     Monatskopf darin waere ein Kopf ueber einem Kopf. */
+  const gSpaet = spaet.length ? `<h3 class="untertitel rkopf spaetkopf">Überfällig
+        <span class="num">${fmt(summe(spaet))}</span>
+        <span>${spaet.length} ${spaet.length===1?'Rechnung':'Rechnungen'} aus einem anderen Zeitraum, noch offen</span></h3>
+      <div class="raster">${spaet.map(r => rechnungKachel(r, false)).join('')}</div>` : '';
+
+  const gOffen = offen.length ? rechnungBlock(rechnungGruppen(offen, nachSteller), false) : '';
+
+  const auf = !!S.rBezAuf;
+  const gBez = bezahlt.length ? `<button class="untertitel klapp" type="button" data-rbez
+        aria-expanded="${auf}"><span class="chev">${auf ? '▾' : '▸'}</span>Bezahlt
+        <span class="num">${fmt(summe(bezahlt))}</span>
+        <span>${bezahlt.length} ${bezahlt.length===1?'Rechnung':'Rechnungen'}</span></button>
+      ${auf ? rechnungBlock(rechnungGruppen(bezahlt, nachSteller), true) : ''}` : '';
+
+  /* U-55: Der Schalter steht nur, wo er etwas umsortiert. */
+  const schalter = S.zeitraum === 'monat' ? '' : `<span class="kansicht">
+      <span class="schalter" role="group" aria-label="Gruppierung">
+      <button type="button" data-rgrp="monat" aria-pressed="${!nachSteller}">Nach Monat</button>
+      <button type="button" data-rgrp="steller" aria-pressed="${nachSteller}">Nach Rechnungssteller</button>
+      </span></span>`;
+
+  const leer = !alle.length
+    ? `<p class="meldung" style="padding:14px 0">Noch keine Rechnung erfasst.
+        Zieh einen Beleg auf das Fenster oder nimm den Knopf oben.</p>`
+    : `<p class="meldung" style="padding:14px 0">${
+        S.zeitraum === 'alle' ? 'Keine Rechnung erfasst.'
+                              : 'In ' + zeitTitel() + ' steht keine Rechnung.'}
+        Der Zeitraum steht in der Leiste links.</p>`;
+
   return `<div class="tafel-kopf"><span class="titel">Rechnungen</span>${tafelKennzahlen()}
-      <span class="nr">${liste.length} ${liste.length===1?'Rechnung':'Rechnungen'} · ${
-        fmt(rd(liste.filter(r=>r.status==='offen').reduce((s,r)=>s+r.betrag,0)))} offen</span>
+      <span class="nr">${imZeit.length} ${imZeit.length===1?'Rechnung':'Rechnungen'} · ${
+        fmt(summe(offen))} offen${spaet.length ? ' · ' + fmt(summe(spaet)) + ' überfällig' : ''}</span>
+      ${schalter}
       <button class="knopf klein" id="btnRechNeu">Rechnung erfassen</button>
       ${vollbildKnopf()}</div>
     <div class="rollflaeche" style="padding:0 var(--pad) var(--pad)">
-      ${gruppen || `<p class="meldung" style="padding:14px 0">Noch keine Rechnung erfasst.
-        Zieh einen Beleg auf das Fenster oder nimm den Knopf oben.</p>`}</div>`;
+      ${gSpaet}${gOffen}${gBez}${(gSpaet || gOffen || gBez) ? '' : leer}</div>`;
 }
 
 /* ---- Der Zeichner --------------------------------------------------- */
@@ -9824,7 +9966,7 @@ document.addEventListener('click', async ev => {
     '[data-vtset],[data-vtdel],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
     '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-buchen],[data-csv],[data-offen],' +
-    '[data-umbuch],[data-umb],[data-umball],#ablage,button');
+    '[data-umbuch],[data-umb],[data-umball],[data-rgrp],[data-rbez],#ablage,button');
   if (!t) return;
 
   /* --- Kachel oeffnet ihr Blatt --- */
@@ -9886,6 +10028,11 @@ document.addEventListener('click', async ev => {
      Die uebrigen Felder stehen mit, damit der Entwurf dieselbe Gestalt hat
      wie der, den maskeBuchung() sonst selbst anlegt. */
   if (t.dataset.csv) return csvExport(t.dataset.csv);
+  /* U-55: Die Gruppierung der Rechnungstafel. zeichne() persistiert den
+     Anzeigezustand selbst — hier ist deshalb nichts nachzutragen. */
+  if (t.dataset.rgrp) { S.rGrp = t.dataset.rgrp === 'steller' ? 'steller' : 'monat'; return zeichne(); }
+  /* U-54: die Klappe ueber dem Bezahlten. */
+  if (t.dataset.rbez !== undefined) { S.rBezAuf = !S.rBezAuf; return zeichne(); }
   if (t.dataset.offen !== undefined) return blattAuf('offen', null);   /* U-45 */
   /* --- U-48: monatliche Umbuchungen --- */
   if (t.closest('[data-umbuch]')) { _umbF = {}; return blattAuf('umbuch', null); }
