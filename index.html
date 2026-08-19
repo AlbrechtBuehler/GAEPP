@@ -1644,6 +1644,71 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
   text-align:left;font-family:inherit}
 .streifen .nam button.t:hover{color:#fff}
 
+
+/* ===================================================================
+   U-47 — Maske «Jahr anlegen»
+   -------------------------------------------------------------------
+   Keine neue Bedienform: Haken, Dialog, Knoepfe und Meldungstext gibt es
+   alle schon. Neu ist nur ihre Anordnung — eine Zeile je Block, die Wahl
+   rechts. Der Dialog wird fuer diese eine Maske breiter, weil drei Spalten
+   in 430 px nicht lesbar nebeneinander stehen.
+   =================================================================== */
+.dialog:has(#jnMaske){max-width:520px}
+/* Mit zehn Glaeubigern und neun Kategorien wird die Maske hoeher als der
+   Bildschirm. Gerollt wird der Koerper, nicht die Seite: Kopf und Fuss —
+   und damit «Jahr anlegen» — bleiben stehen. Ein Knopf, den man erst
+   suchen muss, ist bei einem Vorgang, der ein ganzes Jahr schreibt, keine
+   Kleinigkeit. Gegen A-15 verstoesst das nicht: die Seite dahinter ist
+   fixiert und rollt nicht mit. */
+.dialog:has(#jnMaske) .dialog-koerper{max-height:min(64vh,620px);overflow:auto;
+  overscroll-behavior:contain}
+#jnMaske{display:flex;flex-direction:column;gap:12px}
+.jn-jahr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.jn-jahr input{background:var(--bg);border:1px solid var(--rule);border-radius:var(--radius-sm);
+  color:var(--ink);font:inherit;font-size:14px;font-weight:600;padding:6px 10px;width:88px;
+  font-variant-numeric:tabular-nums}
+.jn-jahr input:focus{outline:1px solid var(--accent);outline-offset:-1px}
+.jn-jahr .v{font-size:12px;color:var(--muted)}
+.jn-kopf{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:3px}
+.jn-kopf .t,.jn-skopf .t{font-size:11px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted)}
+.jn-kopf .alle{display:flex;gap:9px}
+.jn-kopf button,.jn-skopf button{background:none;border:none;padding:0;font:inherit;font-size:11.5px;
+  color:var(--muted);cursor:pointer;border-bottom:1px solid transparent}
+.jn-kopf button:hover,.jn-skopf button:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.jn-liste{display:flex;flex-direction:column;gap:1px}
+.jn-kz{display:flex;align-items:center;gap:9px;padding:5px 6px;border-radius:8px;cursor:pointer}
+.jn-kz:hover{background:var(--soft)}
+.jn-kz input{accent-color:var(--accent);flex:none}
+.jn-kz .nam{flex:1;font-size:13px;color:var(--ink)}
+.jn-kz .anz{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.jn-kz.aus .nam{color:var(--muted)}
+.jn-skopf{display:grid;grid-template-columns:1fr 96px 48px 48px;gap:8px;align-items:end;
+  border-bottom:1px solid var(--line);padding:0 6px 5px;margin-bottom:3px}
+.jn-skopf .sp{font-size:10px;color:var(--muted);text-align:center;line-height:1.25}
+.jn-skopf .sp button{display:block;width:100%;padding-top:2px;font-size:10px}
+.jn-skopf .sp:nth-child(2){text-align:right}
+.jn-grp{font-size:11px;color:var(--muted);padding:7px 6px 2px;letter-spacing:.03em}
+.jn-zeile{display:grid;grid-template-columns:1fr 96px 48px 48px;gap:8px;align-items:center;
+  padding:5px 6px;border-radius:8px}
+.jn-zeile:hover{background:var(--soft)}
+.jn-zeile .nam{font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jn-zeile .bet{font-size:12.5px;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.jn-zeile .zell{display:flex;justify-content:center}
+.jn-zeile input{accent-color:var(--accent);cursor:pointer}
+.jn-zeile input:disabled{cursor:default;opacity:.35}
+.jn-zeile.aus .nam,.jn-zeile.aus .bet{color:var(--muted)}
+.jn-vor{background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.jn-vor .z{font-size:12.5px;color:var(--ink)}
+.jn-vor .z .m{color:var(--muted)}
+.jn-vor .f{font-size:11.5px;color:var(--muted);line-height:1.5}
+
+/* Vortragsmarke in der Verbindlichkeitentabelle und im Blatt */
+.vtr{color:var(--accent);font-size:10px;margin-left:4px;cursor:help}
+.vtr.ab{color:var(--open)}
+
 </style>
 </head>
 <body>
@@ -1779,7 +1844,7 @@ const MON_LANG  = ['Januar','Februar','März','April','Mai','Juni','Juli','Augus
 const TAGE      = [31,28,31,30,31,30,31,31,30,31,30,31];
 const SCHLUESSEL_DATEN = 'gaepp.v1';        /* wird nie gehoben (Datenanbindung) */
 const SCHLUESSEL_GH    = 'gaepp.github';
-const SCHEMA_APP = 4;                        /* Stand dieser App (A-88). Von 2 auf 3 am 17.08.2026:
+const SCHEMA_APP = 5;                        /* Stand dieser App (A-88). Von 2 auf 3 am 17.08.2026:
    die Entitaet «rechnungen» traegt seither ein Feld fuer die Verbindlichkeit
    (F-01). Von 3 auf 4 am 18.08.2026: Zeilen und Kategorien tragen statt
    `aktiv` ein `ausAb` (U-21) — eine aeltere Fassung wuerde ein ausgeblendetes
@@ -2100,6 +2165,17 @@ function normalisieren(d) {
      Reihenfolge da, in der sie in der Datei stehen. Genau die wird hier
      festgeschrieben: beim ersten Laden aendert sich am Bild kein Pixel,
      erst der erste Zug vergibt neu. */
+  /* U-47: Der Saldovortrag je Jahr. Fehlt das Feld, wird es leer angelegt —
+     eine Datei ohne Vortrag rechnet danach Zeichen fuer Zeichen wie vorher.
+     SCHEMAERHOEHUNG 4 -> 5, und die ist noetig: Anders als bei `rang` (U-31)
+     oder `dokumente` (U-22) aendert dieses Feld ZAHLEN. Eine aeltere Fassung
+     der App laese es nicht, ignorierte damit jeden Vortrag und zeigte zu hohe
+     Staende — und schriebe die Datei beim naechsten Sichern mit ihrer eigenen,
+     falschen Rechnung zurueck. Genau den Fall soll die Versionszahl anzeigen
+     (A-88, Abschnitt 7 des Datenschemas). */
+  (d.verbindlichkeiten || []).forEach(v => {
+    if (!v.staende || typeof v.staende !== 'object') v.staende = {};
+  });
   verbRangFuellen(d);
   /* U-35: dasselbe fuer die Konten. Jedes Konto, das GAEPP selbst angelegt
      hat, traegt `rang` — aber eine von Hand geschriebene oder aeltere Datei
@@ -2373,6 +2449,94 @@ function kontosaldo(kId, bisJ, bisM) {
    dazu Erhoehungen und Minderungen. Zins und Gebuehr fallen am Monatsende
    an; ist das Anfangsdatum schon der Monatsletzte, ist der Monat
    abgeschlossen und die Fortschreibung beginnt im Folgemonat. */
+/* ---- U-47: Saldovortrag je Jahr -------------------------------------
+   `anfangsstand` sagt, womit eine Schuld ANFAENGT — einmal, an einem Datum.
+   Ein Vortrag sagt, womit ein JAHR anfaengt. Beides nebeneinander, nicht
+   statt einander: Der Anfangsstand bleibt unberuehrt, und damit bleibt der
+   Verlauf der Jahre davor stehen. Wer stattdessen `anfangsstand` ueberschriebe,
+   verloere mit U-35 jeden Jahrgang vor dem neuen Anfangsdatum — die Schuld
+   gaebe es dort schlicht nicht mehr.
+
+   Der Vortrag gilt per 1. Januar seines Jahres. Deshalb greift er an genau
+   einer Stelle: am Anfang des Januars, VOR Zins, Gebuehr und Rate. Im Januar
+   faellt danach an, was in jedem Monat anfaellt.
+
+   Er wird NICHT als Startpunkt der Schleife benutzt, obwohl das schneller
+   waere. Die Schleife laeuft weiter vom Anfangsdatum los, und der Vortrag
+   setzt den Stand unterwegs neu. Das ist der Grund: Nur so gilt derselbe
+   Eingriff in allen drei Schleifen, die eine Schuld fortschreiben —
+   verbindLauf(), tilgung() und tilgungsende(). Ein eigener Startpunkt haette
+   in jeder von ihnen anders ausgesehen, und die drei liefen auseinander.
+
+   Ein Vortrag fuer ein Jahr VOR dem Anfangsdatum wirkt nie: die Schleife
+   erreicht diesen Januar nicht. Ein Vortrag fuer das Jahr des Anfangsdatums
+   wirkt nur, wenn die Schuld im Januar schon bestand. Beides ist richtig so
+   und braucht keine Sonderbehandlung. */
+function vortrag(v, j) {
+  const x = v.staende && v.staende[String(j)];
+  return (typeof x === 'number' && isFinite(x)) ? x : null;
+}
+/* Was die Fortschreibung fuer den 1.1. dieses Jahres ergaebe — also der Wert,
+   gegen den ein gesetzter Vortrag zu halten ist. Der Vortrag DIESES Jahres
+   geht nicht ein (die Rechnung endet im Dezember davor), fruehere schon. */
+function vortragGerechnet(v, j) { return verbindPrognose(v, j - 1, 11); }
+/* Die Abweichung, die GAEPP ausweist statt sie zu schlucken (F-06). */
+function vortragDifferenz(v, j) {
+  const x = vortrag(v, j);
+  return x === null ? null : rd(x - vortragGerechnet(v, j));
+}
+/* ---- U-47: was die Spalte «Stand» zeigt ------------------------------
+   Bis hierher stand dort in JEDEM Jahrgang derselbe Wert: der Stand von
+   heute. Wer 2027 ansah, las den Stand vom August 2026 — die Spalte war im
+   laufenden Jahr richtig und in jedem anderen eine Zahl ohne Bezug zur
+   Ansicht daneben. Einen Jahresanfangssaldo gab es nicht, also konnte sie
+   auch keinen zeigen.
+
+   Jetzt zeigt sie im laufenden Jahr weiter den Stand von heute — das ist
+   die Zahl, die im Alltag gebraucht wird — und in jedem anderen Jahrgang
+   den Stand per 1.1. dieses Jahres. Der Spaltenkopf sagt, was gerade
+   dasteht; eine Spalte, die je nach Ansicht etwas anderes zeigt und dabei
+   gleich heisst, waere schlimmer als die alte.
+
+   Ist ein Vortrag gesetzt, ist ER der Stand per 1.1. — nicht die
+   Durchrechnung. Das ist der Sinn des Vortrags. */
+function standSpalte(v) {
+  const h = ymOf(heuteISO());
+  if (S.zeitraum === 'alle' || S.jahr === h.j) return verbindStandHeute(v);
+  const x = vortrag(v, S.jahr);
+  return x !== null ? x : rd(verbindPrognose(v, S.jahr - 1, 11));
+}
+/* Der Gruppenstreifen zeigt etwas anderes als das Raster darunter: dort der
+   Stand am ENDE des gewaehlten Zeitraums, hier der am ANFANG des Jahres.
+   Beides ist richtig und beides wird gebraucht — aber beides hiess «Stand».
+   Zwei Bedeutungen unter einem Wort sind genau die Altlast, die das
+   Datenschema als «ein Feld, zwei Bedeutungen» benennt; hier waere es eine
+   Spalte mit zwei Bedeutungen. Seit U-47 sagen beide Koepfe, welchen
+   Zeitpunkt sie meinen. Die Zahlen aendern sich dadurch nicht. */
+function standKopfGruppe() {
+  const h = ymOf(heuteISO()), e = zeitEnde();
+  const kuenftig = e.j > h.j || (e.j === h.j && e.m > h.m);
+  if (!kuenftig) return 'Stand heute';
+  return S.zeitraum === 'alle' ? 'Stand zuletzt'
+       : S.zeitraum === 'jahr' ? 'Stand 31.12.' + e.j
+       : 'Stand Ende ' + MON[e.m] + ' ' + e.j;
+}
+function standSpalteKopf() {
+  const h = ymOf(heuteISO());
+  return (S.zeitraum === 'alle' || S.jahr === h.j) ? 'Stand heute' : 'Stand 1.1.' + S.jahr;
+}
+/* Ein gesetzter Vortrag wird ANGEZEIGT und nicht stillschweigend verrechnet.
+   Weicht er von der Durchrechnung ab, sagt die Marke es und nennt beide
+   Zahlen — sonst waere er genau der Fall aus F-06: eine Zahl, die den Stand
+   verschiebt, ohne dass man sieht, woher sie kommt. */
+function vortragMarke(v, j) {
+  const x = vortrag(v, j);
+  if (x === null) return '';
+  const d = vortragDifferenz(v, j), ab = Math.abs(d) > 0.005;
+  return `<span class="vtr${ab ? ' ab' : ''}" title="Anfangssaldo ${j} von Hand gesetzt: ${fmt(x)}${
+    ab ? ' — durchgerechnet wären es ' + fmt(vortragGerechnet(v, j)) + ' (Abweichung ' + fmt(d) + ')' : ''
+    }">${ab ? '!' : '•'}</span>`;
+}
 function verbindLauf(v, bisJ, bisM, mitPlan) {
   const a = ymOf(v.anfangsdatum), h = ymOf(heuteISO());
   /* U-35: Vor dem Anfangsdatum gibt es die Schuld nicht. Sie ist dort null
@@ -2396,6 +2560,10 @@ function verbindLauf(v, bisJ, bisM, mitPlan) {
   const z = v.zinssatz || 0, g = v.gebuehr || 0;
   if (a.t >= tageImMonat(a.j, a.m)) { m++; if (m === 12) { m = 0; j++; } }
   while (j < bisJ || (j === bisJ && m <= bisM)) {
+    /* U-47: Der Vortrag setzt den Stand am 1. Januar neu. Er steht VOR den
+       Erhoehungen: eine Erhoehung im Januar kommt zu dem Stand dazu, mit dem
+       das Jahr beginnt, und nicht zu dem, den sie ersetzt hat. */
+    { const x = m === 0 ? vortrag(v, j) : null; if (x !== null) s = x; }
     (v.erhoehungen || []).forEach(e => {
       const d = ymOf(e.datum);
       if (d.j === j && d.m === m) s += (e.art === 'minderung' ? -e.betrag : e.betrag);
@@ -2675,7 +2843,10 @@ function kopfbandZeichnen() {
    das zu teuer — deshalb einmal je Datenstand rechnen. */
 let _sfCache = null, _sfSig = null;
 function schuldenfreiGecacht() {
-  const sig = JSON.stringify(D.verbindlichkeiten.map(v => [v.id, v.raten, v.anfangsstand, v.aktiv]));
+  /* U-47: `staende` gehoert in die Signatur. Ohne sie behielte der Zwischen-
+     speicher sein Ergebnis, waehrend ein gesetzter Vortrag den Stand laengst
+     verschoben hat — derselbe Fehler wie F-13, nur mit einem neuen Feld. */
+  const sig = JSON.stringify(D.verbindlichkeiten.map(v => [v.id, v.raten, v.anfangsstand, v.staende, v.aktiv]));
   if (sig !== _sfSig) { _sfSig = sig; _sfCache = schuldenfrei(); }
   return _sfCache;
 }
@@ -4639,14 +4810,14 @@ function verbindTabelle() {
         <button class="klappkopf" aria-expanded="${!zu}" data-klapp="g_${g.id}">
           <span class="chev">▾</span><span class="t">${g.name}</span></button>
         ${alle || _ro ? '' : `<button class="kat-add" type="button" data-vadd="${g.id}">Gläubiger hinzufügen</button>`}</td>
-      <td class="n">${fmt0(rd(liste.reduce((a,v)=>a+verbindStandHeute(v),0)))}</td><td class="n"></td>
+      <td class="n">${fmt0(rd(liste.reduce((a,v)=>a+standSpalte(v),0)))}</td><td class="n"></td>
       ${reihe(sp, s => `<td class="n ${s.jetzt?'jetzt':''}">${zu ? fmt0(rd(liste.reduce((a,v)=>a+zahl(v,s),0))) : ''}</td>`)}
       <td class="n"></td></tr>`;
     liste.forEach(v => {
       rows += `<tr class="zeile-daten ${zu?'zugeklappt':''}" data-verb="${v.id}"
         data-vgrp="${g.id}" data-oart="verb">
         <td class="namenszelle">${ordGriff('verb', v)}<span class="nz" data-schuld="${v.id}">${v.bezeichnung}</span></td>
-        <td class="n">${fmt(verbindStandHeute(v))}</td>
+        <td class="n">${fmt(standSpalte(v))}${alle ? '' : vortragMarke(v, S.jahr)}</td>
         <td class="n">${fmt0(((v.raten && v.raten[String(S.jahr)])||{}).soll)}</td>
         ${reihe(sp, s => alle || _ro
           ? `<td class="n ${s.jetzt?'jetzt':''}">${fmt0(zahl(v,s))}</td>`
@@ -4658,13 +4829,13 @@ function verbindTabelle() {
        stuende als zweite Null direkt unter der ersten und sagte nichts,
        was die Kopfzeile nicht schon sagt. */
     if (liste.length) rows += `<tr class="zeile-summe ${zu?'zugeklappt':''}" data-gsumme="${g.id}"><td>Summe ${g.name}</td>
-      <td class="n">${fmt0(rd(liste.reduce((a,v)=>a+verbindStandHeute(v),0)))}</td><td class="n"></td>
+      <td class="n">${fmt0(rd(liste.reduce((a,v)=>a+standSpalte(v),0)))}</td><td class="n"></td>
       ${reihe(sp, s => `<td class="n ${s.jetzt?'jetzt':''}">${fmt0(rd(liste.reduce((a,v)=>a+zahl(v,s),0)))}</td>`)}
       <td class="n">${uebertrag(s => fmt0(rd(liste.reduce((a,v)=>a+stand(v,s),0))))}</td></tr>`;
   });
   const ges = aktiv;
   rows += `<tr class="zeile-gesamt"><td>Summe Verbindlichkeiten</td>
-    <td class="n">${fmt(rd(ges.reduce((a,v)=>a+verbindStandHeute(v),0)))}</td><td class="n"></td>
+    <td class="n">${fmt(rd(ges.reduce((a,v)=>a+standSpalte(v),0)))}</td><td class="n"></td>
     ${reihe(sp, s => `<td class="n ${s.jetzt?'jetzt':''}">${fmt0(rd(ges.reduce((a,v)=>a+zahl(v,s),0)))}</td>`)}
     <td class="n">${uebertrag(s => fmt(rd(ges.reduce((a,v)=>a+stand(v,s),0))))}</td></tr>`;
 
@@ -4676,7 +4847,7 @@ function verbindTabelle() {
       ${vollbildKnopf()}</div>
     <div class="rollflaeche"><table class="gross fixiert t-verbind">
       <thead><tr class="zeile-titel"><th class="t">Bezeichnung${greifer('w1', true)}</th
-        ><th class="n">Stand${greifer('w2', true)}</th><th class="n">Rate${greifer('w3', true)}</th>
+        ><th class="n">${standSpalteKopf()}${greifer('w2', true)}</th><th class="n">Rate${greifer('w3', true)}</th>
         ${sp.map((s,i) => s.falt ? faltKopf(s)
           : `<th class="n ${s.jetzt?'jetzt':''}">${s.label}${greifer('wz', i === zeit1)}</th>`).join('')}
         <th class="n">Übertrag</th></tr>
@@ -4795,7 +4966,7 @@ function verbindKarten() {
   return kopf + `
     <div class="kflaeche k-verbind">
       <div class="kkopf"><div style="padding-left:14px">Gruppe</div>
-        <div style="text-align:right">Stand</div>
+        <div style="text-align:right">${standKopfGruppe()}</div>
         <div style="text-align:right">${alle ? 'Raten total' : 'Rate'}</div>
         <div style="padding-left:22px">Getilgt</div>
         <div style="text-align:right">Letzte Rate</div>
@@ -4823,7 +4994,11 @@ function verbindKarteAuf(gid, liste) {
   const wert = (v, x) => alle
     ? rd([...Array(12).keys()].reduce((a,m2) => a + rate(v, x.key, m2), 0)) : rate(v, S.jahr, x.key);
   const jetztSp = x => alle ? x.key === h.j : (x.key === h.m && S.jahr === h.j);
-  const kopf = `<div class="r kopf"><div class="p">Gläubiger</div><div class="c">Stand</div>${
+  /* U-47: Dieselbe Spalte wie in verbindTabelle und mit derselben Regel —
+     im laufenden Jahr der Stand von heute, sonst der Stand per 1.1. des
+     gewaehlten Jahrgangs. Zwei Ansichten derselben Sache duerfen nicht zwei
+     verschiedene Zahlen zeigen; deshalb rufen beide standSpalte(). */
+  const kopf = `<div class="r kopf"><div class="p">Gläubiger</div><div class="c">${standSpalteKopf()}</div>${
     sp.map(x => `<div class="c" ${jetztSp(x)?'style="color:var(--accent)"':''
       }>${alle ? x.label : x.label.slice(0,3)}</div>`).join('')}<div class="j">${alle?'Total':'Jahr'}</div></div>`;
   const reihen = liste.map(v => {
@@ -4843,11 +5018,11 @@ function verbindKarteAuf(gid, liste) {
         ${tage !== null && tage <= 120
           ? `<span class="weg" style="color:var(--err)">bis ${v.vereinbarungBis.slice(8,10)}.${
               v.vereinbarungBis.slice(5,7)}.</span>` : ''}</div>
-      <div class="c">${fmtG0(verbindStandHeute(v))}</div>${zellen}
+      <div class="c">${fmtG0(standSpalte(v))}${alle ? '' : vortragMarke(v, S.jahr)}</div>${zellen}
       <div class="j">${fmtG0(rd(sp.reduce((a,x)=>a+wert(v,x),0)))}</div></div>`;
   }).join('');
   const summe = `<div class="r summe"><div class="p" style="color:var(--muted)">Summe</div>
-    <div class="c">${fmtG0(rd(liste.reduce((a,v)=>a+verbindStandHeute(v),0)))}</div>${
+    <div class="c">${fmtG0(rd(liste.reduce((a,v)=>a+standSpalte(v),0)))}</div>${
     sp.map(x => `<div class="c ${jetztSp(x)?'jetzt':''}">${
       fmtG0(rd(liste.reduce((a,v)=>a+wert(v,x),0)))}</div>`).join('')}
     <div class="j" style="color:#fff">${fmtG0(rd(liste.reduce((a,v)=>
@@ -5605,7 +5780,69 @@ function maskeZahlung(v) {
        <td class="r num ${e.art==='minderung'?'':'neg'}">${e.art==='minderung'?'−':'+'}${fmt(e.betrag)}</td>
        <td class="r"><span class="zwerk"><button class="knopf klein" data-edel="${v.id}:${e.id}">Löschen</button></span></td></tr>`).join('')}
       </tbody></table>` : `<p class="meldung">Keine. Diese Schuld wächst nicht von selbst.</p>`}
-    <div style="margin-top:10px"><button class="knopf klein" id="btnErhNeu">Erhöhung erfassen</button></div>`;
+    <div style="margin-top:10px"><button class="knopf klein" id="btnErhNeu">Erhöhung erfassen</button></div>
+    ${vortragBlock(v)}`;
+}
+/* ---- U-47: Die Vortraege gehoeren dorthin, wo die Erhoehungen stehen ---
+   F-06 lautet: «Jede Zahl, die einen Stand veraendert, muss in der
+   Oberflaeche stehen — mit Datum, aenderbar, loeschbar. Was nur die JSON
+   kennt, existiert fuer den Nutzer nicht.» Ein Vortrag veraendert einen
+   Stand. Also steht er hier, neben den Erhoehungen, und nicht nur in der
+   Maske, die ihn angelegt hat.
+
+   Die Differenzspalte ist der Kern: Sie sagt, um wieviel der gesetzte Wert
+   von dem abweicht, was GAEPP selbst gerechnet haette. Null heisst, beide
+   sagen dasselbe. Steht dort eine Zahl, ist das keine Fehlermeldung — es
+   ist genau der Grund, aus dem der Vortrag von Hand setzbar ist. */
+function vortragBlock(v) {
+  const jahre = Object.keys(v.staende || {}).map(Number).filter(j => !isNaN(j)).sort((a,b) => a-b);
+  return `<h3 style="font-size:13px;margin:18px 0 6px">Anfangssaldi je Jahr</h3>
+    ${jahre.length ? `<table class="journal"><tbody>${jahre.map(j => {
+      const d = vortragDifferenz(v, j), ab = Math.abs(d) > 0.005;
+      return `<tr><td class="tag">1.1.${j}</td>
+        <td>${ab ? `<span style="color:var(--open)">durchgerechnet ${fmt(vortragGerechnet(v, j))}
+             · Abweichung ${fmt(d)}</span>` : 'wie durchgerechnet'}</td>
+        <td class="r num">${fmt(vortrag(v, j))}</td>
+        <td class="r"><span class="zwerk">
+          <button class="knopf klein" data-vtset="${v.id}:${j}">Ändern</button>
+          <button class="knopf klein" data-vtdel="${v.id}:${j}">Löschen</button></span></td></tr>`;
+    }).join('')}</tbody></table>`
+    : `<p class="meldung">Keiner. Diese Schuld rechnet über die Jahresgrenze durch.</p>`}
+    <div style="margin-top:10px"><button class="knopf klein" data-vtset="${v.id}:">Anfangssaldo setzen</button></div>`;
+}
+/* Der Dialog dazu. Er schlaegt den durchgerechneten Wert vor — wer nichts
+   aendert, bekommt genau das, was ohne Vortrag herauskaeme, und der Vortrag
+   ist dann ein Festhalten und keine Verschiebung. */
+let _vt = null;
+function vortragMaske(vId, j) {
+  const v = verbind(vId); if (!v) return;
+  const jahre = Object.keys(D.budget).map(Number).filter(x => !isNaN(x)).sort((a,b) => a-b);
+  const ziel = j || (jahre.length ? jahre[jahre.length-1] : new Date().getFullYear());
+  _vt = { vId, jahr: ziel };
+  const wert = vortrag(v, ziel);
+  dialogAuf('Anfangssaldo setzen', `
+    <p class="dlg-lead"><b>${htmlText(v.bezeichnung)}</b></p>
+    <div class="dlg-zeile">
+      <label>Gilt ab 1.1.
+        <select id="vtJahr">${(jahre.length ? jahre : [ziel]).map(x =>
+          `<option value="${x}"${x === ziel ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label>Betrag
+        <input class="num" id="vtBetrag" type="text" inputmode="decimal"
+               value="${wert !== null ? fmt(wert) : ''}" placeholder="${fmt(vortragGerechnet(v, ziel))}"></label>
+    </div>
+    <p class="meldung">Leer lassen und speichern entfernt den Vortrag — die Schuld rechnet dann
+      wieder über die Jahresgrenze durch. Der Platzhalter ist der durchgerechnete Wert.</p>`,
+    'Speichern', _ro ? null : vortragSpeichern, false);
+}
+function vortragSpeichern() {
+  if (_ro || !_vt) return;
+  const v = verbind(_vt.vId); if (!v) return;
+  const j = String(parseInt($('#vtJahr').value, 10));
+  const roh = ($('#vtBetrag').value || '').trim();
+  merkeStand('Anfangssaldo ' + j + ' gesetzt');
+  if (!v.staende) v.staende = {};
+  if (roh === '') delete v.staende[j]; else v.staende[j] = rd(zahl(roh));
+  persist(); dialogZu(); blattZeichnen(); zeichne();
 }
 /* ---- Verlauf einer Schuld ------------------------------------------
    Bis heute der wirkliche Stand, danach die Prognose — die Trennlinie
@@ -5666,6 +5903,11 @@ function tilgung(v) {
   const rows = [];
   let getilgtIm = null, jahresBeginn = s, letztesJahr = j;
   for (let i = 0; i < 84 && s > 0.005; i++) {
+    /* U-47: derselbe Eingriff wie in verbindLauf — der Vortrag setzt den
+       Stand am 1. Januar neu. `vor` wird danach gelesen, damit die Spalte
+       «Stand» der Tilgungstabelle den Wert zeigt, mit dem gerechnet wird,
+       und nicht den, der ueberschrieben wurde. */
+    { const x = m === 0 ? vortrag(v, j) : null; if (x !== null) s = x; }
     const vor = s;
     (v.erhoehungen||[]).forEach(e => { const d = ymOf(e.datum);
       if (d.j===j && d.m===m) s += (e.art==='minderung' ? -e.betrag : e.betrag); });
@@ -7951,6 +8193,9 @@ function tilgungsende(v) {
   if (a.t >= tageImMonat(a.j, a.m)) { m++; if (m===12) { m=0; j++; } }
   const h = ymOf(heuteISO());
   for (let i = 0; i < 160 && s > 0.005; i++) {
+    /* U-47: derselbe Eingriff wie in verbindLauf. Ohne ihn saehe die Frage
+       «wann ist sie getilgt» eine andere Schuld als die Tabelle daneben. */
+    { const x = m === 0 ? vortrag(v, j) : null; if (x !== null) s = x; }
     (v.erhoehungen||[]).forEach(e => { const d = ymOf(e.datum);
       if (d.j===j && d.m===m) s += (e.art==='minderung'?-e.betrag:e.betrag); });
     const gebucht = rd(D.buchungen.reduce((x,b) => { const d = ymOf(b.datum);
@@ -8156,7 +8401,7 @@ function exportHtml() {
    =================================================================== */
 function blattHandbuch() {
   return { weit:true, titel:'Wie GÄPP tickt', koerper:`<div class="hb">
-    <p>Zehn Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
+    <p>Elf Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
        nicht aus Gewohnheit. Der Rest bedient sich von selbst.</p>
 
     <div class="regel"><h3>1. Eine offene Rechnung mindert den Kontostand nicht</h3>
@@ -8241,6 +8486,20 @@ function blattHandbuch() {
        seiner Gruppe, ein Konto in seinem Bereich. Das ist Absicht — die Kategorie einer Zeile
        ist eine Zuordnung und keine Position, und die änderst du in ihrer Maske. Die
        Reihenfolge der Konten gilt überall: Kacheln, Auswahllisten, Berichte.</p></div>
+
+    <div class="regel"><h3>11. Ein neues Jahr entsteht nach Regeln, nicht als Kopie</h3>
+    <p><b>«Jahr anlegen»</b> fragt für jede Kategorie einzeln, ob ihr Budget mitkommt — und für
+       jeden Gläubiger getrennt zweierlei: ob sein <b>Endsaldo als Anfangssaldo</b> ins neue Jahr
+       geht, und ob sein <b>Ratenplan</b> fortgeschrieben wird. Voreingestellt ist der häufige
+       Fall: Budget mitnehmen, Saldo vortragen, Raten nicht — die Raten des neuen Jahres sind
+       eine neue Entscheidung und keine Wiederholung. Was du nicht übernimmst, steht danach auf
+       null; die Zeile bleibt stehen.</p>
+    <p>Ein <b>Anfangssaldo gilt ab dem 1. Januar seines Jahres</b> und lässt die Jahre davor
+       unberührt — dein Verlauf bleibt stehen. Ohne ihn rechnet GÄPP über die Jahresgrenze
+       durch. Du findest ihn im Blatt eines Gläubigers unter <b>«Anfangssaldi je Jahr»</b> und
+       kannst ihn dort ändern oder wegnehmen. Weicht er von dem ab, was GÄPP selbst gerechnet
+       hätte, steht die Abweichung daneben und ein <b>!</b> in der Standspalte — verrechnet wird
+       sie nicht still.</p></div>
 
     <h3>Berichte</h3>
     <p>In jedem Bericht lässt sich <b>jede Zeile anklicken</b>. Sie fällt zurück, und alles
@@ -8995,7 +9254,7 @@ document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-oeffne],[data-tat],[data-klapp],[data-filter],[data-reiter],[data-bereich],[data-faltauf],[data-vwseite],[data-vwklapp],[data-dokneu],[data-dokumb],[data-dokloesch],' +
     '[data-blattreiter],[data-art],[data-krich],[data-takt],[data-sart],[data-zu],[data-weg],[data-add],' +
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
-    '[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
+    '[data-vtset],[data-vtdel],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
     '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-buchen],[data-csv],[data-offen],#ablage,button');
   if (!t) return;
@@ -9206,6 +9465,18 @@ document.addEventListener('click', async ev => {
     if (!text) return;
     v.erhoehungen.push({ id:neueId('erh'), datum:heuteISO(), art:'erhoehung', betrag:rd(b), text });
     persist(); return blattZeichnen();
+  }
+  /* U-47: Vortrag setzen, aendern, loeschen. */
+  if (t.dataset.vtset !== undefined) {
+    const [vId, jj] = t.dataset.vtset.split(':');
+    return vortragMaske(vId, jj ? parseInt(jj, 10) : null);
+  }
+  if (t.dataset.vtdel) {
+    const [vId, jj] = t.dataset.vtdel.split(':');
+    merkeStand('Anfangssaldo ' + jj + ' gelöscht');
+    const v = verbind(vId);
+    if (v && v.staende) delete v.staende[jj];
+    persist(); blattZeichnen(); return zeichne();
   }
   if (t.dataset.edel) {
     const [vId, eId] = t.dataset.edel.split(':');
@@ -9933,56 +10204,220 @@ function berEinlesen() {
   }
 }
 
-/* ---- Budgetjahr anlegen (A-86) — und dabei die Ratenplaene mitschreiben.
-   Sonst stehen nach dem Jahreswechsel zehn Schulden ohne Raten da. ------ */
+/* ===================================================================
+   U-47 — Budgetjahr anlegen mit Regeln je Block (A-86)
+   -------------------------------------------------------------------
+   Bis hierher stellte jahrAnlegen() genau eine Frage: «Das Vorjahr
+   fortschreiben? OK / Abbrechen» — und schrieb daraufhin ALLE Budgetzeilen
+   UND alle Ratenplaene fort, oder keines von beidem. Alles oder nichts.
+
+   Fuer Albrechts Fall ist beides falsch. Sein Haushaltsbudget steht und
+   soll 1:1 weiterlaufen; seine Ratenplaene sind fuer das neue Jahr eine
+   neue Entscheidung und duerfen nicht mitkopiert werden. Zwischen «alles»
+   und «nichts» gab es keinen Platz dafuer.
+
+   DIE DRITTE SPALTE IST DER EIGENTLICHE PUNKT. Vorher liess sich der
+   Endsaldo einer Schuld nicht ins Folgejahr uebernehmen, weil es in GAEPP
+   gar keinen Jahresanfangssaldo gab: ein Glaeubiger trug genau einen
+   `anfangsstand` an einem `anfangsdatum`, alles andere war Durchrechnung.
+   Der Saldovortrag (U-47 im Rechenkern) schafft ihn — und diese Maske ist
+   die Stelle, an der er entsteht.
+
+   `prompt()` ist damit auch aus der letzten Stelle verschwunden, an der
+   GAEPP noch einen Browserdialog benutzte (N-05).
+   =================================================================== */
+let _jn = null;
+const jnWert = o => !!o && ((o.soll || 0) !== 0 || (o.m || []).some(x => (x || 0) !== 0));
+
 function jahrAnlegen() {
+  /* Ohne geladene Datendatei ist D null — dann gibt es kein Budget, in das
+     ein Jahrgang gehoerte, und `D.budget` warf hier. Im Betrieb fuehrt zwar
+     kein Weg hierher, solange nichts geladen ist; aber der leere Zustand ist
+     ein Prueffall und kein Randfall (F-17), und eine Maske, die am ersten
+     Zugriff platzt, ist keine Maske. */
+  if (_ro || !D) return;
   const jahre = Object.keys(D.budget).map(Number).filter(j => !isNaN(j)).sort((a, b) => a - b);
   /* U-36: Ohne einen einzigen Jahrgang war jahre[jahre.length-1] undefined und
-     der Vorschlag damit NaN — die Maske bot «NaN» zum Bestaetigen an. Im leeren
-     Zustand ist das laufende Jahr der richtige Vorschlag; wer frueher beginnen
-     will, tippt seine Zahl darueber. Der Vergleicher in .sort() stand hier als
-     einziger Stelle nicht da (vgl. budgetJahre()). */
-  const vorschlag = jahre.length ? jahre[jahre.length-1] + 1 : new Date().getFullYear();
-  const eingabe = prompt('Welches Jahr anlegen?', String(vorschlag));
-  if (!eingabe) return;
-  const j = parseInt(eingabe, 10);
-  if (!j || j < 2000 || j > 2100) return;
-  /* U-22: Die Rueckfrage sagte nur das halbe Wort. Sie sprach vom Budgetjahr
-     und verschwieg, dass unten auch v.raten[j] neu geschrieben wird — bei
-     zehn Glaeubigern und sieben Jahrgaengen ist das der groessere Teil des
-     Schadens. Eine Rueckfrage, die weniger sagt, als die Aktion tut, ist
-     schlimmer als keine: sie holt eine Zustimmung zu etwas anderem. */
-  if (D.budget[String(j)] && !frage('Das Jahr ' + j + ' gibt es schon.\n\n'
-      + 'Überschreiben setzt das Budgetjahr ' + j + ' neu UND schreibt die Ratenpläne '
-      + 'aller Verbindlichkeiten für ' + j + ' neu. Beides ist danach weg.')) return;
-  const fort = frage('Das Vorjahr fortschreiben?\n\nOK  = Werte des Vorjahrs übernehmen — Budget und Ratenpläne\n'
-      + 'Abbrechen = leeres Jahr, Budget und Ratenpläne auf null');
-  /* Nach beiden Rueckfragen, vor der ersten Zuweisung an D.budget. */
+     der Vorschlag damit NaN. Im leeren Zustand ist das laufende Jahr der
+     richtige Vorschlag. Der Vergleicher in .sort() stand hier als einziger
+     Stelle nicht da (vgl. budgetJahre()). */
+  const j = jahre.length ? jahre[jahre.length - 1] + 1 : new Date().getFullYear();
+  _jn = { jahr: j, kat: new Set(), saldo: new Set(), raten: new Set() };
+  jnVoreinstellung();
+  dialogAuf('Jahr anlegen', jnMaske(), 'Jahr anlegen', jahrAnlegenTun, false);
+}
+/* Die Voreinstellung ist der haeufige Fall und nicht die Mitte: Budget
+   uebernehmen, Saldo vortragen, Raten NICHT. Wer nichts anklickt, bekommt
+   ein Jahr, das den Haushalt fortschreibt und die Schulden dort weiterfuehrt,
+   wo sie am 31.12. standen — ohne die Zahlungen des Vorjahrs zu wiederholen.
+   Ein Saldo von null wird nicht vorgetragen: eine getilgte Schuld braucht
+   keinen Vortrag, und eine, die es im Zieljahr noch nicht gibt, erst recht
+   nicht. */
+function jnVoreinstellung() {
+  const j = _jn.jahr;
+  jnKategorien().forEach(x => _jn.kat.add(x.k.id));
+  _jn.saldo.clear(); _jn.raten.clear();
+  jnGlaeubiger().forEach(x => { if (x.end > 0.005) _jn.saldo.add(x.v.id); });
+}
+/* Eine Kategorie steht in der Liste, wenn sie im ZIELJAHR sichtbar ist und
+   mindestens eine eigene, nicht gespiegelte Zeile fuehrt. Gespiegelte Zeilen
+   haben keine eigenen Werte — «Verbindlichkeiten» und «Rechnungen» waeren
+   Haken ohne Wirkung. */
+function jnKategorien() {
+  const j = _jn.jahr, vor = String(j - 1);
+  return D.kategorien.filter(k => katSicht(k, j)).map(k => {
+    const zeilen = D.zeilen.filter(z => z.kategorieId === k.id && !gespiegelt(z) && zeileSicht(z, j));
+    const mit = zeilen.filter(z => jnWert((D.budget[vor] || {})[z.id])).length;
+    return { k, zeilen, mit };
+  }).filter(x => x.zeilen.length);
+}
+/* Je Glaeubiger sein Stand am 31.12. des Vorjahrs — durchgerechnet mit Plan,
+   also genau die Zahl, die in der Uebertragsspalte der Tabelle steht. */
+function jnGlaeubiger() {
+  const j = _jn.jahr, vor = String(j - 1);
+  return GRUPPEN.map(g => ({ g, liste: ordListe('verb', g.id).filter(v => v.aktiv !== false)
+    .map(v => ({ v, end: rd(verbindPrognose(v, j - 1, 11)), hatRaten: jnWert((v.raten || {})[vor]) })) }))
+    .filter(x => x.liste.length)
+    .reduce((a, x) => a.concat(x.liste.map(y => Object.assign({ g: x.g }, y))), []);
+}
+function jnMaske() {
+  const j = _jn.jahr, vor = j - 1, k = String(j);
+  const kats = jnKategorien();
+  const gl = jnGlaeubiger();
+  const zeilenZahl = kats.reduce((a, x) => a + (_jn.kat.has(x.k.id) ? x.mit : 0), 0);
+  const saldoSum = rd(gl.reduce((a, x) => a + (_jn.saldo.has(x.v.id) ? x.end : 0), 0));
+  const saldoN = gl.filter(x => _jn.saldo.has(x.v.id)).length;
+  const ratenN = gl.filter(x => _jn.raten.has(x.v.id)).length;
+  let letzteG = null;
+  const glZeilen = gl.map(x => {
+    const kopf = x.g.id !== letzteG ? `<div class="jn-grp">${x.g.name}</div>` : '';
+    letzteG = x.g.id;
+    const an = _jn.saldo.has(x.v.id);
+    return kopf + `<div class="jn-zeile${an ? '' : ' aus'}">
+      <span class="nam">${htmlText(x.v.bezeichnung)}</span>
+      <span class="bet">${x.end > 0.005 || x.end < -0.005 ? fmt(x.end) : '–'}</span>
+      <span class="zell"><input type="checkbox" data-jns="${x.v.id}"${an ? ' checked' : ''}
+        aria-label="Endsaldo als Anfangssaldo ${j} übernehmen"></span>
+      <span class="zell"><input type="checkbox" data-jnr="${x.v.id}"${_jn.raten.has(x.v.id) ? ' checked' : ''}
+        ${x.hatRaten ? '' : 'disabled'} aria-label="Ratenplan ${vor} fortschreiben"></span></div>`;
+  }).join('');
+  return `<div id="jnMaske">
+    <div class="jn-jahr">
+      <input id="jnJahr" value="${j}" inputmode="numeric" aria-label="Neues Jahr">
+      <span class="v">Vorlage: <b>${vor}</b></span>
+    </div>
+    ${D.budget[k] ? `<p class="dlg-warnung"><b>Das Jahr ${j} gibt es schon.</b><br>
+      Anlegen setzt Budget, Ratenpläne und Anfangssaldi dieses Jahrgangs neu. Was jetzt
+      darin steht, ist danach weg — zwölf Sekunden lang rücknehmbar.</p>` : ''}
+
+    <div>
+      <div class="jn-kopf"><span class="t">Budget übernehmen</span>
+        <span class="alle"><button type="button" data-jnalle="k1">alle</button>
+        <button type="button" data-jnalle="k0">keine</button></span></div>
+      <div class="jn-liste">${kats.length ? kats.map(x => `<label class="jn-kz${_jn.kat.has(x.k.id) ? '' : ' aus'}">
+        <input type="checkbox" data-jnk="${x.k.id}"${_jn.kat.has(x.k.id) ? ' checked' : ''}>
+        <span class="nam">${htmlText(x.k.name)}</span>
+        <span class="anz">${x.mit ? x.mit + (x.mit === 1 ? ' Zeile' : ' Zeilen') : 'leer'}</span></label>`).join('')
+        : '<p class="meldung">Keine Kategorie mit eigenen Zeilen.</p>'}</div>
+    </div>
+
+    ${gl.length ? `<div>
+      <div class="jn-skopf"><span class="t">Schulden</span>
+        <span class="sp">Endsaldo<br>31.12.${vor}</span>
+        <span class="sp">Saldo<button type="button" data-jnalle="s${saldoN ? 0 : 1}">${saldoN ? 'keine' : 'alle'}</button></span>
+        <span class="sp">Raten<button type="button" data-jnalle="r${ratenN ? 0 : 1}">${ratenN ? 'keine' : 'alle'}</button></span></div>
+      ${glZeilen}</div>` : ''}
+
+    <div class="jn-vor">
+      <div class="z"><b class="num">${zeilenZahl}</b> Budgetzeilen mit Werten
+        <span class="m">— aus ${kats.filter(x => _jn.kat.has(x.k.id)).length} von ${kats.length} Kategorien</span></div>
+      ${gl.length ? `<div class="z"><b class="num">${saldoN}</b> Anfangssaldi gesetzt
+        <span class="m">— zusammen </span><b class="num">${fmt(saldoSum)}</b></div>
+      <div class="z"><b class="num">${ratenN}</b> Ratenpläne fortgeschrieben</div>` : ''}
+      <div class="f"><b>Saldo</b> setzt den Endsaldo per 31.12.${vor} als <b>Anfangssaldo per
+        1.1.${j}</b>. Er gilt ab da; die Jahrgänge davor bleiben unberührt.
+        <b>Raten</b> schreibt den Ratenplan des Vorjahrs fort. Beides ist danach änderbar.</div>
+    </div>
+    <p class="meldung">Nicht übernommen heisst <b>null</b>, nicht «nichts» — die Zeile bleibt stehen.
+      «Verbindlichkeiten» und «Rechnungen» stehen nicht in der Budgetliste: sie sind gespiegelt
+      und haben keine eigenen Werte.</p>
+  </div>`;
+}
+function jnNeu() { const el = $('#dialogKoerper'); if (el) el.innerHTML = jnMaske(); }
+/* Zwei eigene Zuhoerer statt Eintraegen in der grossen Klick-Kette: Sie
+   greifen nur, solange die Maske offen ist, und fallen mit ihr weg. */
+document.addEventListener('change', ev => {
+  const t = ev.target;
+  if (!_jn || !t || !t.closest || !t.closest('#jnMaske')) return;
+  if (t.id === 'jnJahr') {
+    const x = parseInt(t.value, 10);
+    if (!x || x < 2000 || x > 2100) { t.value = _jn.jahr; return; }
+    /* Ein anderes Jahr heisst andere Endsaldi und andere sichtbare Zeilen.
+       Die Voreinstellung wird deshalb neu gesetzt und nicht mitgeschleppt —
+       eine Auswahl, die fuer 2027 galt, sagt ueber 2031 nichts. */
+    _jn.jahr = x; _jn.kat.clear(); jnVoreinstellung(); return jnNeu();
+  }
+  const id = t.dataset.jnk || t.dataset.jns || t.dataset.jnr;
+  if (!id) return;
+  const menge = t.dataset.jnk ? _jn.kat : t.dataset.jns ? _jn.saldo : _jn.raten;
+  if (t.checked) menge.add(id); else menge.delete(id);
+  jnNeu();
+});
+document.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('[data-jnalle]');
+  if (!b || !_jn) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const art = b.dataset.jnalle[0], an = b.dataset.jnalle[1] === '1';
+  if (art === 'k') { _jn.kat.clear(); if (an) jnKategorien().forEach(x => _jn.kat.add(x.k.id)); }
+  else {
+    const menge = art === 's' ? _jn.saldo : _jn.raten;
+    menge.clear();
+    if (an) jnGlaeubiger().forEach(x => {
+      if (art === 's') menge.add(x.v.id); else if (x.hatRaten) menge.add(x.v.id);
+    });
+  }
+  jnNeu();
+}, true);
+
+function jahrAnlegenTun() {
+  if (_ro || !_jn) return;
+  const j = _jn.jahr, k = String(j), vor = String(j - 1);
+  /* Erste Anweisung nach der Bestaetigung — vor der ersten Zuweisung. */
   merkeStand('Budgetjahr ' + j + ' angelegt');
-  const vor = String(j - 1);
-  D.budget[String(j)] = {};
+  /* Die Endsaldi werden VOR dem Schreiben gerechnet. Danach stuenden in
+     v.raten[k] und v.staende[k] bereits die neuen Werte, und die Rechnung
+     saehe ein Jahr, das es beim Rechnen noch nicht gab. Dass die Grenze im
+     Dezember des Vorjahrs liegt, macht das hier folgenlos — verlassen sollte
+     man sich darauf nicht. */
+  const saldi = {};
+  D.verbindlichkeiten.forEach(v => {
+    if (_jn.saldo.has(v.id)) saldi[v.id] = rd(verbindPrognose(v, j - 1, 11));
+  });
+  D.budget[k] = {};
   D.zeilen.forEach(z => {
     if (gespiegelt(z)) return;
     /* U-21: Eine Zeile, die im neuen Jahr ausgeblendet ist, bekommt dort
        keinen Behaelter. Sonst schriebe das Fortschreiben ihre alten Werte in
-       ein Jahr, in dem sie gar nicht mehr steht — unsichtbar, aber gespeichert,
-       und beim Wiedereinblenden staende sie ploetzlich mit Zahlen da, die
-       niemand eingetragen hat. budgetSetzen legt den Behaelter spaeter selbst
-       an, wenn die Zeile zurueckkommt. */
+       ein Jahr, in dem sie gar nicht mehr steht. */
     if (!zeileSicht(z, j)) return;
-    const q = fort && D.budget[vor] ? D.budget[vor][z.id] : null;
-    D.budget[String(j)][z.id] = q ? { soll:q.soll, m:q.m.slice() } : { soll:0, m:Array(12).fill(0) };
+    const nimm = _jn.kat.has(z.kategorieId);
+    const q = nimm && D.budget[vor] ? D.budget[vor][z.id] : null;
+    D.budget[k][z.id] = q ? { soll:q.soll, m:q.m.slice() } : { soll:0, m:Array(12).fill(0) };
   });
-  /* Die Ratenplaene gehoeren dazu — ohne sie zeigen die gespiegelten Budgetzeilen null
-     und die Tilgungsprognose endet am Jahreswechsel. */
   D.verbindlichkeiten.forEach(v => {
-    if (!v.raten) v.raten = {};          /* Behaelter zuerst, sonst wirft schon das Lesen des Vorjahrs */
-    const q = fort ? v.raten[vor] : null;
-    v.raten[String(j)] = q ? { soll:q.soll, m:q.m.slice() } : { soll:0, m:Array(12).fill(0) };
+    if (!v.raten)   v.raten = {};      /* Behaelter zuerst, sonst wirft schon das Lesen */
+    if (!v.staende) v.staende = {};
+    const q = _jn.raten.has(v.id) ? v.raten[vor] : null;
+    v.raten[k] = q ? { soll:q.soll, m:q.m.slice() } : { soll:0, m:Array(12).fill(0) };
+    /* Kein Vortrag heisst: KEIN Eintrag. Eine gespeicherte Null waere etwas
+       anderes als kein Vortrag — sie zwaenge die Schuld am 1.1. auf null,
+       statt sie durchrechnen zu lassen. */
+    if (v.id in saldi) v.staende[k] = saldi[v.id]; else delete v.staende[k];
   });
   persist();
   S.jahr = j;
-  blattZeichnen();
+  dialogZu();
+  zeichne();
 }
 
 /* ===================================================================
