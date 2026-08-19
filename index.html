@@ -422,9 +422,6 @@ body{
 .kachel.kpi.warnung{border-color:#5a4433}
 .kachel.kpi.warnung .spark polyline{stroke:var(--open)}
 .kachel.kpi.warnung .spark circle{fill:var(--open)}
-.kachel.kpi.frist.nah .kennung{color:var(--open)}
-.kachel.kpi.frist.nah{border-color:#54452f}
-.kachel.kpi.frist.nah .fuss .meta{color:var(--open)}
 @media (max-width:1000px){ .dash-oben{grid-template-columns:1fr} }
 
 .kachel.kpi{cursor:pointer;gap:9px}
@@ -2721,8 +2718,11 @@ function zeichneDashboard() {
         meta: offen.length ? offen.length + (offen.length===1?' Rechnung · fällig ':' Rechnungen · nächste ')
               + kurzdatum(offen[0].faelligkeit) : 'nichts offen' })}
     </div></div>
-
-  ${fristenHtml(verb)}`;
+`;
+  /* U-40: Hier stand ${fristenHtml(verb)}. Die Frist steht jetzt auf der
+     Karte des Glaeubigers, wo die Sache liegt — rot, sobald sie naeher als
+     120 Tage ist. Ein zweiter Ort fuer dieselbe Aussage war einer zu viel.
+     `verb` bleibt: die Schuldenkachel darueber rechnet damit. */
 }
 
 /* Die Schuldenkachel traegt zwei Dinge, die sonst nirgends stehen: wann
@@ -2763,42 +2763,11 @@ function sparkHtml(werte) {
     <circle cx="${pkt[pkt.length-1].split(',')[0]}" cy="${pkt[pkt.length-1].split(',')[1]}" r="2.5"/></svg>`;
 }
 
-/* Was auslaeuft, steht als Karte da — mit der Restzeit, nicht nur dem Datum.
-   «in 4 Monaten» beantwortet die Frage, die ein Datum offen laesst. */
-function fristenHtml(verb) {
-  const heute = heuteISO();
-  const liste = verb.filter(v => v.vereinbarungBis)
-    .map(v => ({ bis: v.vereinbarungBis, name: v.bezeichnung, stand: verbindStandHeute(v), id: v.id }))
-    .sort((a,b) => a.bis < b.bis ? -1 : 1);
-  if (!liste.length) return '';
-  /* In Monaten zu rechnen war falsch: der 31.08. liegt im selben Monat wie
-     heute und stand deshalb als «ausgelaufen» da, obwohl noch 13 Tage bleiben.
-     Kurze Fristen gehoeren in Tagen gesagt, lange in Monaten. */
-  const tageBis = d => Math.round((Date.parse(d + 'T00:00:00') - Date.parse(heute + 'T00:00:00')) / 86400000);
-  const restText = d => {
-    const t = tageBis(d);
-    if (t < 0)  return 'ausgelaufen';
-    if (t === 0) return 'läuft heute aus';
-    if (t === 1) return 'läuft morgen aus';
-    if (t <= 60) return 'in ' + t + ' Tagen';
-    const a = ymOf(heute), b = ymOf(d);
-    const mb = (b.j - a.j) * 12 + (b.m - a.m);
-    return 'in ' + mb + ' Monaten';
-  };
-  return `<div class="sektion"><h2>Was ausläuft
-      <span class="h2-wert">${fmt(rd(liste.reduce((s,x)=>s+x.stand,0)))} betroffen</span></h2>
-    <div class="raster">
-      ${liste.map(x => {
-        const t = tageBis(x.bis), nah = t <= 120;
-        return `<article class="karte kachel kpi frist ${nah?'nah':''}" data-bereich="verbind">
-          <div><span class="kennung">bis ${x.bis.slice(8,10)}.${x.bis.slice(5,7)}.${x.bis.slice(0,4)}</span>
-            <button class="name" type="button">${x.name}</button></div>
-          <div class="mitte"><span class="wert"><span class="v gross">${fmt(x.stand)}</span></span></div>
-          <div class="fuss"><span class="meta">${restText(x.bis)}</span>
-            <span class="pfeil">›</span></div></article>`;
-      }).join('')}
-    </div></div>`;
-}
+/* U-40: Hier stand fristenHtml() — die Sektion «Was ausläuft» des
+   Dashboards. Sie faellt mit ihrem einzigen Aufrufer weg; die Frist steht
+   jetzt auf der Glaeubigerkarte, rot ab 120 Tagen. `vereinbarungBis` bleibt
+   im Schema, im Glaeubigerblatt und im Bericht — nur diese zweite Anzeige
+   derselben Aussage geht. */
 
 function zeichneKacheln() {
   const e = zeitEnde();
@@ -3074,8 +3043,9 @@ function ansichtVon(bereich) {
 /* Der Schalter steht in BEIDEN Ansichten an derselben Stelle des Tafelkopfs.
    Stuende er nur auf der Karte, gaebe es aus der Tabelle keinen Weg zurueck —
    die Falle, in die der Bauplan lief, weil er ihn nur dort auffuehrte.
-   Der CSV-Knopf kommt in Schritt 6 dazu; ein Knopf ohne Funktion ist
-   schlimmer als keiner. */
+   Der CSV-Knopf sitzt am selben Ort und exportiert, was die TABELLE dieses
+   Bereichs zeigt — auch wenn man ihn aus der Kartenansicht drueckt. Das
+   steht so in seinem title, weil es sonst niemand erraet. */
 function ansichtSchalter(bereich) {
   if (!KARTENBAU[bereich]) return '';
   const a = ansichtVon(bereich), fest = S.zeitraum === 'alle';
@@ -3083,7 +3053,9 @@ function ansichtSchalter(bereich) {
       <button type="button" data-ansicht="${bereich}:karten" aria-pressed="${a==='karten'}"
         ${fest?'disabled title="In «Alle Jahre» gibt es kein Ist eines Monats"':''}>Lesen</button>
       <button type="button" data-ansicht="${bereich}:tabelle" aria-pressed="${a==='tabelle'}"
-        >Eintragen</button></span></span>`;
+        >Eintragen</button></span>
+    <button class="knopf klein" type="button" data-csv="${bereich}"
+      title="Exportiert, was die Tabelle dieses Bereichs zeigt">CSV</button></span>`;
 }
 function zeichneTabellen() {
   /* Die Reiterzeile ist mit U-1 in die Seitenleiste gewandert, die
@@ -4091,6 +4063,206 @@ function istKat(k, j, m) {
 }
 
 /* ===================================================================
+   U-40 — Das Band: budgetiert und nicht gebucht
+   -------------------------------------------------------------------
+   Die einzige Handlungsliste, die GAEPP aus vorhandenen Zahlen erzeugen
+   kann, ohne eine neue zu erfinden: Soll minus Ist, Position fuer
+   Position. Damit wird das Budget vom Nachweis zur Arbeitsflaeche.
+
+   Eine gespiegelte Zeile wird in ihre Glaeubiger aufgeloest — «Rate
+   Staatssteuer 2021» ist eine Sache, «Verbindlichkeiten 1'200» keine.
+
+   ZWEI AUSSCHLUESSE, und beide sind Absicht:
+   — Einkommen (k.richtung === 'ein'). Einen Lohn bucht man, wenn er
+     kommt; er ist keine offene Handlung.
+   — Zeilen mit `gegenrichtung`. Sie stehen in einer Ausgabenkategorie
+     und mindern sie — eine Rueckerstattung, kein zu zahlender Posten.
+     Der Bauplan kennt `gegenrichtung` nicht; ohne diesen Ausschluss
+     stuende ein erwarteter Zufluss unter «noch offen» und die Summe
+     des Bands zaehlte ihn wie eine Schuld mit.
+   =================================================================== */
+function offenPosten(j, m) {
+  const out = [];
+  D.kategorien.filter(k => katSicht(k, j)).forEach(k => {
+    if (k.richtung === 'ein') return;
+    zeilenVon(k.id, j).forEach(z => {
+      if (z.gegenrichtung) return;
+      /* Die Schuldenzeile: ihr Ist haengt an verbId, nicht an zeileId —
+         deshalb je Glaeubiger gefragt und je Glaeubiger gezeigt. */
+      if (zeileGruppe[z.id]) {
+        D.verbindlichkeiten.filter(v => v.aktiv !== false && v.gruppe === zeileGruppe[z.id])
+          .forEach(v => {
+            const rest = rd(rate(v, j, m) - istVerb(v, j, m));
+            if (rest > 0.005) out.push({ name:'Rate ' + v.bezeichnung, betrag:rest,
+              kat:k.name, weg:'', kontoId:v.kontoId, verbId:v.id });
+          });
+        return;
+      }
+      if (z.gespiegeltAus === 'rechnungen') {
+        D.rechnungen.forEach(r => {
+          const f = ymOf(r.faelligkeit);
+          if (r.status === 'offen' && rechnungImBudget(r) && f.j === j && f.m === m)
+            out.push({ name: (steller(r.stellerId) || {}).name || 'Rechnung',
+              betrag:r.betrag, kat:k.name, weg:'fällig ' + kurzdatum(r.faelligkeit),
+              kontoId:r.kontoId, rechId:r.id });
+        });
+        return;
+      }
+      const rest = rd(zeilenwert(z, j, m) - istZeile(z, j, m));
+      if (rest > 0.005) out.push({ name:z.bezeichnung, betrag:rest, kat:k.name,
+        weg:zahlungsweg(z), kontoId:k.kontoId, zeileId:z.id });
+    });
+  });
+  return out.sort((a,b) => b.betrag - a.betrag);
+}
+function offenStreifen() {
+  const j = S.jahr, m = S.monat;
+  const p = offenPosten(j, m);
+  if (!p.length) return '';
+  const sum = rd(p.reduce((s,x) => s + x.betrag, 0));
+  /* WELCHER GRIFF je Posten — dreimal derselbe Satz «buchen», dreimal ein
+     anderer Weg, weil GAEPP drei Arten von Buchung kennt:
+     — Glaeubigerrate: das Schuldblatt auf dem Reiter Zahlung. Es belegt den
+       Betrag aus rate() selbst vor, hier ist nichts mitzugeben.
+     — Rechnung: rechnungBezahlen() ueber data-tat="rstatus:…". Der Bauplan
+       schrieb hier «rzahlen» — diese Art gibt es im Verteiler nicht, der
+       Klick waere in blattAuf('rzahlen', …) gelaufen und haette das Blatt
+       zerlegt.
+     — gewoehnliche Position: die Buchungsmaske des Kontos, vorbelegt.
+     Ohne ein Konto gibt es keinen Ort zum Buchen — dann steht der Posten
+     ohne Knopf da, statt blattAuf() auf ein Konto zu schicken, das es
+     nicht gibt. */
+  const griff = x => {
+    if (x.verbId) return `data-schuld="${x.verbId}"`;
+    if (x.rechId) return `data-tat="rstatus:${x.rechId}"`;
+    return konto(x.kontoId) ? `data-buchen="${x.zeileId}:${x.kontoId}:${fmt(x.betrag)}"` : '';
+  };
+  const posten = x => {
+    const g = griff(x);
+    return `<div>
+      <div class="txt"><div class="t">${x.name}</div>
+        <div class="z">${[x.kat, x.weg].filter(Boolean).join(' · ')}</div></div>
+      <span class="n">${fmtG(x.betrag)}</span>
+      ${g ? `<button class="knopf klein primaer" type="button" ${g}>Buchen</button>` : ''}</div>`;
+  };
+  return `<div class="offenband">
+    <div class="kopf"><span class="lab">Diesen Monat noch offen</span>
+      <span class="sum">${fmtG(sum)}</span>
+      <span class="z">budgetiert, aber nicht gebucht · ${p.length} ${
+        p.length===1?'Position':'Positionen'}</span>
+      <span class="hin">nach dem Buchen bleibt der Saldo, wie er ist</span></div>
+    <div class="posten">${p.slice(0, 6).map(posten).join('')}</div>
+    ${p.length > 6 ? `<div class="kopf" style="margin:12px 0 0"><span class="z"
+      >und ${p.length - 6} weitere · ${fmtG(rd(p.slice(6).reduce((s,x)=>s+x.betrag,0)))}</span></div>` : ''}
+    </div>`;
+}
+
+/* ===================================================================
+   U-40 — CSV
+   -------------------------------------------------------------------
+   Ein Export, der etwas anderes zeigt als der Bildschirm, ist eine
+   zweite Wahrheit. Deshalb dieselben Praedikate wie die Tabelle:
+   Zeitraum, Kategorienfilter, Spaltenfaltung — und zwar woertlich
+   dieselben Ausdruecke wie in budgetTabelle() und verbindTabelle(),
+   nicht sinngemaess nachgebaute. Ein Praedikat, das «fast dasselbe»
+   tut, faltet eines Tages eine andere Spalte weg.
+
+   ZEILENFALTUNG FOLGT NICHT, und das ist eine Entscheidung: sie
+   versteckt Zeilen, die im ganzen Zeitraum null tragen. Am Bildschirm
+   ist das Platzersparnis, in einer Datei kostet eine Nullzeile nichts —
+   und ihr Fehlen waere schwerer zu erklaeren als ihr Dasein. Die
+   SPALTEN dagegen folgen, denn sie sind Zeitraeume: ein Export mit
+   anderen Monaten als der Bildschirm waere wirklich eine zweite
+   Wahrheit.
+
+   Gebaut wird aus dem Modell, nicht aus dem DOM: in der Tabelle stehen
+   Eingabefelder, aus denen ein Abzug halb getippte Werte laese, und in
+   der Kartenansicht gibt es gar kein DOM dafuer.
+
+   Format: UTF-8 mit BOM, `sep=;` als erste Zeile, Dezimalkomma — damit
+   Excel die Datei ohne Importdialog richtig oeffnet.
+   =================================================================== */
+function csvExport(bereich) {
+  const alle = S.zeitraum === 'alle', spAlle = spaltenKoepfe();
+  const zahlT = x => (x === null || x === undefined || x === '') ? ''
+    : String(rd(x)).replace('.', ',');
+  const zell = x => {
+    const s = String(x === null || x === undefined ? '' : x);
+    return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  let kopf = [], reihen = [];
+
+  if (bereich === 'verbind') {
+    const aktiv = D.verbindlichkeiten.filter(v => v.aktiv !== false);
+    const ratenSp = (v,s) => alle
+      ? rd([...Array(12).keys()].reduce((a,m)=>a+rate(v,s.key,m),0)) : rate(v, S.jahr, s.key);
+    /* Dasselbe Praedikat wie verbindTabelle — inklusive der beiden
+       Kopfzahlen. Wer nur die Raten fragt, faltet eine Spalte weg, deren
+       Saldo im Jahrestotal weiterzaehlt. */
+    const sp = spaltenSicht(spAlle, s => aktiv.some(v => Math.abs(ratenSp(v, s)) >= 0.005)
+      || Math.abs(saldoRoh(s, alle)) >= 0.005
+      || Math.abs(kumRoh(s, alle))   >= 0.005).filter(s => !s.falt);
+    kopf = ['Gruppe','Gläubiger','Stand heute','Rate ' + MON[S.monat],'Getilgt %','Vereinbarung bis',
+      ...sp.map(s => s.label), 'Übertrag'];
+    const zeile = (gname, v) => reihen.push([gname, v.bezeichnung,
+      zahlT(verbindStandHeute(v)), zahlT(rate(v, S.jahr, S.monat)),
+      Math.round(getilgtAnteil(v)*100), v.vereinbarungBis || '',
+      ...sp.map(s => zahlT(ratenSp(v, s))),
+      zahlT(spAlle.length ? (alle ? verbindPrognose(v, spAlle[spAlle.length-1].key, 11)
+                                  : verbindPrognose(v, S.jahr, spAlle[spAlle.length-1].key)) : 0)]);
+    GRUPPEN.forEach(g => ordListe('verb', g.id).filter(v => v.aktiv !== false)
+      .forEach(v => zeile(g.name, v)));
+    /* Auch die ohne gueltige Gruppe — sie zaehlen in der Summenzeile der
+       Tabelle mit und fehlten sonst in der Datei, die diese Summe erklaeren
+       soll. Genau der Grund, aus dem die Karten sie zeigen. */
+    aktiv.filter(v => !GRUPPEN.some(g => g.id === v.gruppe))
+      .forEach(v => zeile('Ohne Gruppe', v));
+  } else {
+    const kats = D.kategorien.filter(k => alle ? spAlle.some(s => katSicht(k, s.key))
+      : katSicht(k, S.jahr)).sort((a,b) => a.rang - b.rang);
+    const gewaehlt = (S.filterNur || []).filter(id => kats.some(k => k.id === id));
+    const sicht = gewaehlt.length ? kats.filter(k => gewaehlt.includes(k.id)) : kats;
+    const spJahr = s => alle ? s.key : S.jahr;
+    const wert = (z,s) => alle ? zeilenJahr(z, s.key) : zeilenwert(z, S.jahr, s.key);
+    const katW = (k,s) => alle
+      ? rd(zeilenVon(k.id, s.key).reduce((a,z)=>a+zeilenJahr(z,s.key)*(z.gegenrichtung?-1:1),0))
+      : katSumme(k, S.jahr, s.key);
+    /* Wieder woertlich das Praedikat der Tabelle (hatWert in budgetTabelle). */
+    const sp = spaltenSicht(spAlle, s =>
+         sicht.flatMap(k => zeilenVon(k.id, spJahr(s))).some(z => Math.abs(wert(z,s)) >= 0.005)
+      || Math.abs(saldoRoh(s, alle)) >= 0.005
+      || Math.abs(kumRoh(s, alle))   >= 0.005).filter(s => !s.falt);
+    kopf = ['Kategorie','Position','Zahlung','Soll', ...sp.map(s => s.label), 'Jahr'];
+    sicht.forEach(k => {
+      zeilenVon(k.id, S.jahr).forEach(z => {
+        reihen.push([k.name, z.bezeichnung, zahlungsweg(z), zahlT(zeilenSoll(z, S.jahr)),
+          ...sp.map(s => zahlT(wert(z,s))), zahlT(zeilenJahr(z, S.jahr))]);
+      });
+      reihen.push(['', 'Summe ' + k.name, '', '',
+        ...sp.map(s => zahlT(katW(k,s))),
+        zahlT(rd(spAlle.reduce((a,s)=>a+katW(k,s),0)))]);
+    });
+    reihen.push([]);
+    reihen.push(['', 'Saldo budgetiert', '', '',
+      ...sp.map(s => zahlT(saldoRoh(s, alle))), zahlT(rd(spAlle.reduce((a,s)=>a+saldoRoh(s,alle),0)))]);
+    reihen.push(['', 'Saldo kumuliert', '', '',
+      ...sp.map(s => zahlT(kumRoh(s, alle))), '']);
+  }
+
+  const stand = alle ? 'alle-Jahre'
+    : S.zeitraum === 'jahr' ? String(S.jahr)
+    : S.jahr + '-' + String(S.monat+1).padStart(2,'0');
+  const txt = '﻿sep=;\n' + [kopf, ...reihen]
+    .map(r => r.map(zell).join(';')).join('\r\n') + '\r\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], { type:'text/csv;charset=utf-8' }));
+  a.download = 'GAEPP_' + (bereich === 'verbind' ? 'Verbindlichkeiten' : 'Budget')
+    + '_' + stand + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/* ===================================================================
    U-40 — Budget als Kategorie-Karten
    -------------------------------------------------------------------
    Eine Karte je KATEGORIE, nicht je Position. Bei vierzig Positionen mal
@@ -4193,6 +4365,7 @@ function katKarten() {
 
   return kopf + `
     <div class="kflaeche k-budget">
+      ${laufend ? offenStreifen() : ''}
       <div class="kkopf"><div style="padding-left:14px">Kategorie</div>
         <div style="text-align:right">Soll ${S.zeitraum === 'jahr' ? j : MON[m].slice(0,3)}</div>
         <div style="text-align:right">Ist</div><div style="text-align:right">Rest</div>
@@ -8653,7 +8826,7 @@ document.addEventListener('click', async ev => {
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
-    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-ansicht],[data-kklapp],#ablage,button');
+    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-ansicht],[data-kklapp],[data-buchen],[data-csv],#ablage,button');
   if (!t) return;
 
   /* --- Kachel oeffnet ihr Blatt --- */
@@ -8706,6 +8879,21 @@ document.addEventListener('click', async ev => {
   if (t.id === 'btnBericht') { _ber = berStandard(); return blattAuf('bericht', 'wahl:'); }
   if (t.id === 'btnHandbuch' || t.dataset.hb !== undefined) {
     entwurfSichern(); return blattAuf('handbuch', null, null, true); }
+
+  /* U-40: Der Buchen-Knopf aus dem Offen-Band. Die Maske liest _entwurf nur,
+     wenn `_entwurf.kontoId === k.id` — ohne kontoId legt maskeBuchung() sofort
+     einen leeren Entwurf darueber, und der Knopf haelt sein Versprechen nicht.
+     Der Bauplan liess das Feld weg. buchungSpeichern() braucht es ausserdem
+     ein zweites Mal: es schreibt `kontoId: e.kontoId` in die Buchung.
+     Die uebrigen Felder stehen mit, damit der Entwurf dieselbe Gestalt hat
+     wie der, den maskeBuchung() sonst selbst anlegt. */
+  if (t.dataset.csv) return csvExport(t.dataset.csv);
+  if (t.dataset.buchen) {
+    const [zeileId, kontoId, betrag] = t.dataset.buchen.split(':');
+    _entwurf = { kontoId, art:'ausgabe', datum:heuteISO(), ganzerMonat:false,
+                 betrag, zeileId, gegenkontoId:'', text:'', verbId:'', sparzielId:'' };
+    return blattAuf('konto', kontoId, 'buchen');
+  }
 
   /* --- U-40: Lesen und Eintragen, und die eine offene Karte ---
      `zeichne()` speichert den Anzeigezustand am Ende selbst — ein
