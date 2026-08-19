@@ -3066,7 +3066,7 @@ function tafelKennzahlen() {
    drei Orten verteilt, gaebe ein halb gebauter Schritt einen Schalter ohne
    Ansicht oder eine Verzweigung auf eine Funktion, die es noch nicht gibt.
    Schritt 4 traegt `budget: katKarten` nach, und mehr ist dort nicht zu tun. */
-const KARTENBAU = { verbind: () => verbindKarten() };
+const KARTENBAU = { budget: () => katKarten(), verbind: () => verbindKarten() };
 function ansichtVon(bereich) {
   if (!KARTENBAU[bereich] || S.zeitraum === 'alle') return 'tabelle';
   return (S.ansicht && S.ansicht[bereich]) === 'tabelle' ? 'tabelle' : 'karten';
@@ -4034,6 +4034,223 @@ function zelle(z, s, alle, gesp) {
     <input type="text" value="${w ? fmtG(w) : ''}" placeholder="0" inputmode="decimal"></td>`;
 }
 
+
+/* ===================================================================
+   U-40 — Ist: was von einer budgetierten Zahl schon gebucht ist
+   -------------------------------------------------------------------
+   Neu, und das einzige Neuland in diesem Umbau. Die Karten zeigen sonst
+   nur, was schon gerechnet wurde; das «Ist» gab es bis hierher nicht.
+
+   Zwei Rechenwege, weil es zwei Arten von Buchung gibt. Eine gewoehnliche
+   Ausgabe traegt zeileId und zeigt damit auf ihre Budgetposition. Eine
+   Ratenzahlung traegt verbId und KEIN zeileId — ihre Budgetzeile ist
+   gespiegelt und existiert nur als Summe ihrer Gruppe. Wer nur zeileId
+   fragt, sieht bei den Schuldenzeilen ewig null.
+
+   Der Betrag wird als Betrag genommen, nicht mit Vorzeichen: eine
+   Budgetzeile hat eine Richtung, und die steht in ihrer Kategorie.
+   Korrekturen zaehlen nicht mit — sie richten einen Kontostand und
+   erfuellen keine Budgetposition.
+   =================================================================== */
+function istZeile(z, j, m) {
+  if (zeileGruppe[z.id]) return istGruppe(zeileGruppe[z.id], j, m);
+  if (z.gespiegeltAus === 'rechnungen') return istRechnungen(j, m);
+  return rd(D.buchungen.reduce((s,b) => {
+    if (b.zeileId !== z.id || b.art === 'korrektur') return s;
+    const d = ymOf(b.datum);
+    return (d.j === j && d.m === m) ? s + Math.abs(b.betrag) : s;
+  }, 0));
+}
+function istGruppe(gruppe, j, m) {
+  const ids = D.verbindlichkeiten.filter(v => v.aktiv !== false && v.gruppe === gruppe).map(v => v.id);
+  return rd(D.buchungen.reduce((s,b) => {
+    if (!b.verbId || !ids.includes(b.verbId)) return s;
+    const d = ymOf(b.datum);
+    return (d.j === j && d.m === m) ? s + Math.abs(b.betrag) : s;
+  }, 0));
+}
+function istVerb(v, j, m) {
+  return rd(D.buchungen.reduce((s,b) => {
+    if (b.verbId !== v.id) return s;
+    const d = ymOf(b.datum);
+    return (d.j === j && d.m === m) ? s + Math.abs(b.betrag) : s;
+  }, 0));
+}
+/* Eine bezahlte Rechnung ist keine offene mehr — mehr braucht es hier nicht.
+   Gefiltert wird mit rechnungImBudget(), demselben Praedikat wie in
+   gespiegelteRechnung(): sonst zaehlte das Ist eine Rechnung mit, die das
+   Soll gar nie enthielt. */
+function istRechnungen(j, m) {
+  return rd(D.rechnungen.reduce((s,r) => {
+    const f = ymOf(r.faelligkeit);
+    return (r.status !== 'offen' && rechnungImBudget(r) && f.j === j && f.m === m) ? s + r.betrag : s;
+  }, 0));
+}
+function istKat(k, j, m) {
+  return rd(zeilenVon(k.id, j).reduce((s,z) => s + istZeile(z, j, m), 0));
+}
+
+/* ===================================================================
+   U-40 — Budget als Kategorie-Karten
+   -------------------------------------------------------------------
+   Eine Karte je KATEGORIE, nicht je Position. Bei vierzig Positionen mal
+   zwoelf Monaten IST das Raster der Wert; eine Karte je Position
+   zerschnitte genau den Vergleich, den man sucht. Das Raster bleibt
+   deshalb dort, wo es gebraucht wird: im aufgeklappten Zustand, mit den
+   Positionen dieser einen Kategorie.
+   =================================================================== */
+function katKarten() {
+  const j = S.jahr, m = S.monat, h = ymOf(heuteISO());
+  const laufend = S.zeitraum === 'monat' && istLaufenderMonat(j, m);
+  const kats = D.kategorien.filter(k => katSicht(k, j)).sort((a,b) => a.rang - b.rang);
+  const gewaehlt = (S.filterNur || []).filter(id => kats.some(k => k.id === id));
+  const sicht = gewaehlt.length ? kats.filter(k => gewaehlt.includes(k.id)) : kats;
+  const monatW = k => S.zeitraum === 'jahr'
+    ? rd([...Array(12).keys()].reduce((s,i) => s + katSumme(k, j, i), 0))
+    : katSumme(k, j, m);
+
+  /* WOHIN eine gespiegelte Kategorie fuehrt. Der Bauplan schrieb hier
+     `data-bereich="verbind"` fest — das trifft die Schuldenzeilen, aber
+     die Kategorie mit der Rechnungszeile schickte es an den falschen Ort.
+     Dieselbe Unterscheidung steht schon im Klickverteiler bei data-spring;
+     hier ist sie nur noch einmal gestellt, nicht neu beantwortet.
+     Der Verweistext heisst «öffnen ›» und nicht «Karten ›» wie im Bauplan:
+     der Zielname steht schon links als Kategoriename, und «Rechnungen ›»
+     lief in der 360-Pixel-Spalte aus dem Raster — abgeschnitten stand dort
+     «Rechnunge». Ein Wort, das in die Spalte passt, ist mehr wert als
+     eines, das die Ansicht doppelt benennt. */
+  const gespZiel = k => {
+    const zs = zeilenVon(k.id, j);
+    if (!zs.length || !zs.every(gespiegelt)) return null;
+    if (zs.some(z => zeileGruppe[z.id])) return 'verbind';
+    if (zs.some(z => z.gespiegeltAus === 'rechnungen')) return 'rechnung';
+    return null;
+  };
+
+  const karte = k => {
+    const offen = S.kOffen.includes(k.id);
+    const ziel = gespZiel(k);
+    const soll = monatW(k), ist = laufend ? istKat(k, j, m) : 0;
+    const rest = rd(Math.max(0, soll - ist));
+    const anteil = soll > 0.005 ? Math.min(1, ist / soll) : 0;
+    const kt = konto(k.kontoId);
+    const zeilen = zeilenVon(k.id, j);
+    /* Der Jahresverlauf als zwoelf Balken. Math.abs nur fuer die HOEHE —
+       eine Kategorie mit Gegenrichtungszeilen kann in einem Monat negativ
+       summieren, und ein Balken hat keine Richtung. */
+    const werte = [...Array(12).keys()].map(i => Math.abs(katSumme(k, j, i)));
+    const max = Math.max(...werte, 1);
+    return `<article class="streifen ${offen?'offen':''}">
+      <div class="reihe" ${ziel ? `data-bereich="${ziel}"` : `data-kklapp="${k.id}"`}>
+        <div class="nam"><span class="chev">${ziel ? '›' : (offen?'▾':'▸')}</span>
+          <span class="t">${k.name}</span>
+          <span class="z">${kt ? kt.nr + ' ' + kt.name : ''}${
+            ziel ? ' · gespiegelt' : ' · ' + zeilen.length + (zeilen.length===1?' Position':' Positionen')}</span>
+          ${ziel ? '<span class="z" style="color:var(--accent)">öffnen ›</span>' : ''}</div>
+        <div class="n gross ${ziel?'gespiegelt-wert':''}"${
+          ziel ? ' title="kommt aus ' + (ziel === 'verbind' ? 'den Ratenplänen' : 'den erfassten Rechnungen') + '"' : ''
+          }>${fmtG(soll)}</div>
+        <div class="n ${laufend?'':'leer'}">${laufend ? fmtG(ist) : '–'}</div>
+        <div class="n ${laufend ? (rest > 0.005 ? 'err' : 'leer') : 'leer'}">${
+          laufend ? (rest > 0.005 ? fmtG(rest) : '—') : '–'}</div>
+        <div class="kbalken"><div class="bar"><div style="width:${Math.round(anteil*100)}%"></div></div>
+          <span class="p">${laufend ? Math.round(anteil*100) + ' %' : '–'}</span></div>
+        <div class="n">${fmtG(rd([...Array(12).keys()].reduce((s,i)=>s+katSumme(k,j,i),0)))}</div>
+        <div class="kjahr">${werte.map((w,i) => `<i class="${
+          i === h.m && j === h.j ? 'jetzt' : (j > h.j || (j === h.j && i > h.m) ? 'kuenftig' : '')
+          }" style="height:${Math.max(2, Math.round(w / max * 100))}%"></i>`).join('')}</div>
+        <div class="pfeil">›</div>
+      </div>
+      ${offen && !ziel ? katKarteAuf(k) : ''}</article>`;
+  };
+
+  const saldo = S.zeitraum === 'jahr'
+    ? rd([...Array(12).keys()].reduce((s,i) => s + saldoBudgetiert(j, i), 0))
+    : saldoBudgetiert(j, m);
+
+  const kopf = `<div class="tafel-kopf">
+      <span class="titel">Budget ${zeitTitel()}</span>${tafelKennzahlen()}
+      <span class="kopfwerkzeug"><button class="knopf klein ${gewaehlt.length?'primaer':''}" id="btnKat"
+        aria-expanded="false">${gewaehlt.length ? gewaehlt.length + ' von ' + kats.length
+          + ' Kategorien' : 'Kategorien'} ▾</button></span>
+      ${ansichtSchalter('budget')}
+      ${vollbildKnopf()}
+    </div>
+    <div class="filterzeile" id="filterzeile" hidden><span class="lab">${
+      gewaehlt.length ? 'Ausgewählt' : 'Alle sichtbar — wähle aus'}</span>
+      ${kats.map(k => `<button class="filter" data-filter="${k.id}"
+        aria-pressed="${gewaehlt.includes(k.id)}">${k.name}</button>`).join('')}
+      ${gewaehlt.length ? '<button class="knopf klein" id="btnFilterAlle">Auswahl aufheben</button>' : ''}</div>`;
+
+  /* Derselbe Grund wie bei den Verbindlichkeiten: ohne Kategorie steht hier
+     sonst eine Spaltenkopfzeile ueber nichts, und der Knopf «Zeile
+     hinzufügen» haengt an der Kategoriezeile der Tabelle. */
+  if (!sicht.length) return kopf + `<div class="kflaeche k-budget">
+    <p class="meldung">${kats.length
+      ? 'Keine der gewählten Kategorien gilt in ' + j + '.'
+      : 'Noch keine Kategorie angelegt. Du legst eine in der Verwaltung unter «Struktur» an — '
+        + 'Konto trägt Kategorie trägt Position, in dieser Reihenfolge.'}</p></div>`;
+
+  return kopf + `
+    <div class="kflaeche k-budget">
+      <div class="kkopf"><div style="padding-left:14px">Kategorie</div>
+        <div style="text-align:right">Soll ${S.zeitraum === 'jahr' ? j : MON[m].slice(0,3)}</div>
+        <div style="text-align:right">Ist</div><div style="text-align:right">Rest</div>
+        <div style="padding-left:22px">Verbraucht</div>
+        <div style="text-align:right">Jahr ${j}</div>
+        <div style="padding-left:26px">Monatsverlauf ${j}</div><div></div></div>
+      ${sicht.map(karte).join('')}
+      <div class="kgruppe" style="border-top:1px solid var(--rule);margin-top:10px;padding-top:14px">
+        <span class="t">Saldo budgetiert</span>
+        <span class="num" style="font-size:17px;color:${saldo<0?'var(--err)':'var(--accent)'}">${
+          (saldo>0?'+':'') + fmtG(saldo)}</span>
+        <span class="z">kumuliert ${fmtG(saldoKumuliert(j, m))} · Jahr ${
+          fmtG(rd([...Array(12).keys()].reduce((s,i)=>s+saldoBudgetiert(j,i),0)))}</span></div>
+    </div>`;
+}
+
+/* Das Raster einer Kategorie: ihre Positionen mal zwoelf Monate. Dieselben
+   Zellen wie die Tabelle, nur auf eine Kategorie beschraenkt — hier steht
+   deshalb kein Eingabefeld: eintragen ist die andere Ansicht.
+   Die Zellen zeigen den ROHEN Wert, die Summenzeile rechnet mit
+   katSumme(). Das sieht bei einer Gegenrichtungszeile aus, als ginge die
+   Summe nicht auf — genau so steht es aber auch in der Tabelle (zelle()
+   zeigt zeilenwert, katW rechnet mit Vorzeichen). Die Karte bildet die
+   Tabelle ab und erfindet die Darstellung nicht neu. */
+function katKarteAuf(k) {
+  const j = S.jahr, h = ymOf(heuteISO());
+  const zeilen = zeilenVon(k.id, j);
+  const kopf = `<div class="r kopf"><div class="p">Position</div>${
+    [...Array(12).keys()].map(i => `<div class="c" ${i===h.m&&j===h.j?'style="color:var(--accent)"':''
+      }>${MON[i].slice(0,3)}</div>`).join('')}<div class="j">Jahr</div></div>`;
+  const reihen = zeilen.map(z => {
+    const gesp = gespiegelt(z);
+    const zellen = [...Array(12).keys()].map(i => {
+      const w = zeilenwert(z, j, i), jetzt = i === h.m && j === h.j;
+      const offenHier = jetzt && !gesp && rd(w - istZeile(z, j, i)) > 0.005;
+      return `<div class="c ${jetzt?'jetzt':''} ${offenHier?'hatoffen':''}">${fmtG0(w)}${
+        jetzt && Math.abs(w) >= 0.005 ? '<span class="pkt"></span>' : ''}</div>`;
+    }).join('');
+    return `<div class="r"><div class="p"><span class="t">${z.bezeichnung}</span>
+        <span class="weg">${zahlungsweg(z)}</span></div>${zellen}
+      <div class="j">${fmtG0(zeilenJahr(z, j))}</div></div>`;
+  }).join('');
+  const summe = `<div class="r summe"><div class="p" style="color:var(--muted)">Summe ${k.name}</div>${
+    [...Array(12).keys()].map(i => `<div class="c ${i===h.m&&j===h.j?'jetzt':''}">${
+      fmtG0(katSumme(k, j, i))}</div>`).join('')}
+    <div class="j" style="color:#fff">${fmtG0(rd([...Array(12).keys()].reduce(
+      (s,i)=>s+katSumme(k,j,i),0)))}</div></div>`;
+  const rest = istLaufenderMonat(j, S.monat)
+    ? rd(Math.max(0, katSumme(k, j, S.monat) - istKat(k, j, S.monat))) : 0;
+  return `<div class="kauf"><div class="praster">${kopf}${reihen}${summe}
+    <div class="fuss"><span class="leg"><span class="pkt" style="width:5px;height:5px;
+      border-radius:50%;background:var(--accent);display:inline-block"></span>gebucht</span>
+      ${rest > 0.005 ? `<span class="leg"><span style="width:5px;height:5px;border-radius:50%;
+        border:1px solid var(--err);display:inline-block"></span>offen ${fmtG(rest)}</span>` : ''}
+      <span style="flex:1"></span>
+      <button class="knopf klein" type="button" data-ansicht="budget:tabelle"
+        >Diese Kategorie eintragen</button></div></div></div>`;
+}
 /* ---- Verbindlichkeiten (A-40, A-41) --------------------------------- */
 function verbindTabelle() {
   const spAlle = spaltenKoepfe(), alle = S.zeitraum === 'alle';
