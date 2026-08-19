@@ -1702,13 +1702,13 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .jn-kz .nam{flex:1;font-size:13px;color:var(--ink)}
 .jn-kz .anz{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .jn-kz.aus .nam{color:var(--muted)}
-.jn-skopf{display:grid;grid-template-columns:1fr 96px 48px 48px;gap:8px;align-items:end;
+.jn-skopf{display:grid;grid-template-columns:1fr 92px 44px 44px 52px;gap:8px;align-items:end;
   border-bottom:1px solid var(--line);padding:0 6px 5px;margin-bottom:3px}
 .jn-skopf .sp{font-size:10px;color:var(--muted);text-align:center;line-height:1.25}
 .jn-skopf .sp button{display:block;width:100%;padding-top:2px;font-size:10px}
 .jn-skopf .sp:nth-child(2){text-align:right}
 .jn-grp{font-size:11px;color:var(--muted);padding:7px 6px 2px;letter-spacing:.03em}
-.jn-zeile{display:grid;grid-template-columns:1fr 96px 48px 48px;gap:8px;align-items:center;
+.jn-zeile{display:grid;grid-template-columns:1fr 92px 44px 44px 52px;gap:8px;align-items:center;
   padding:5px 6px;border-radius:8px}
 .jn-zeile:hover{background:var(--soft)}
 .jn-zeile .nam{font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1717,6 +1717,14 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .jn-zeile input{accent-color:var(--accent);cursor:pointer}
 .jn-zeile input:disabled{cursor:default;opacity:.35}
 .jn-zeile.aus .nam,.jn-zeile.aus .bet{color:var(--muted)}
+/* Ausgeblendet sieht anders aus als «nur nicht uebernommen»: durchgestrichen
+   heisst «den gibt es ab hier nicht mehr», grau heisst «der bleibt, ohne Wert». */
+.jn-zeile.weg .nam{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.jn-zeile.weg .bet{color:var(--muted)}
+.jn-rest{color:var(--open);font-weight:600;margin-left:5px;cursor:help}
+.jn-warn{font-size:11.5px;line-height:1.5;color:var(--open);border-top:1px solid var(--line);
+  padding-top:7px;margin-top:2px}
+.jn-warn b{color:var(--open)}
 .jn-vor{background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:10px 12px;display:flex;flex-direction:column;gap:5px}
 .jn-vor .z{font-size:12.5px;color:var(--ink)}
@@ -1862,7 +1870,7 @@ const MON_LANG  = ['Januar','Februar','März','April','Mai','Juni','Juli','Augus
 const TAGE      = [31,28,31,30,31,30,31,31,30,31,30,31];
 const SCHLUESSEL_DATEN = 'gaepp.v1';        /* wird nie gehoben (Datenanbindung) */
 const SCHLUESSEL_GH    = 'gaepp.github';
-const SCHEMA_APP = 5;                        /* Stand dieser App (A-88). Von 2 auf 3 am 17.08.2026:
+const SCHEMA_APP = 6;                        /* Stand dieser App (A-88). Von 2 auf 3 am 17.08.2026:
    die Entitaet «rechnungen» traegt seither ein Feld fuer die Verbindlichkeit
    (F-01). Von 3 auf 4 am 18.08.2026: Zeilen und Kategorien tragen statt
    `aktiv` ein `ausAb` (U-21) — eine aeltere Fassung wuerde ein ausgeblendetes
@@ -2193,6 +2201,13 @@ function normalisieren(d) {
      (A-88, Abschnitt 7 des Datenschemas). */
   (d.verbindlichkeiten || []).forEach(v => {
     if (!v.staende || typeof v.staende !== 'object') v.staende = {};
+    /* U-49: Ausblenden ab einem Stichjahr, jetzt auch fuer Glaeubiger.
+       SCHEMAERHOEHUNG 5 -> 6. Sie ist noetig, weil eine aeltere Fassung der
+       App das Feld nicht liest: Sie zeigte einen ab 2027 ausgeblendeten
+       Glaeubiger weiter an UND rechnete ihn in den Schuldenberg — sie
+       versteht die Datei falsch, und genau das soll die Versionszahl
+       anzeigen (A-88). `null` heisst nie ausgeblendet. */
+    if (!('ausAb' in v)) v.ausAb = null;
   });
   verbRangFuellen(d);
   /* U-35: dasselbe fuer die Konten. Jedes Konto, das GAEPP selbst angelegt
@@ -2331,8 +2346,10 @@ function rate(v, j, m) {
 /* ---- Gespiegelte Budgetzeile: Summe der Raten einer Gruppe (A-91) ----
    Monat fuer Monat aus den Ratenplaenen, nie aus dem Soll-Feld. */
 function gespiegelteRate(gruppe, j, m) {
-  return rd(D.verbindlichkeiten.reduce((s, v) =>
-    (v.aktiv !== false && v.gruppe === gruppe) ? s + rate(v, j, m) : s, 0));
+  /* U-49: je Jahr. Ein ab 2027 ausgeblendeter Glaeubiger traegt ab 2027
+     keine Rate mehr ins Budget — und bis 2026 unveraendert seine. */
+  return rd(verbAlle(j).reduce((s, v) =>
+    (v.gruppe === gruppe) ? s + rate(v, j, m) : s, 0));
 }
 /* ---- Gespiegelte Zeile «Rechnungen» (A-92) --------------------------
    Summe der ungedeckten Rechnungen mit Faelligkeit in diesem Monat.
@@ -2365,7 +2382,7 @@ function zeilenSoll(z, j) {
        Wer einen Glaeubiger ausblendete, sah dieselbe Zeile mit Soll 700 und
        Monatswerten 0 — zwei Wahrheiten in einer Zeile. Derselbe Filter wie in
        gespiegelteRate (A-91). */
-    const v = D.verbindlichkeiten.filter(x => x.aktiv !== false && x.gruppe === zeileGruppe[z.id]);
+    const v = verbAlle(j).filter(x => x.gruppe === zeileGruppe[z.id]);   /* U-49 */
     /* Ein Glaeubiger ohne Ratenplan hat kein raten-Objekt — x.raten[j] wirft dann,
        statt null zu liefern. rate() prueft das eine Ebene hoeher (x.raten && …),
        hier fehlte die Pruefung. */
@@ -2420,6 +2437,38 @@ function katSicht(k, j)  { return jahrSicht(k, j); }
    und beim Wiedereinblenden einer Kategorie kommen ihre Zeilen von selbst
    mit. */
 function zeileSicht(z, j) { return jahrSicht(z, j) && katSicht(kategorie(z.kategorieId), j); }
+
+/* ---- U-49: dasselbe fuer Glaeubiger ---------------------------------
+   `anfangsdatum` sagt seit U-35, ab wann es eine Schuld gibt. Was fehlte,
+   war das andere Ende: ab wann es sie nicht mehr gibt. Bis hierher gab es
+   dafuer nur `aktiv` — ganz oder gar nicht —, und das nahm einen getilgten
+   Glaeubiger RUECKWIRKEND aus jedem Jahr. Gemessen an einem Fall mit einer
+   Ende 2026 getilgten Schuld fiel der Schuldenberg im Januar 2026 um genau
+   deren Restbetrag: Die Schuld war da, sie wurde abbezahlt, und das Ausblenden
+   machte die Vergangenheit nachtraeglich falsch. Genau der Verlauf, den
+   diese App zeigen soll, ging dabei verloren.
+
+   WARUM DIE BEGRUENDUNG AUS U-21 HIER NICHT TRAEGT. Dort steht, Konten
+   bekaemen bewusst kein `ausAb` — «ein Konto ist kein Anzeigeobjekt,
+   sondern ein Saldo» —, und Verbindlichkeiten wurden im selben Satz
+   mitgenannt. Fuer ein Konto stimmt das: «ab 2027 weg» hiesse, sein
+   Guthaben verschwaende aus dem Vermoegen. Fuer eine Schuld stimmt es
+   nicht: Dort ist «ab hier gibt es sie nicht mehr» keine Anzeigefrage,
+   sondern eine Tatsache — sie ist getilgt.
+
+   DIE REGEL BLEIBT: Sichtbarkeit wird in den AUSWAHLfunktionen gefragt,
+   nie in verbindLauf(). Der Stand einer Schuld ist eine Tatsache und
+   aendert sich nicht dadurch, dass man sie nicht mehr sehen will. Was
+   sich aendert, ist, welche Glaeubiger eine Ansicht oder eine Summe
+   ueberhaupt zusammenzaehlt — und das je Jahr, nicht je Objekt. */
+function verbSicht(v, j) { return !!v && v.aktiv !== false && jahrSicht(v, j); }
+/* Das Jahr ist Pflicht, kein Zusatz — aus demselben Grund wie bei
+   zeilenVon(): ohne es waere «sichtbar» wieder eine Eigenschaft des
+   Glaeubigers statt eine des Jahres. */
+function verbAlle(j)      { return D.verbindlichkeiten.filter(v => verbSicht(v, j)); }
+function verbVon(g, j)    { return ordListe('verb', g).filter(v => verbSicht(v, j)); }
+/* Fuer die Kennzahlen, die «heute» meinen und kein Jahr mitbringen. */
+function verbHeute()      { return verbAlle(ymOf(heuteISO()).j); }
 
 /* ---- Kategorie: sichtbare Zeilen in der richtigen Reihenfolge --------
    Das Jahr ist Pflicht, kein Zusatz: ohne es waere «sichtbar» wieder
@@ -2506,7 +2555,7 @@ function umbBedient(j, m) {
    Waechst eine Schuld durch Erhoehungen ueber ihren Anfangsstand hinaus,
    wird `getilgt` negativ — das wird angezeigt und nicht weggerechnet. */
 function getilgtStand() {
-  const v = D.verbindlichkeiten.filter(x => x.aktiv !== false);
+  const v = verbHeute();                                             /* U-49 */
   const anfang = rd(v.reduce((s, x) => s + (x.anfangsstand || 0), 0));
   const heute  = rd(v.reduce((s, x) => s + verbindStandHeute(x), 0));
   const getilgt = rd(anfang - heute);
@@ -2751,12 +2800,12 @@ function standPer(v, j, m) {
   return (j === h.j && m === h.m) ? verbindStandHeute(v) : verbindStand(v, j, m);
 }
 function schuldenSumme(j, m) {
-  return rd(D.verbindlichkeiten.filter(v => v.aktiv !== false)
-            .reduce((s,v) => s + verbindStand(v, j, m), 0));
+  /* U-49: je Jahr gefragt. Ein ab 2027 ausgeblendeter Glaeubiger zaehlt in
+     den Summen von 2026 unveraendert mit — das ist der ganze Punkt. */
+  return rd(verbAlle(j).reduce((s,v) => s + verbindStand(v, j, m), 0));
 }
 function schuldenPrognose(j, m) {
-  return rd(D.verbindlichkeiten.filter(v => v.aktiv !== false)
-            .reduce((s,v) => s + verbindPrognose(v, j, m), 0));
+  return rd(verbAlle(j).reduce((s,v) => s + verbindPrognose(v, j, m), 0));  /* U-49 */
 }
 /* Stichtagssumme — die Zahl, gegen die abgenommen wird. */
 function schuldenStichtag() {
@@ -2922,7 +2971,7 @@ function kopfbandZeichnen() {
       `<button type="button" class="kb-knopf" data-offen>${fmtG(offen)}</button>`, 'err'));
   }
   if (bereich === 'verbind') {
-    const verb = D.verbindlichkeiten.filter(v => v.aktiv !== false);
+    const verb = verbHeute();                                        /* U-49 */
     teile.push(w('Schulden', fmt(rd(verb.reduce((a,v) => a + verbindStandHeute(v), 0)))));
     const sf = schuldenfreiGecacht();
     teile.push(w('Schuldenfrei', sf.monate !== null
@@ -3057,7 +3106,7 @@ function zeichneDashboard() {
   const frei = freiPerMonatsende(h.j, h.m), pt = proTag(), tage = tageBisLohn();
   const hhk  = D.konten.filter(k => k.frei);
   const zyklus = tageImMonat(h.j, h.m);
-  const verb = D.verbindlichkeiten.filter(v => v.aktiv !== false);
+  const verb = verbHeute();                                          /* U-49 */
   const schuld = rd(verb.reduce((s,v) => s + verbindStandHeute(v), 0));
   const offen  = D.rechnungen.filter(r => r.status === 'offen')
                    .sort((a,b) => a.faelligkeit < b.faelligkeit ? -1 : 1);
@@ -3363,8 +3412,10 @@ function schuldenfrei() {
   const h = ymOf(heuteISO());
   const jahre = Object.keys(D.budget).map(Number).sort();
   const letztes = jahre[jahre.length - 1] || h.j;
-  const verb = D.verbindlichkeiten.filter(v => v.aktiv !== false);
-  const summeAm = (j, m) => rd(verb.reduce((a,v) => a + Math.max(0, verbindPrognose(v, j, m)), 0));
+  /* U-49: die Liste wird je Jahr neu gebildet, nicht einmal vorab. Sonst
+     traege ein Glaeubiger, der ab 2029 ausgeblendet ist, noch 2031 bei —
+     und «schuldenfrei ab» stimmte nie. */
+  const summeAm = (j, m) => rd(verbAlle(j).reduce((a,v) => a + Math.max(0, verbindPrognose(v, j, m)), 0));
   let jj = h.j, mm = h.m, n = 0;
   while (jj < letztes || (jj === letztes && mm <= 11)) {
     if (summeAm(jj, mm) < 0.005) return { monate: n, jahr: jj, monat: mm, rest: 0 };
@@ -4470,7 +4521,7 @@ function istZeile(z, j, m) {
   }, 0));
 }
 function istGruppe(gruppe, j, m) {
-  const ids = D.verbindlichkeiten.filter(v => v.aktiv !== false && v.gruppe === gruppe).map(v => v.id);
+  const ids = verbAlle(j).filter(v => v.gruppe === gruppe).map(v => v.id);   /* U-49 */
   return rd(D.buchungen.reduce((s,b) => {
     if (!b.verbId || !ids.includes(b.verbId)) return s;
     const d = ymOf(b.datum);
@@ -4526,7 +4577,7 @@ function offenPosten(j, m) {
       /* Die Schuldenzeile: ihr Ist haengt an verbId, nicht an zeileId —
          deshalb je Glaeubiger gefragt und je Glaeubiger gezeigt. */
       if (zeileGruppe[z.id]) {
-        D.verbindlichkeiten.filter(v => v.aktiv !== false && v.gruppe === zeileGruppe[z.id])
+        verbAlle(j).filter(v => v.gruppe === zeileGruppe[z.id])       /* U-49 */
           .forEach(v => {
             const rest = rd(rate(v, j, m) - istVerb(v, j, m));
             if (rest > 0.005) out.push({ name:'Rate ' + v.bezeichnung, betrag:rest,
@@ -4762,7 +4813,11 @@ function csvExport(bereich) {
   let kopf = [], reihen = [];
 
   if (bereich === 'verbind') {
-    const aktiv = D.verbindlichkeiten.filter(v => v.aktiv !== false);
+    /* U-49: der Export zeigt, was die Ansicht zeigt — sonst stuende im CSV
+       ein Glaeubiger, den der Bildschirm daneben nicht fuehrt. */
+    const aktiv = alle
+      ? D.verbindlichkeiten.filter(v => spAlle.some(x => verbSicht(v, x.key)))
+      : verbAlle(S.jahr);
     const ratenSp = (v,s) => alle
       ? rd([...Array(12).keys()].reduce((a,m)=>a+rate(v,s.key,m),0)) : rate(v, S.jahr, s.key);
     /* Dasselbe Praedikat wie verbindTabelle — inklusive der beiden
@@ -4777,7 +4832,7 @@ function csvExport(bereich) {
       ...sp.map(s => zahlT(ratenSp(v, s))),
       zahlT(spAlle.length ? (alle ? verbindPrognose(v, spAlle[spAlle.length-1].key, 11)
                                   : verbindPrognose(v, S.jahr, spAlle[spAlle.length-1].key)) : 0)]);
-    GRUPPEN.forEach(g => ordListe('verb', g.id).filter(v => v.aktiv !== false)
+    GRUPPEN.forEach(g => ordListe('verb', g.id).filter(v => aktiv.includes(v))   /* U-49 */
       .forEach(v => zeile(g.name, v)));
     /* Auch die ohne gueltige Gruppe — sie zaehlen in der Summenzeile der
        Tabelle mit und fehlten sonst in der Datei, die diese Summe erklaeren
@@ -5033,9 +5088,12 @@ function katKarteAuf(k) {
 /* ---- Verbindlichkeiten (A-40, A-41) --------------------------------- */
 function verbindTabelle() {
   const spAlle = spaltenKoepfe(), alle = S.zeitraum === 'alle';
+  /* U-49: dieselbe Auswahl wie in verbindKarten. Zwei Ansichten derselben
+     Sache duerfen nicht zwei verschiedene Glaeubigerlisten zeigen. */
+  const sichtbar = v => alle ? spAlle.some(x => verbSicht(v, x.key)) : verbSicht(v, S.jahr);
   const stand = (v, s) => alle ? verbindPrognose(v, s.key, 11) : verbindPrognose(v, S.jahr, s.key);
   const zahl  = (v, s) => alle ? rd([...Array(12).keys()].reduce((a,m)=>a+rate(v,s.key,m),0)) : rate(v, S.jahr, s.key);
-  const aktiv = D.verbindlichkeiten.filter(v => v.aktiv !== false);
+  const aktiv = D.verbindlichkeiten.filter(sichtbar);               /* U-49 */
   /* Das Praedikat muss alles pruefen, was in der Spalte steht — nicht nur die
      Raten. Der thead traegt hier dieselben zwei Kopfzahlen wie das Budget
      (U-7). Wer nur die Raten fragt, faltet eine Spalte weg, deren Saldo im
@@ -5055,7 +5113,7 @@ function verbindTabelle() {
        geblieben — was hier dasteht, ist weiter nur das Aktive; geordnet wird
        aber auf der vollen Liste der Gruppe (ordListe), damit ein aus-
        geblendeter Glaeubiger seinen Platz zwischen den sichtbaren behaelt. */
-    const liste = ordListe('verb', g.id).filter(v => v.aktiv !== false);
+    const liste = ordListe('verb', g.id).filter(sichtbar);          /* U-49 */
     /* U-36: Eine leere Gruppe fiel mitsamt ihrer Kopfzeile weg — und mit der
        Kopfzeile der einzige Knopf, ueber den in der ganzen App ein Glaeubiger
        entsteht. Bei leerer Datendatei war damit KEINE Verbindlichkeit
@@ -5145,7 +5203,13 @@ function verbindTabelle() {
 function verbindKarten() {
   const e = zeitEnde(), h = ymOf(heuteISO());
   const alle = S.zeitraum === 'alle', sp = spaltenKoepfe();
-  const aktiv = D.verbindlichkeiten.filter(v => v.aktiv !== false);
+  /* U-49: In «Alle Jahre» steht ein Glaeubiger, sobald er in IRGENDEINER
+     gezeigten Spalte gilt — dieselbe Regel wie bei den Budgetzeilen. Sonst
+     verschwaende ein 2027 ausgeblendeter aus einer Ansicht, die 2022 bis
+     2032 zeigt, und mit ihm seine Jahre 2022 bis 2026. */
+  const aktiv = alle
+    ? D.verbindlichkeiten.filter(v => sp.some(x => verbSicht(v, x.key)))
+    : verbAlle(S.jahr);
   const jahre = Object.keys(D.budget).map(Number).sort();
   const letztes = jahre.length ? jahre[jahre.length - 1] : S.jahr;
   const kuenftig = e.j > h.j || (e.j === h.j && e.m > h.m);
@@ -5199,7 +5263,7 @@ function verbindKarten() {
   };
 
   const gruppen = GRUPPEN.map(g =>
-    karte(g.id, g.name, ordListe('verb', g.id).filter(v => v.aktiv !== false))).join('');
+    karte(g.id, g.name, ordListe('verb', g.id).filter(v => aktiv.includes(v)))).join('');  /* U-49 */
   /* Ein Glaeubiger mit einer Gruppe, die es nicht gibt, gehoert gezeigt —
      er zaehlt in der Gesamtsumme mit und verschwand frueher lautlos. */
   const fremd = aktiv.filter(v => !GRUPPEN.some(g => g.id === v.gruppe))
@@ -7619,6 +7683,13 @@ function blattGlaeubiger(arg) {
                value="${e.anfangsstand !== '' && e.anfangsstand != null ? fmt(e.anfangsstand) : ''}"></div>
       <div class="feld"><label>Stand per</label>
         <input type="date" id="gDatum" value="${e.anfangsdatum || heuteISO()}"></div>
+      <!-- U-49: das andere Ende. «Stand per» sagt, ab wann es die Schuld gibt;
+           dieses Feld sagt, ab wann es sie nicht mehr gibt. Die beiden gehoeren
+           nebeneinander, weil sie dieselbe Frage von zwei Seiten beantworten. -->
+      <div class="feld"><label>Ausgeblendet ab Jahr</label>
+        <input class="num" id="gAusAb" type="text" inputmode="numeric"
+               value="${e.ausAb != null && e.ausAb !== 0 ? e.ausAb : ''}"
+               placeholder="leer = bleibt sichtbar"></div>
       <div class="feld"><label>Monatszins %</label>
         <input class="num" id="gZins" type="text" inputmode="decimal"
                value="${e.zinssatz != null && e.zinssatz !== '' ? e.zinssatz : ''}" placeholder="leer = zinsfrei"></div>
@@ -8731,8 +8802,10 @@ function blattHandbuch() {
        Rot heisst: es ging etwas schief, der Text daneben sagt was.</p></div>
 
     <div class="regel"><h3>9. Löschen ist etwas anderes als Ausblenden</h3>
-    <p><b>Ausblenden</b> nimmt ein Konto, eine Kategorie oder eine Position aus der Ansicht;
-       ihre Werte bleiben, und du holst sie in der Verwaltung zurück. <b>Löschen nimmt sie
+    <p><b>Ausblenden</b> nimmt eine Kategorie, eine Position oder <b>einen Gläubiger</b>
+       <b>ab einem Jahr</b> aus der Ansicht; die Jahre davor zeigen sie weiter mit ihren
+       Zahlen, und du holst sie zurück — Kategorien und Positionen in der Verwaltung, einen
+       Gläubiger in seiner Maske, Feld «Ausgeblendet ab Jahr». <b>Löschen nimmt sie
        wirklich weg</b>, mit allem, was daran hängt — GÄPP zeigt vorher eine Aufstellung, was
        mitgeht. Nur eine Handvoll Kennungen ist gesperrt, weil GÄPP mit ihnen rechnet;
        dort sagt der Dialog, warum es nicht geht. Buchungen, Rechnungen und Erhöhungen werden
@@ -8757,6 +8830,12 @@ function blattHandbuch() {
        Fall: Budget mitnehmen, Saldo vortragen, Raten nicht — die Raten des neuen Jahres sind
        eine neue Entscheidung und keine Wiederholung. Was du nicht übernimmst, steht danach auf
        null; die Zeile bleibt stehen.</p>
+    <p>Die dritte Spalte heisst <b>«Ab hier weg»</b> und ist für erledigte Gläubiger da.
+       Sie blendet einen Gläubiger <b>ab dem neuen Jahr</b> aus — er verschwindet aus allen
+       Jahren ab da, nicht nur aus dem einen, und die Vorjahre zeigen ihn weiter mit seinen
+       Zahlen und in ihren Summen. Wessen Endsaldo null ist, steht schon angehakt da: getilgt
+       ist getilgt. Ist er es nicht, sagt der Dialog es mit Zahl — verhindern tut er nichts,
+       die Entscheidung ist deine.</p>
     <p>Ein <b>Anfangssaldo gilt ab dem 1. Januar seines Jahres</b> und lässt die Jahre davor
        unberührt — dein Verlauf bleibt stehen. Ohne ihn rechnet GÄPP über die Jahresgrenze
        durch. Du findest ihn im Blatt eines Gläubigers unter <b>«Anfangssaldi je Jahr»</b> und
@@ -10557,7 +10636,7 @@ function jahrAnlegen() {
      richtige Vorschlag. Der Vergleicher in .sort() stand hier als einziger
      Stelle nicht da (vgl. budgetJahre()). */
   const j = jahre.length ? jahre[jahre.length - 1] + 1 : new Date().getFullYear();
-  _jn = { jahr: j, kat: new Set(), saldo: new Set(), raten: new Set() };
+  _jn = { jahr: j, kat: new Set(), saldo: new Set(), raten: new Set(), weg: new Set() };
   jnVoreinstellung();
   dialogAuf('Jahr anlegen', jnMaske(), 'Jahr anlegen', jahrAnlegenTun, false);
 }
@@ -10569,10 +10648,16 @@ function jahrAnlegen() {
    keinen Vortrag, und eine, die es im Zieljahr noch nicht gibt, erst recht
    nicht. */
 function jnVoreinstellung() {
-  const j = _jn.jahr;
   jnKategorien().forEach(x => _jn.kat.add(x.k.id));
-  _jn.saldo.clear(); _jn.raten.clear();
-  jnGlaeubiger().forEach(x => { if (x.end > 0.005) _jn.saldo.add(x.v.id); });
+  _jn.saldo.clear(); _jn.raten.clear(); _jn.weg.clear();
+  /* U-49: Ein Glaeubiger, dessen Endsaldo null ist, ist getilgt — und ein
+     getilgter gehoert nicht ins neue Jahr. Er steht deshalb voreingestellt
+     auf «ab hier weg» statt auf «Saldo vortragen»; die beiden schliessen
+     einander aus. Wer trotzdem will, dass er stehenbleibt, nimmt den Haken
+     weg — das ist ein Handgriff statt eines Suchens. */
+  jnGlaeubiger().forEach(x => {
+    if (Math.abs(x.end) < 0.005) _jn.weg.add(x.v.id); else _jn.saldo.add(x.v.id);
+  });
 }
 /* Eine Kategorie steht in der Liste, wenn sie im ZIELJAHR sichtbar ist und
    mindestens eine eigene, nicht gespiegelte Zeile fuehrt. Gespiegelte Zeilen
@@ -10590,7 +10675,11 @@ function jnKategorien() {
    also genau die Zahl, die in der Uebertragsspalte der Tabelle steht. */
 function jnGlaeubiger() {
   const j = _jn.jahr, vor = String(j - 1);
-  return GRUPPEN.map(g => ({ g, liste: ordListe('verb', g.id).filter(v => v.aktiv !== false)
+  /* U-49: Wer schon frueher ausgeblendet wurde, steht hier nicht mehr — er
+     ist keine Entscheidung dieses Jahrgangs mehr. Gefragt wird nach dem
+     VORjahr: Ein Glaeubiger, der ab dem Zieljahr ausgeblendet ist, soll
+     sichtbar bleiben, damit man ihn zurueckholen kann. */
+  return GRUPPEN.map(g => ({ g, liste: ordListe('verb', g.id).filter(v => verbSicht(v, j - 1))
     .map(v => ({ v, end: rd(verbindPrognose(v, j - 1, 11)), hatRaten: jnWert((v.raten || {})[vor]) })) }))
     .filter(x => x.liste.length)
     .reduce((a, x) => a.concat(x.liste.map(y => Object.assign({ g: x.g }, y))), []);
@@ -10600,21 +10689,31 @@ function jnMaske() {
   const kats = jnKategorien();
   const gl = jnGlaeubiger();
   const zeilenZahl = kats.reduce((a, x) => a + (_jn.kat.has(x.k.id) ? x.mit : 0), 0);
-  const saldoSum = rd(gl.reduce((a, x) => a + (_jn.saldo.has(x.v.id) ? x.end : 0), 0));
-  const saldoN = gl.filter(x => _jn.saldo.has(x.v.id)).length;
-  const ratenN = gl.filter(x => _jn.raten.has(x.v.id)).length;
+  const saldoSum = rd(gl.reduce((a, x) =>
+    a + (_jn.saldo.has(x.v.id) && !_jn.weg.has(x.v.id) ? x.end : 0), 0));
+  const wegN   = gl.filter(x => _jn.weg.has(x.v.id)).length;
+  const saldoN = gl.filter(x => _jn.saldo.has(x.v.id) && !_jn.weg.has(x.v.id)).length;
+  const ratenN = gl.filter(x => _jn.raten.has(x.v.id) && !_jn.weg.has(x.v.id)).length;
+  /* U-49: Wer ausgeblendet wird und trotzdem einen Restsaldo traegt, nimmt
+     echte Schuld aus dem Schuldenberg. Das wird gesagt, mit Zahl — und
+     nicht verhindert: Die Zahlen gehoeren Albrecht. */
+  const wegRest = gl.filter(x => _jn.weg.has(x.v.id) && Math.abs(x.end) > 0.005);
+  const wegRestSum = rd(wegRest.reduce((a, x) => a + x.end, 0));
   let letzteG = null;
   const glZeilen = gl.map(x => {
     const kopf = x.g.id !== letzteG ? `<div class="jn-grp">${x.g.name}</div>` : '';
     letzteG = x.g.id;
-    const an = _jn.saldo.has(x.v.id);
-    return kopf + `<div class="jn-zeile${an ? '' : ' aus'}">
-      <span class="nam">${htmlText(x.v.bezeichnung)}</span>
+    const weg = _jn.weg.has(x.v.id), an = _jn.saldo.has(x.v.id) && !weg;
+    return kopf + `<div class="jn-zeile${weg ? ' weg' : (an ? '' : ' aus')}">
+      <span class="nam">${htmlText(x.v.bezeichnung)}${
+        weg && Math.abs(x.end) > 0.005 ? '<span class="jn-rest" title="Diese Schuld ist nicht getilgt">!</span>' : ''}</span>
       <span class="bet">${x.end > 0.005 || x.end < -0.005 ? fmt(x.end) : '–'}</span>
       <span class="zell"><input type="checkbox" data-jns="${x.v.id}"${an ? ' checked' : ''}
-        aria-label="Endsaldo als Anfangssaldo ${j} übernehmen"></span>
-      <span class="zell"><input type="checkbox" data-jnr="${x.v.id}"${_jn.raten.has(x.v.id) ? ' checked' : ''}
-        ${x.hatRaten ? '' : 'disabled'} aria-label="Ratenplan ${vor} fortschreiben"></span></div>`;
+        ${weg ? 'disabled' : ''} aria-label="Endsaldo als Anfangssaldo ${j} übernehmen"></span>
+      <span class="zell"><input type="checkbox" data-jnr="${x.v.id}"${_jn.raten.has(x.v.id) && !weg ? ' checked' : ''}
+        ${x.hatRaten && !weg ? '' : 'disabled'} aria-label="Ratenplan ${vor} fortschreiben"></span>
+      <span class="zell"><input type="checkbox" data-jnw="${x.v.id}"${weg ? ' checked' : ''}
+        aria-label="Ab ${j} ausblenden"></span></div>`;
   }).join('');
   return `<div id="jnMaske">
     <div class="jn-jahr">
@@ -10640,7 +10739,8 @@ function jnMaske() {
       <div class="jn-skopf"><span class="t">Schulden</span>
         <span class="sp">Endsaldo<br>31.12.${vor}</span>
         <span class="sp">Saldo<button type="button" data-jnalle="s${saldoN ? 0 : 1}">${saldoN ? 'keine' : 'alle'}</button></span>
-        <span class="sp">Raten<button type="button" data-jnalle="r${ratenN ? 0 : 1}">${ratenN ? 'keine' : 'alle'}</button></span></div>
+        <span class="sp">Raten<button type="button" data-jnalle="r${ratenN ? 0 : 1}">${ratenN ? 'keine' : 'alle'}</button></span>
+        <span class="sp">Ab hier<br>weg<button type="button" data-jnalle="w${wegN ? 0 : 1}">${wegN ? 'keine' : 'alle'}</button></span></div>
       ${glZeilen}</div>` : ''}
 
     <div class="jn-vor">
@@ -10648,10 +10748,21 @@ function jnMaske() {
         <span class="m">— aus ${kats.filter(x => _jn.kat.has(x.k.id)).length} von ${kats.length} Kategorien</span></div>
       ${gl.length ? `<div class="z"><b class="num">${saldoN}</b> Anfangssaldi gesetzt
         <span class="m">— zusammen </span><b class="num">${fmt(saldoSum)}</b></div>
-      <div class="z"><b class="num">${ratenN}</b> Ratenpläne fortgeschrieben</div>` : ''}
+      <div class="z"><b class="num">${ratenN}</b> Ratenpläne fortgeschrieben</div>
+      <div class="z"><b class="num">${wegN}</b> Gläubiger ab ${j} ausgeblendet</div>` : ''}
+      ${wegRest.length ? `<div class="jn-warn"><b>${wegRest.length === 1
+        ? 'Ein ausgeblendeter Gläubiger ist nicht getilgt'
+        : wegRest.length + ' ausgeblendete Gläubiger sind nicht getilgt'}:</b>
+        ${wegRest.map(x => htmlText(x.v.bezeichnung) + ' ' + fmt(x.end)).join(' · ')}.
+        Zusammen <b class="num">${fmt(wegRestSum)}</b> fallen ab ${j} aus dem Schuldenberg.
+        Die Jahrgänge davor bleiben unberührt.</div>` : ''}
       <div class="f"><b>Saldo</b> setzt den Endsaldo per 31.12.${vor} als <b>Anfangssaldo per
         1.1.${j}</b>. Er gilt ab da; die Jahrgänge davor bleiben unberührt.
-        <b>Raten</b> schreibt den Ratenplan des Vorjahrs fort. Beides ist danach änderbar.</div>
+        <b>Raten</b> schreibt den Ratenplan des Vorjahrs fort.
+        <b>Ab hier weg</b> blendet den Gläubiger ab ${j} aus — er verschwindet aus allen
+        Jahren ab ${j}, nicht nur aus diesem, und die Vorjahre zeigen ihn weiter mit seinen
+        Zahlen. Zurückholen geht in seiner Maske, Feld «Ausgeblendet ab Jahr».
+        Alles drei ist danach änderbar.</div>
     </div>
     <p class="meldung">Nicht übernommen heisst <b>null</b>, nicht «nichts» — die Zeile bleibt stehen.
       «Verbindlichkeiten» und «Rechnungen» stehen nicht in der Budgetliste: sie sind gespiegelt
@@ -10672,10 +10783,15 @@ document.addEventListener('change', ev => {
        eine Auswahl, die fuer 2027 galt, sagt ueber 2031 nichts. */
     _jn.jahr = x; _jn.kat.clear(); jnVoreinstellung(); return jnNeu();
   }
-  const id = t.dataset.jnk || t.dataset.jns || t.dataset.jnr;
+  const id = t.dataset.jnk || t.dataset.jns || t.dataset.jnr || t.dataset.jnw;
   if (!id) return;
-  const menge = t.dataset.jnk ? _jn.kat : t.dataset.jns ? _jn.saldo : _jn.raten;
+  const menge = t.dataset.jnk ? _jn.kat : t.dataset.jns ? _jn.saldo
+              : t.dataset.jnr ? _jn.raten : _jn.weg;
   if (t.checked) menge.add(id); else menge.delete(id);
+  /* U-49: «ab hier weg» und «Saldo vortragen» schliessen einander aus — ein
+     Glaeubiger, den es ab diesem Jahr nicht mehr gibt, braucht keinen
+     Anfangssaldo und keinen Ratenplan. Wer ihn wegnimmt, nimmt beides mit. */
+  if (t.dataset.jnw && t.checked) { _jn.saldo.delete(id); _jn.raten.delete(id); }
   jnNeu();
 });
 document.addEventListener('click', ev => {
@@ -10685,11 +10801,16 @@ document.addEventListener('click', ev => {
   const art = b.dataset.jnalle[0], an = b.dataset.jnalle[1] === '1';
   if (art === 'k') { _jn.kat.clear(); if (an) jnKategorien().forEach(x => _jn.kat.add(x.k.id)); }
   else {
-    const menge = art === 's' ? _jn.saldo : _jn.raten;
+    const menge = art === 's' ? _jn.saldo : art === 'r' ? _jn.raten : _jn.weg;
     menge.clear();
     if (an) jnGlaeubiger().forEach(x => {
-      if (art === 's') menge.add(x.v.id); else if (x.hatRaten) menge.add(x.v.id);
+      if (art === 's')      { if (!_jn.weg.has(x.v.id)) menge.add(x.v.id); }
+      else if (art === 'r') { if (x.hatRaten && !_jn.weg.has(x.v.id)) menge.add(x.v.id); }
+      else                  menge.add(x.v.id);
     });
+    /* Wer alle wegnimmt, nimmt ihre Saldi und Raten mit — sonst stuenden
+       Haken fuer Glaeubiger, die es im neuen Jahr gar nicht gibt. */
+    if (art === 'w' && an) { _jn.saldo.clear(); _jn.raten.clear(); }
   }
   jnNeu();
 }, true);
@@ -10722,8 +10843,30 @@ function jahrAnlegenTun() {
   D.verbindlichkeiten.forEach(v => {
     if (!v.raten)   v.raten = {};      /* Behaelter zuerst, sonst wirft schon das Lesen */
     if (!v.staende) v.staende = {};
+    /* U-49: Wer schon vor dem Zieljahr ausgeblendet war, bleibt unberuehrt.
+       Er stand nicht in der Maske, also ist er auch keine Entscheidung
+       dieses Jahrgangs — und ein Ratenplan fuer ein Jahr, in dem es ihn
+       nicht gibt, waere eine Zahl ohne Gegenstand. */
+    if (!verbSicht(v, j - 1)) return;
+    if (_jn.weg.has(v.id)) {
+      /* «Ab hier weg» heisst ab dem Zieljahr — und raeumt mit, was fuer
+         dieses Jahr sonst dastuende. */
+      v.ausAb = j;
+      delete v.raten[k];
+      delete v.staende[k];
+      return;
+    }
+    /* Nicht weggewaehlt heisst: er bleibt. Ein `ausAb`, das genau auf dieses
+       Jahr zeigte, wird damit zurueckgenommen — sonst liesse sich ein
+       versehentliches Ausblenden nur in der Maske des Glaeubigers heilen. */
+    if (v.ausAb === j) v.ausAb = null;
     const q = _jn.raten.has(v.id) ? v.raten[vor] : null;
-    v.raten[k] = q ? { soll:q.soll, m:q.m.slice() } : { soll:0, m:Array(12).fill(0) };
+    /* U-49: Kein Ratenplan, wo keiner gewollt ist. Bis hierher entstand
+       einer aus lauter Nullen — und stand danach als ausdruecklich
+       gepflegte Null da, die niemand eingetragen hat. jahrLeeren() sagt an
+       derselben Stelle seit U-22 genau das Gegenteil; zwei Stellen
+       derselben App beantworteten dieselbe Frage verschieden. */
+    if (q) v.raten[k] = { soll:q.soll, m:q.m.slice() }; else delete v.raten[k];
     /* Kein Vortrag heisst: KEIN Eintrag. Eine gespeicherte Null waere etwas
        anderes als kein Vortrag — sie zwaenge die Schuld am 1.1. auf null,
        statt sie durchrechnen zu lassen. */
@@ -10827,6 +10970,14 @@ function glaeubigerSpeichern() {
   v.kontoId      = $('#gKonto').value;
   v.anfangsstand = rd(stand);
   v.anfangsdatum = $('#gDatum').value || heuteISO();
+  /* U-49: leer heisst «bleibt sichtbar» und nicht «Jahr 0». Eine Zahl
+     ausserhalb der gefuehrten Jahre waere ein Tippfehler und kein Wunsch —
+     sie wird verworfen, statt den Glaeubiger unsichtbar zu machen. */
+  {
+    const roh = ($('#gAusAb').value || '').trim();
+    const x = parseInt(roh, 10);
+    v.ausAb = (roh === '' || !x || x < 2000 || x > 2100) ? null : x;
+  }
   v.zinssatz     = zins;
   v.gebuehr      = geb;
   v.vereinbarungBis = $('#gBis').value || null;
