@@ -2095,6 +2095,23 @@ function kontosaldo(kId, bisJ, bisM) {
    abgeschlossen und die Fortschreibung beginnt im Folgemonat. */
 function verbindLauf(v, bisJ, bisM, mitPlan) {
   const a = ymOf(v.anfangsdatum), h = ymOf(heuteISO());
+  /* U-35: Vor dem Anfangsdatum gibt es die Schuld nicht. Sie ist dort null
+     und nicht ihr Anfangsstand.
+     Bis hierher lief die Schleife fuer einen Stichmonat vor dem
+     Anfangsdatum gar nicht erst an — und die Funktion gab zurueck, womit sie
+     gestartet war: den vollen Anfangsstand. Eine Steuerschuld, die mit der
+     definitiven Veranlagung im Januar 2027 entsteht, stand damit schon in
+     allen zwoelf Monaten 2026 in der Tabelle und im Schuldenberg. Das Feld
+     `anfangsdatum` sagt «ab hier» — es wurde nur vorwaerts gelesen, nie
+     rueckwaerts.
+     Die Grenze sitzt am Anfangsdatum SELBST und nicht am verschobenen
+     Startmonat zwei Zeilen weiter unten: Ist das Anfangsdatum der
+     Monatsletzte, besteht die Schuld an diesem Tag bereits — nur faellt in
+     diesem Monat nichts mehr an, weil er abgeschlossen ist. Wer die Grenze
+     an den verschobenen Startmonat legte, liesse eine am 31.12. entstandene
+     Schuld im Dezember verschwinden.
+     Gefunden von Albrecht am 19.08.2026 beim Uebernehmen des Budgets 2027. */
+  if (bisJ < a.j || (bisJ === a.j && bisM < a.m)) return 0;
   let s = v.anfangsstand, j = a.j, m = a.m;
   const z = v.zinssatz || 0, g = v.gebuehr || 0;
   if (a.t >= tageImMonat(a.j, a.m)) { m++; if (m === 12) { m = 0; j++; } }
