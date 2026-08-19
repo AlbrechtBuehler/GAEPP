@@ -1522,6 +1522,44 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
   /* Statt der zwölf Spalten die Monatstafel — vier mal drei. */
   .mraster{grid-template-columns:repeat(4,1fr)}
 }
+/* ===================================================================
+   Eingabefelder in den Karten (U-41). Lesen und Eintragen sind nicht
+   mehr zwei Ansichten: die Zelle, die den Wert zeigt, nimmt ihn auch
+   entgegen. Der Feldrahmen bleibt unsichtbar, bis die Maus darauf steht
+   — sonst wird aus einem Raster ein Formular mit vierzehn Kaesten.
+   =================================================================== */
+.k-budget .praster .r{grid-template-columns:250px 84px repeat(12,1fr) 88px}
+.praster .c.bearbeitbar,.mraster>div.bearbeitbar{padding:0}
+.praster .c.bearbeitbar input{width:100%;height:30px;background:none;
+  border:1px solid transparent;border-radius:5px;text-align:right;padding:0 9px;
+  color:#c3ccd6;font:400 13px/1 'IBM Plex Mono',monospace}
+.praster .c.bearbeitbar.jetzt{display:block}
+.praster .c.bearbeitbar.jetzt input{color:#fff}
+.praster .c.bearbeitbar input:hover{border-color:var(--line)}
+.praster .c.bearbeitbar input:focus{border-color:var(--accent);background:#0b1116;
+  color:#fff;outline:none}
+.praster .c.bearbeitbar.markiert input{background:rgba(240,160,141,.12)}
+.mraster>div.bearbeitbar{padding:8px 3px 7px}
+.mraster>div.bearbeitbar input{width:100%;height:24px;margin-top:2px;background:none;
+  border:1px solid transparent;border-radius:4px;text-align:center;padding:0 2px;
+  color:#c3ccd6;font:400 12.5px/1 'IBM Plex Mono',monospace}
+.mraster>div.bearbeitbar input:hover{border-color:var(--rule)}
+.mraster>div.bearbeitbar input:focus{border-color:var(--accent);background:#0b1116;
+  color:#fff;outline:none}
+.praster .p .zwerk{margin-left:auto;opacity:0;transition:opacity .12s}
+.praster .r:hover .p .zwerk{opacity:1}
+.praster .p .zwerk button{background:none;border:0;padding:0 2px;cursor:pointer;
+  font:400 10.5px/1 'IBM Plex Mono',monospace;color:#5f6874}
+.praster .p .zwerk button:hover{color:var(--err)}
+.praster .p .t{cursor:pointer}
+.praster .p .t:hover{color:#fff}
+/* Der Zaehler steht rechts beim Pfeil statt als Wort in der Zeile — er sagt,
+   wie viel hinter dem Aufklappen liegt, und muss dafuer nicht ausgeschrieben
+   werden. */
+.k-budget .kkopf,.k-budget .streifen>.reihe{
+  grid-template-columns:360px 108px 108px 108px 170px 118px 1fr 54px}
+.streifen .pfeil .anz{color:#5f6874;margin-right:5px}
+
 /* Zwei Regeln, die im Bauplan fehlten und ohne die die Karten am Code
    scheitern — nicht am Aussehen (U-40):
    1. .inhalt[data-modus="tabellen"] traegt overflow:hidden; gerollt wird
@@ -1749,12 +1787,13 @@ let S = {                /* der Anzeigezustand — nur localStorage, nie in die 
      ABWEICHT. Sonst friere eine alte Sitzung die heutigen Vorgabewerte
      ein, und eine geaenderte Zahl im Stylesheet kaeme nie an. */
   vollbild: false, breiten: { budget: {}, verbind: {} },
-  /* U-40: Die Ansicht ist eine Frage je Bereich, nicht eine der App. Schulden
-     liest man als Karten, das Budget fuellt man als Tabelle aus. Ein globaler
-     Schalter zwaenge dazu, ihn in jedem Bereich neu zu setzen.
-     kOffen haelt die aufgeklappten Karten — leer heisst alle zu, das Gegenteil
+  /* U-41: `ansicht` ist weggefallen. Lesen und Eintragen sind nicht mehr zwei
+     Ansichten, sondern eine: die Karte traegt die Eingabefelder selbst. Ein
+     Umschalter zwischen zwei Ansichten derselben Zahlen war eine Trennung,
+     die es in der Arbeit nicht gibt — man liest und traegt im selben Griff ein.
+     kOffen haelt die aufgeklappte Karte — leer heisst alle zu, das Gegenteil
      von S.zu bei der Tabelle. Dort ist Offen der Normalfall, hier Zu. */
-  ansicht: { budget:'karten', verbind:'karten', rechnung:'tabelle' }, kOffen: []
+  kOffen: []
 };
 let GH = { repo:'', branch:'main', token:'' };
 let _sig, _sha = null, _pushT = null, _ro = false;
@@ -1780,18 +1819,13 @@ function persistAnsicht() {
   if (!D) return;
   try { localStorage.setItem(SCHLUESSEL_DATEN, JSON.stringify({ d: D, s: S })); } catch (err) {}
 }
-/* U-40: Ein alter Stand kennt `ansicht` nicht — dann gilt die Vorgabe. Traegt
-   er eine unbekannte Ansicht, gewinnt sonst die Datei, weil start() den Zustand
-   mit Object.assign UEBER die Vorgabe legt: der Bereich stuende dann leer da,
-   weil zeichneTabellen() weder den einen noch den anderen Zweig nimmt.
-   Deshalb gerufen an beiden Stellen, an denen S von aussen gefuellt wird. */
+/* U-41: Ein alter Stand aus der Zeit des Umschalters traegt noch `ansicht`
+   und vielleicht ein kOffen falscher Gestalt. Beides faengt diese Stelle ab,
+   gerufen an den zwei Orten, an denen S von aussen gefuellt wird. Ohne sie
+   liesse ein `kOffen: null` aus einer alten Sitzung die erste Karte werfen. */
 function ansichtFangen() {
-  const vor = { budget:'karten', verbind:'karten', rechnung:'tabelle' };
-  S.ansicht = Object.assign({}, vor, S.ansicht || {});
-  Object.keys(vor).forEach(b => {
-    if (S.ansicht[b] !== 'karten' && S.ansicht[b] !== 'tabelle') S.ansicht[b] = vor[b];
-  });
   if (!Array.isArray(S.kOffen)) S.kOffen = [];
+  delete S.ansicht;
 }
 
 /* ===================================================================
@@ -3036,26 +3070,19 @@ function tafelKennzahlen() {
    Ansicht oder eine Verzweigung auf eine Funktion, die es noch nicht gibt.
    Schritt 4 traegt `budget: katKarten` nach, und mehr ist dort nicht zu tun. */
 const KARTENBAU = { budget: () => katKarten(), verbind: () => verbindKarten() };
+/* U-41: Keine Wahl mehr, nur noch eine Feststellung. Karten, wo es sie gibt —
+   ausser in «Alle Jahre»: dort ist jede Spalte ein Jahr, es gibt kein Ist
+   eines Monats und keinen Ratenplan je Monat. Die Tabelle bleibt genau dafuer
+   stehen und ist der einzige Ort, an dem sie noch erscheint. */
 function ansichtVon(bereich) {
-  if (!KARTENBAU[bereich] || S.zeitraum === 'alle') return 'tabelle';
-  return (S.ansicht && S.ansicht[bereich]) === 'tabelle' ? 'tabelle' : 'karten';
+  return (!KARTENBAU[bereich] || S.zeitraum === 'alle') ? 'tabelle' : 'karten';
 }
-/* Der Schalter steht in BEIDEN Ansichten an derselben Stelle des Tafelkopfs.
-   Stuende er nur auf der Karte, gaebe es aus der Tabelle keinen Weg zurueck —
-   die Falle, in die der Bauplan lief, weil er ihn nur dort auffuehrte.
-   Der CSV-Knopf sitzt am selben Ort und exportiert, was die TABELLE dieses
-   Bereichs zeigt — auch wenn man ihn aus der Kartenansicht drueckt. Das
-   steht so in seinem title, weil es sonst niemand erraet. */
-function ansichtSchalter(bereich) {
-  if (!KARTENBAU[bereich]) return '';
-  const a = ansichtVon(bereich), fest = S.zeitraum === 'alle';
-  return `<span class="kansicht"><span class="schalter" role="group" aria-label="Ansicht">
-      <button type="button" data-ansicht="${bereich}:karten" aria-pressed="${a==='karten'}"
-        ${fest?'disabled title="In «Alle Jahre» gibt es kein Ist eines Monats"':''}>Lesen</button>
-      <button type="button" data-ansicht="${bereich}:tabelle" aria-pressed="${a==='tabelle'}"
-        >Eintragen</button></span>
-    <button class="knopf klein" type="button" data-csv="${bereich}"
-      title="Exportiert, was die Tabelle dieses Bereichs zeigt">CSV</button></span>`;
+/* U-41: Hier stand der Umschalter «Lesen · Eintragen». Er ist weg, weil die
+   Trennung weg ist: die Karte traegt ihre Eingabefelder selbst. Geblieben ist
+   der CSV-Knopf, der an derselben Stelle im Tafelkopf sitzt. */
+function tafelWerkzeug(bereich) {
+  return `<span class="kansicht"><button class="knopf klein" type="button" data-csv="${bereich}"
+    title="Exportiert, was dieser Bereich zeigt">CSV</button></span>`;
 }
 function zeichneTabellen() {
   /* Die Reiterzeile ist mit U-1 in die Seitenleiste gewandert, die
@@ -3952,7 +3979,7 @@ function budgetTabelle() {
         >${S.monateAlle ? 'Leere Monate falten' : weg + ' leere Monate gefaltet'}</button>` : ''}
       ${leerZeilen || S.zeilenAlle ? `<button class="knopf klein" data-zeilenauf="${S.zeilenAlle?'0':'1'}"
         >${S.zeilenAlle ? 'Leere Zeilen falten' : leerZeilen + ' leere Zeilen gefaltet'}</button>` : ''}
-      ${ansichtSchalter('budget')}
+      ${tafelWerkzeug('budget')}
       ${vollbildKnopf()}
     </div>
     <div class="filterzeile" id="filterzeile" hidden><span class="lab">${gewaehlt.length ? 'Ausgewählt' : 'Alle sichtbar — wähle aus'}</span>
@@ -4305,7 +4332,6 @@ function katKarten() {
     const soll = monatW(k), ist = laufend ? istKat(k, j, m) : 0;
     const rest = rd(Math.max(0, soll - ist));
     const anteil = soll > 0.005 ? Math.min(1, ist / soll) : 0;
-    const kt = konto(k.kontoId);
     const zeilen = zeilenVon(k.id, j);
     /* Der Jahresverlauf als zwoelf Balken. Math.abs nur fuer die HOEHE —
        eine Kategorie mit Gegenrichtungszeilen kann in einem Monat negativ
@@ -4316,9 +4342,7 @@ function katKarten() {
       <div class="reihe" ${ziel ? `data-bereich="${ziel}"` : `data-kklapp="${k.id}"`}>
         <div class="nam"><span class="chev">${ziel ? '›' : (offen?'▾':'▸')}</span>
           <span class="t">${k.name}</span>
-          <span class="z">${kt ? kt.nr + ' ' + kt.name : ''}${
-            ziel ? ' · gespiegelt' : ' · ' + zeilen.length + (zeilen.length===1?' Position':' Positionen')}</span>
-          ${ziel ? '<span class="z" style="color:var(--accent)">öffnen ›</span>' : ''}</div>
+          ${ziel ? '<span class="z">gespiegelt</span>' : ''}</div>
         <div class="n gross ${ziel?'gespiegelt-wert':''}"${
           ziel ? ' title="kommt aus ' + (ziel === 'verbind' ? 'den Ratenplänen' : 'den erfassten Rechnungen') + '"' : ''
           }>${fmtG(soll)}</div>
@@ -4331,7 +4355,7 @@ function katKarten() {
         <div class="kjahr">${werte.map((w,i) => `<i class="${
           i === h.m && j === h.j ? 'jetzt' : (j > h.j || (j === h.j && i > h.m) ? 'kuenftig' : '')
           }" style="height:${Math.max(2, Math.round(w / max * 100))}%"></i>`).join('')}</div>
-        <div class="pfeil">›</div>
+        <div class="pfeil">${ziel ? '' : `<span class="anz">${zeilen.length}</span>`}›</div>
       </div>
       ${offen && !ziel ? katKarteAuf(k) : ''}</article>`;
   };
@@ -4345,7 +4369,7 @@ function katKarten() {
       <span class="kopfwerkzeug"><button class="knopf klein ${gewaehlt.length?'primaer':''}" id="btnKat"
         aria-expanded="false">${gewaehlt.length ? gewaehlt.length + ' von ' + kats.length
           + ' Kategorien' : 'Kategorien'} ▾</button></span>
-      ${ansichtSchalter('budget')}
+      ${tafelWerkzeug('budget')}
       ${vollbildKnopf()}
     </div>
     <div class="filterzeile" id="filterzeile" hidden><span class="lab">${
@@ -4393,22 +4417,41 @@ function katKarten() {
 function katKarteAuf(k) {
   const j = S.jahr, h = ymOf(heuteISO());
   const zeilen = zeilenVon(k.id, j);
-  const kopf = `<div class="r kopf"><div class="p">Position</div>${
+  const kopf = `<div class="r kopf"><div class="p">Position</div><div class="c">Soll</div>${
     [...Array(12).keys()].map(i => `<div class="c" ${i===h.m&&j===h.j?'style="color:var(--accent)"':''
       }>${MON[i].slice(0,3)}</div>`).join('')}<div class="j">Jahr</div></div>`;
   const reihen = zeilen.map(z => {
-    const gesp = gespiegelt(z);
+    const gesp = gespiegelt(z), fest = gesp || _ro;
+    const soll = zeilenSoll(z, j);
+    /* Das Soll war bis U-41 nur in der Budgettabelle zu pflegen. Da die nur
+       noch in «Alle Jahre» erscheint und dort nichts entgegennimmt, waere es
+       ohne diese Spalte nirgends mehr aenderbar. */
+    const sollZ = fest
+      ? `<div class="c ${gesp?'gespiegelt-wert':''}">${fmtG0(soll)}</div>`
+      : `<div class="c bearbeitbar" data-soll="${z.id}"><input type="text" inputmode="decimal"
+           value="${soll ? fmtG(soll) : ''}" placeholder="0"></div>`;
     const zellen = [...Array(12).keys()].map(i => {
       const w = zeilenwert(z, j, i), jetzt = i === h.m && j === h.j;
       const offenHier = jetzt && !gesp && rd(w - istZeile(z, j, i)) > 0.005;
-      return `<div class="c ${jetzt?'jetzt':''} ${offenHier?'hatoffen':''}">${fmtG0(w)}${
-        jetzt && Math.abs(w) >= 0.005 ? '<span class="pkt"></span>' : ''}</div>`;
+      const kl = `c ${jetzt?'jetzt':''} ${offenHier?'hatoffen':''}`;
+      if (fest) return `<div class="${kl}">${fmtG0(w)}</div>`;
+      const mark = S.markiert.includes(z.id + ':' + i) ? ' markiert' : '';
+      return `<div class="${kl} bearbeitbar${mark}" data-z="${z.id}" data-m="${i}"><input
+        type="text" inputmode="decimal" value="${w ? fmtG(w) : ''}" placeholder="0"></div>`;
     }).join('');
-    return `<div class="r"><div class="p"><span class="t">${z.bezeichnung}</span>
-        <span class="weg">${zahlungsweg(z)}</span></div>${zellen}
+    /* data-oart/-zeile/-zkat bringen Alt+Pfeil hoch/runter mit — dieselbe
+       Umordnung wie in der Tabelle, ohne eine zweite Mechanik. */
+    return `<div class="r" data-oart="zeile" data-zeile="${z.id}" data-zkat="${k.id}">
+      <div class="p"><span class="t" data-zblatt="${z.id}"
+          title="Stammdaten, Verlauf und Jahre">${z.bezeichnung}</span>
+        <span class="weg">${zahlungsweg(z)}</span>
+        ${gesp || _ro ? '' : `<span class="zwerk"><button type="button" data-weg="${z.id}"
+          title="Diese Position ab ${j} nicht mehr zeigen">ab ${j} aus</button></span>`}</div>
+      ${sollZ}${zellen}
       <div class="j">${fmtG0(zeilenJahr(z, j))}</div></div>`;
   }).join('');
-  const summe = `<div class="r summe"><div class="p" style="color:var(--muted)">Summe ${k.name}</div>${
+  const summe = `<div class="r summe"><div class="p" style="color:var(--muted)">Summe ${k.name}</div>
+    <div class="c">${fmtG0(rd(zeilen.reduce((a,z)=>a+(zeilenSoll(z,j)||0)*(z.gegenrichtung?-1:1),0)))}</div>${
     [...Array(12).keys()].map(i => `<div class="c ${i===h.m&&j===h.j?'jetzt':''}">${
       fmtG0(katSumme(k, j, i))}</div>`).join('')}
     <div class="j" style="color:#fff">${fmtG0(rd([...Array(12).keys()].reduce(
@@ -4416,14 +4459,13 @@ function katKarteAuf(k) {
   const rest = istLaufenderMonat(j, S.monat)
     ? rd(Math.max(0, katSumme(k, j, S.monat) - istKat(k, j, S.monat))) : 0;
   return `<div class="kauf"><div class="praster">${kopf}${reihen}${summe}
-    <div class="fuss"><span class="leg"><span class="pkt" style="width:5px;height:5px;
-      border-radius:50%;background:var(--accent);display:inline-block"></span>gebucht</span>
-      ${rest > 0.005 ? `<span class="leg"><span style="width:5px;height:5px;border-radius:50%;
-        border:1px solid var(--err);display:inline-block"></span>offen ${fmtG(rest)}</span>` : ''}
+    <div class="fuss"><span>Der laufende Monat steht hell${
+      rest > 0.005 ? ` · rot umrandet heisst budgetiert und noch nicht gebucht — offen ${fmtG(rest)}` : ''}</span>
       <span style="flex:1"></span>
-      <button class="knopf klein" type="button" data-ansicht="budget:tabelle"
-        >Diese Kategorie eintragen</button></div></div></div>`;
+      ${_ro ? '' : `<button class="knopf klein" type="button" data-add="${k.id}">Zeile hinzufügen</button>`}
+      </div></div></div>`;
 }
+
 /* ---- Verbindlichkeiten (A-40, A-41) --------------------------------- */
 function verbindTabelle() {
   const spAlle = spaltenKoepfe(), alle = S.zeitraum === 'alle';
@@ -4503,7 +4545,7 @@ function verbindTabelle() {
       <span class="nr">Konto 08 Schulden</span>
       ${weg || S.monateAlle ? `<button class="knopf klein" data-faltauf="${S.monateAlle?'0':'1'}"
         >${S.monateAlle ? 'Leere Monate falten' : weg + ' leere Monate gefaltet'}</button>` : ''}
-      ${ansichtSchalter('verbind')}
+      ${tafelWerkzeug('verbind')}
       ${vollbildKnopf()}</div>
     <div class="rollflaeche"><table class="gross fixiert t-verbind">
       <thead><tr class="zeile-titel"><th class="t">Bezeichnung${greifer('w1', true)}</th
@@ -4650,14 +4692,21 @@ function verbindKarten() {
 
   return `<div class="tafel-kopf">
       <span class="titel">Verbindlichkeiten ${zeitTitel()}</span>${tafelKennzahlen()}
-      ${ansichtSchalter('verbind')}
+      ${tafelWerkzeug('verbind')}
       ${vollbildKnopf()}
     </div>
     <div class="kflaeche k-verbind">
       <div class="kgruppe" style="padding-top:0">
         <span class="t">Schulden ${S.zeitraum === 'monat' ? MON[S.monat] + ' ' + S.jahr : S.jahr}</span>
         <span class="num" style="font-size:19px">${fmt(total)}</span>
-        <span class="z">Raten diesen Monat ${fmt(ratenM)} · ${sfText}</span></div>
+        <span class="z">Raten diesen Monat ${fmt(ratenM)} · ${sfText}</span>
+        <!-- U-41: Ein Glaeubiger entstand bis hierher nur ueber die Kopfzeile
+             einer Gruppe in der Tabelle oder ueber den Verwaltungsbaum. Beides
+             ist ein Umweg fuer etwas, das man an dieser Stelle tut. Der Knopf
+             ruft dieselbe Maske (data-vadd) — die Gruppe steht dort als Feld
+             und laesst sich aendern, deshalb genuegt hier eine Vorgabe. -->
+        ${_ro ? '' : `<button class="knopf klein" type="button" style="margin-left:auto"
+          data-vadd="${GRUPPEN[0].id}">Gläubiger erfassen</button>`}</div>
       <div class="kkopf"><div style="padding-left:14px">Gläubiger</div>
         <div style="text-align:right">Stand</div><div style="text-align:right">Rate</div>
         <div style="padding-left:22px">Getilgt</div>
@@ -4675,10 +4724,18 @@ function verbindKarteAuf(v) {
   const h = ymOf(heuteISO());
   const jahre = Object.keys(D.budget).map(Number).sort();
   const letztes = jahre.length ? jahre[jahre.length - 1] : S.jahr;
+  /* U-41: Die zwoelf Monatsraten sind hier eintragbar. Bis dahin fuehrte der
+     einzige Weg ueber die Tabelle, und die erscheint seit U-41 nur noch in
+     «Alle Jahre» — dort gibt es keinen Ratenplan je Monat. Dieselben
+     data-Attribute wie die Tabellenzelle: der Verteiler oben kennt sie
+     schon, es kommt keine zweite Speicherstelle dazu. */
   const monate = [...Array(12).keys()].map(m => {
-    const jetzt = S.jahr === h.j && m === h.m;
-    return `<div class="${jetzt?'jetzt':''}"><div class="m">${MON[m].slice(0,3).toUpperCase()}</div>
-      <div class="v">${fmtG0(rate(v, S.jahr, m)) || '–'}</div></div>`;
+    const jetzt = S.jahr === h.j && m === h.m, r = rate(v, S.jahr, m);
+    const kopf = `<div class="m">${MON[m].slice(0,3).toUpperCase()}</div>`;
+    if (_ro) return `<div class="${jetzt?'jetzt':''}">${kopf}<div class="v">${fmtG0(r) || '–'}</div></div>`;
+    const mark = S.markiert.includes(v.id + ':' + m) ? ' markiert' : '';
+    return `<div class="${jetzt?'jetzt ':''}bearbeitbar${mark}" data-vr="${v.id}" data-m="${m}">${kopf}
+      <input type="text" inputmode="decimal" value="${r ? fmtG(r) : ''}" placeholder="0"></div>`;
   }).join('');
   const jahrSumme = rd([...Array(12).keys()].reduce((s,m) => s + rate(v, S.jahr, m), 0));
   const stufen = [];
@@ -8826,7 +8883,7 @@ document.addEventListener('click', async ev => {
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
-    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-ansicht],[data-kklapp],[data-buchen],[data-csv],#ablage,button');
+    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-buchen],[data-csv],#ablage,button');
   if (!t) return;
 
   /* --- Kachel oeffnet ihr Blatt --- */
@@ -8895,15 +8952,10 @@ document.addEventListener('click', async ev => {
     return blattAuf('konto', kontoId, 'buchen');
   }
 
-  /* --- U-40: Lesen und Eintragen, und die eine offene Karte ---
+  /* --- U-40/U-41: die eine offene Karte ---
      `zeichne()` speichert den Anzeigezustand am Ende selbst — ein
-     persistAnsicht() davor waere ein zweiter Schreibvorgang fuer dasselbe. */
-  if (t.dataset.ansicht) {
-    const [b, a] = t.dataset.ansicht.split(':');
-    if (S.ansicht[b] === a) return;
-    S.ansicht[b] = a; return zeichne();
-  }
-  /* EINE offene Karte, nicht viele: das aufgeklappte Raster ist hoch, und zwei
+     persistAnsicht() davor waere ein zweiter Schreibvorgang fuer dasselbe.
+     EINE offene Karte, nicht viele: das aufgeklappte Raster ist hoch, und zwei
      offene Karten heben den Vergleich auf, fuer den die Streifen da sind.
      Deshalb `[id]` und nicht `.concat([id])` — der Unterschied zu S.zu ist
      Absicht und keine Nachlaessigkeit. */
@@ -9272,7 +9324,7 @@ window.addEventListener('resize', fahneSetzen);
 
 /* ---- Zellen: Strg-Klick markiert, Doppelklick uebertraegt (A-33/A-37) --- */
 document.addEventListener('click', ev => {
-  const td = ev.target.closest('td.bearbeitbar');
+  const td = ev.target.closest('.bearbeitbar');   /* U-41 */
   if (!td || !ev.ctrlKey) return;
   ev.preventDefault();
   const k = (td.dataset.z || td.dataset.vr) + ':' + td.dataset.m;
@@ -9281,7 +9333,7 @@ document.addEventListener('click', ev => {
   persistAnsicht();
 });
 document.addEventListener('dblclick', ev => {
-  const td = ev.target.closest('td.bearbeitbar[data-z],td.bearbeitbar[data-vr]');
+  const td = ev.target.closest('.bearbeitbar[data-z],.bearbeitbar[data-vr]');   /* U-41 */
   if (!td) return;
   ev.preventDefault();
   uebertragen(td.dataset.vr ? 'rate' : 'budget', td.dataset.vr || td.dataset.z, +td.dataset.m);
@@ -9296,7 +9348,13 @@ document.addEventListener('dblclick', ev => {
    die Zelle selbst (Zeile + Monat), nicht ihre Stelle im DOM.
    Tab / Shift+Tab gehen quer, Enter und die Pfeile hoch/runter senkrecht.
    =================================================================== */
-function bearbeitbareZellen() { return [...document.querySelectorAll('#tafel td.bearbeitbar')]; }
+/* U-41: `.bearbeitbar` statt `td.bearbeitbar` — seit die Karten Eingabe-
+   felder tragen, ist eine Zelle nicht mehr zwingend ein <td>. Alles darunter
+   (zellSchluessel, zielFokus, nachbarZelle) liest nur data-Attribute und
+   funktioniert damit unveraendert weiter. Die Reihenfolge in der flachen
+   Liste ist die des DOM — im Kartenraster also Monat fuer Monat, dann
+   naechste Position. Genau wie in der Tabelle. */
+function bearbeitbareZellen() { return [...document.querySelectorAll('#tafel .bearbeitbar')]; }
 function zellSchluessel(td) {
   if (td.dataset.soll) return 'soll:' + td.dataset.soll;
   return (td.dataset.z ? 'z:' + td.dataset.z : 'vr:' + td.dataset.vr) + ':' + td.dataset.m;
@@ -9314,7 +9372,21 @@ function nachbarZelle(td, richtung) {
     const alle = bearbeitbareZellen();
     return alle[alle.indexOf(td) + richtung] || null;
   }
-  const tr = td.closest('tr'), sp = td.cellIndex, schritt = richtung === 'runter' ? 1 : -1;
+  const schritt = richtung === 'runter' ? 1 : -1;
+  /* U-41: Im Kartenraster gibt es kein <tr> und kein cellIndex. Die Reihe ist
+     ein .r, die Spalte ihre Kindposition — dieselbe Ueberlegung, andere
+     Bauteile. Beim Monatsraster der Verbindlichkeiten gibt es nur eine Reihe;
+     dort findet die Schleife nichts und gibt null, und das ist richtig. */
+  const kr = td.closest('.praster .r');
+  if (kr) {
+    const sp2 = [...kr.children].indexOf(td), reihen = [...kr.parentElement.children];
+    for (let i = reihen.indexOf(kr) + schritt; i >= 0 && i < reihen.length; i += schritt) {
+      const c = reihen[i].children[sp2];
+      if (c && c.classList.contains('bearbeitbar')) return c;
+    }
+    return null;
+  }
+  const tr = td.closest('tr'), sp = td.cellIndex;
   const zeilen = [...tr.parentElement.children];
   for (let i = zeilen.indexOf(tr) + schritt; i >= 0 && i < zeilen.length; i += schritt) {
     const c = zeilen[i].children[sp];
@@ -9331,7 +9403,7 @@ document.addEventListener('keydown', ev => {
   if (ev.altKey) return;
   const feld = ev.target;
   if (!feld || feld.tagName !== 'INPUT') return;
-  const td = feld.closest('td.bearbeitbar'); if (!td) return;
+  const td = feld.closest('.bearbeitbar'); if (!td) return;   /* U-41 */
   const richtung = ev.key === 'Tab' ? (ev.shiftKey ? -1 : 1)
                  : (ev.key === 'Enter' || ev.key === 'ArrowDown') ? 'runter'
                  : ev.key === 'ArrowUp' ? 'rauf' : null;
@@ -9368,7 +9440,7 @@ document.addEventListener('change', ev => {
     ev.target.value = s2.id;
     return;
   }
-  const td = ev.target.closest('td.bearbeitbar');
+  const td = ev.target.closest('.bearbeitbar');   /* U-41 */
   if (td) {
     const w = zahl(ev.target.value);
     if (td.dataset.z)    budgetSetzen(td.dataset.z, +td.dataset.m, w);
