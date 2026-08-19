@@ -446,7 +446,40 @@ table.klein.liste tr:hover td{background:var(--soft)}
 .liq.dash{grid-template-columns:repeat(4,1fr);gap:20px}
 .liq.dash .wert .z{margin-top:4px}
 
-.kopfband{display:flex;gap:22px;align-items:center}
+/* ===================================================================
+   U-42 — Kopfzeile nach der Bildvorlage
+   -------------------------------------------------------------------
+   Die Zahlen standen bis hierher als gleichwertige Reihe nebeneinander:
+   fuenf Werte, fuenf gleiche Schriftgroessen, und der wichtigste fiel
+   nicht auf. Jetzt gibt es eine Hauptzahl und eine Reihe daneben — die
+   Groessen und Farben sind aus «GÄPP Mockups.dc.html» uebernommen und
+   nicht neu erfunden. Der senkrechte Strich trennt die Frage «was habe
+   ich heute» von der Frage «wie steht der Monat».
+   Die alten .wert-Regeln bleiben stehen: tafelKennzahlen() baut im
+   Vollbild ein zweites, kleines Band mit denselben Bauteilen.
+   =================================================================== */
+.kopfband{display:flex;gap:26px;align-items:center}
+.kopfband .lab{font:400 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.kopfband .kb-haupt .zahl{display:flex;align-items:baseline;gap:11px}
+.kopfband .kb-haupt .gross{font:500 30px/1 'IBM Plex Mono',monospace;color:var(--ink);
+  letter-spacing:-.02em}
+.kopfband .kb-haupt .tag{font:400 13px/1 'IBM Plex Mono',monospace;color:var(--accent)}
+.kopfband .kb-haupt .bis{font:400 12px/1 'Space Grotesk',sans-serif;color:var(--muted)}
+.kopfband .kb-strich{width:1px;align-self:stretch;background:var(--line)}
+.kopfband .kb-werte{display:flex;gap:28px}
+.kopfband .kb-werte .lab{margin-bottom:7px}
+.kopfband .kb-werte .v{font:500 18px/1 'IBM Plex Mono',monospace;color:#c3ccd6}
+.kopfband .kb-werte .v .zu{font-size:10.5px;color:#757f8c;margin-left:7px}
+.kopfband .kb-werte .v.ok{color:var(--accent)}
+.kopfband .kb-werte .v.err{color:var(--err)}
+.kopfband .kb-knopf{background:none;border:0;padding:0;cursor:pointer;color:inherit;
+  font:inherit;border-bottom:1px dotted rgba(240,160,141,.5)}
+.kopfband .kb-knopf:hover{color:#fff;border-bottom-color:#fff}
+/* Eng wird zuerst die Reihe rechts beschnitten, nie die Hauptzahl. */
+@media (max-width:1250px){ .kopfband .kb-werte .leise{display:none} }
+@media (max-width:1000px){ .kopfband .kb-strich,.kopfband .kb-haupt .bis{display:none} }
+
 .kopfband .wert{display:flex;align-items:baseline;gap:7px}
 .kopfband .wert .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .kopfband .wert .v{font-size:15px}
@@ -562,6 +595,14 @@ table.gross th,table.gross td{padding:0 8px;height:var(--row);white-space:nowrap
 table.gross .n{text-align:right;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px}
 table.gross .t{text-align:left}
 table.gross th.n,table.gross td.n,table.gross td.bearbeitbar{min-width:78px;max-width:78px}
+/* U-43: Die Namensspalte hatte kein max-width. Bei wenigen Zeitspalten ist die
+   Tabelle schmaler als das Fenster, min-width:100% streckt sie — und die
+   einzige Zelle ohne Deckel nahm die ganze Differenz. Daher die 590 Pixel
+   breite Bezeichnungsspalte. */
+table.gross th:first-child,table.gross td:first-child:not([colspan]){
+  min-width:var(--w1);max-width:var(--w1);width:var(--w1)}
+table.gross.t-verbind th:first-child,table.gross.t-verbind td:first-child:not([colspan]){
+  min-width:var(--w1);max-width:var(--w1)}
 table.gross th:last-child,table.gross td:last-child{min-width:94px;max-width:94px}
 
 /* Kopfzeilen gestapelt und fixiert — bis und mit «Saldo kumuliert» (A-36) */
@@ -1434,7 +1475,11 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .streifen.offen .kspark polyline{stroke:var(--accent);stroke-width:1.6}
 /* Jahresverlauf als zwölf Balken (Budget). Der laufende Monat leuchtet. */
 .kjahr{padding:0 26px;display:flex;align-items:flex-end;gap:4px;height:26px}
-.kjahr i{flex:1;background:#2c4a44;border-radius:1px;min-height:2px}
+/* U-44: gedeckelt. Bei zwoelf Monaten sind die Saeulen schmal, bei zwei
+   Jahrgaengen wuerden aus denselben flex:1 zwei handbreite Bloecke — das
+   liest sich als Fortschrittsbalken und nicht als Verlauf. */
+.kjahr i{flex:1;max-width:22px;background:#2c4a44;border-radius:1px;min-height:2px}
+.kjahr{justify-content:flex-start}
 .kjahr i.kuenftig{background:#232b34}
 .kjahr i.jetzt{background:var(--accent)}
 .streifen .pfeil{font:400 12px/1 'IBM Plex Mono',monospace;color:#5f6874;text-align:center}
@@ -1448,7 +1493,7 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .kauf .knopf{white-space:nowrap}
 
 /* Monatsraster im aufgeklappten Streifen (Verbindlichkeiten, 12 Zellen). */
-.mraster{display:grid;grid-template-columns:repeat(12,1fr);gap:1px;background:#1a2029;
+.mraster{display:grid;grid-template-columns:repeat(var(--mm,12),1fr);gap:1px;background:#1a2029;
   border:1px solid #1a2029;border-radius:7px;overflow:hidden;margin-top:9px}
 .mraster>div{background:var(--card);padding:8px 4px;text-align:center}
 .mraster .m{font:400 9.5px/1 'IBM Plex Mono',monospace;color:#757f8c}
@@ -1512,7 +1557,8 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 /* Die Rasterdefinitionen. Eine Stelle je Bereich, von Kopf und Streifen
    geteilt — sonst verrutscht die Kante beim nächsten Umbau. */
 .k-verbind .kkopf,.k-verbind .streifen>.reihe{
-  grid-template-columns:400px 130px 110px 190px 130px 1fr 120px}
+  grid-template-columns:360px 130px 118px 190px 140px 1fr 54px}
+.k-verbind .praster .r{grid-template-columns:var(--pgrid)}
 .k-budget .kkopf,.k-budget .streifen>.reihe{
   grid-template-columns:360px 108px 108px 108px 170px 118px 1fr 34px}
 .k-budget .praster .r{grid-template-columns:280px repeat(12,1fr) 100px}
@@ -1540,7 +1586,11 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
    entgegen. Der Feldrahmen bleibt unsichtbar, bis die Maus darauf steht
    — sonst wird aus einem Raster ein Formular mit vierzehn Kaesten.
    =================================================================== */
-.k-budget .praster .r{grid-template-columns:250px 84px repeat(12,1fr) 88px}
+/* U-44: Das ganze Raster kommt als eine Variable von der Funktion, nicht als
+   zwei. Eine auf 0 gesetzte Soll-Spur zaehlt im Grid weiter mit — die Kopf-
+   zeile hat in «Alle Jahre» aber gar keine Soll-Zelle, und damit rutschte
+   jede Zelle eine Spur nach links. */
+.k-budget .praster .r{grid-template-columns:var(--pgrid)}
 .praster .c.bearbeitbar,.mraster>div.bearbeitbar{padding:0}
 .praster .c.bearbeitbar input{width:100%;height:34px;display:block;background:none;
   border:1px solid transparent;border-radius:5px;text-align:right;padding:0 9px;
@@ -2570,37 +2620,56 @@ function zeichneKopf() {
    dort waere das Band eine dritte Wiederholung. */
 function kopfbandZeichnen() {
   const b = $('#kopfband'); if (!b) return;
-  /* U-13: Das Band steht ueberall ausser im Dashboard — dort stehen dieselben
-     Zahlen gross. Zwei Werte traegt es immer, weil sie ueberall gelten:
-     was heute frei ist und was das pro Tag heisst. Der Rest richtet sich
-     nach dem Bereich und zeigt bewusst das, was der Bereich selbst NICHT
-     schon zeigt — sonst steht eine Zahl zweimal auf demselben Bild. */
+  /* U-13/U-42: Das Band steht ueberall ausser im Dashboard — dort stehen
+     dieselben Zahlen gross. Links immer dasselbe: was heute frei ist, was
+     das pro Tag heisst und wie lange es reichen muss. Rechts das, was der
+     Bereich selbst NICHT schon zeigt — sonst steht eine Zahl zweimal auf
+     demselben Bild. */
   if (!D || S.modus === 'dashboard') { b.innerHTML = ''; return; }
-  const h = ymOf(heuteISO());
-  const w = (k, v, leise) =>
-    `<span class="wert${leise ? ' leise' : ''}"><span class="k">${k}</span><span class="v num">${v}</span></span>`;
-  const teile = [ w('verfügbar', fmt(freiPerMonatsende(h.j, h.m))), w('pro Tag', fmt(proTag())) ];
+  const h = ymOf(heuteISO()), tage = tageBisLohn();
+  const w = (k, v, kl, leise) => `<div class="${leise ? 'leise' : ''}"><div class="lab">${k}</div>
+    <div class="v ${kl || ''}">${v}</div></div>`;
+  const vz = x => (x > 0.005 ? '+' : '') + fmtG(x);
+  const rich = x => x < -0.005 ? 'err' : 'ok';
+
+  const haupt = `<div class="kb-haupt"><div class="lab">Verfügbar heute</div>
+    <div class="zahl"><span class="gross">${fmt(freiPerMonatsende(h.j, h.m))}</span>
+      <span class="tag">${fmt(proTag())} / Tag</span>
+      <span class="bis">${tage} ${tage === 1 ? 'Tag' : 'Tage'} bis ${D.meta.lohntag}.</span></div></div>`;
+
   const bereich = S.modus === 'kacheln' ? 'start' : S.reiter;
-
-  if (bereich === 'start' || bereich === 'budget')
-    teile.push(w('bis Dez', fmt(verfuegbarPer(h.j, 11)), true));
-
-  if (bereich === 'budget')
-    teile.push(w('Saldo ' + MON[h.m], fmt(saldoBudgetiert(h.j, h.m)), true));
-
+  const teile = [];
+  if (bereich === 'start')
+    teile.push(w('Bis Dezember', fmt(verfuegbarPer(h.j, 11))));
+  if (bereich === 'budget') {
+    const jahr = rd([...Array(12).keys()].reduce((a,m) => a + saldoBudgetiert(h.j, m), 0));
+    const sm = saldoBudgetiert(h.j, h.m);
+    teile.push(w('Saldo ' + MON_LANG[h.m], vz(sm), rich(sm)));
+    teile.push(w('Kumuliert', fmtG(saldoKumuliert(h.j, h.m)), '', true));
+    teile.push(w('Jahr ' + h.j, vz(jahr), rich(jahr), true));
+    /* «Noch offen im Monat» ist die Summe desselben Bands, das ueber den
+       Kategorie-Karten steht — eine Zahl, zwei Orte, eine Quelle. */
+    const offen = rd(offenPosten(h.j, h.m).reduce((a,x) => a + x.betrag, 0));
+    if (offen > 0.005) teile.push(w('Noch offen im Monat',
+      `<button type="button" class="kb-knopf" data-offen>${fmtG(offen)}</button>`, 'err'));
+  }
   if (bereich === 'verbind') {
     const verb = D.verbindlichkeiten.filter(v => v.aktiv !== false);
-    teile.push(w('Schulden', fmt(rd(verb.reduce((a,v) => a + verbindStandHeute(v), 0))), true));
+    teile.push(w('Schulden', fmt(rd(verb.reduce((a,v) => a + verbindStandHeute(v), 0)))));
     const sf = schuldenfreiGecacht();
-    teile.push(w('schuldenfrei', sf.monate !== null ? MON[sf.monat] + ' ' + sf.jahr : 'Rest ' + fmt(sf.rest), true));
+    teile.push(w('Schuldenfrei', sf.monate !== null
+      ? MON[sf.monat] + ' ' + sf.jahr : 'Rest ' + fmtG(sf.rest), sf.monate !== null ? 'ok' : 'err', true));
   }
   if (bereich === 'rechnung') {
-    const off = D.rechnungen.filter(r => r.status === 'offen').sort((a,b2) => a.faelligkeit < b2.faelligkeit ? -1 : 1);
-    teile.push(w('offen', fmt(rd(off.reduce((a,r) => a + r.betrag, 0))), true));
-    teile.push(w('nächste', off.length ? kurzdatum(off[0].faelligkeit) : '—', true));
+    const off = D.rechnungen.filter(r => r.status === 'offen')
+      .sort((a,b2) => a.faelligkeit < b2.faelligkeit ? -1 : 1);
+    teile.push(w('Offen', fmtG(rd(off.reduce((a,r) => a + r.betrag, 0))), off.length ? 'err' : ''));
+    teile.push(w('Nächste', off.length ? kurzdatum(off[0].faelligkeit) : '—', '', true));
   }
-  b.innerHTML = teile.join('');
+  b.innerHTML = haupt + (teile.length
+    ? `<span class="kb-strich"></span><div class="kb-werte">${teile.join('')}</div>` : '');
 }
+
 /* schuldenfrei() laeuft ueber bis zu sieben Jahrgaenge mal zehn Glaeubiger.
    Fuer eine Kopfzeile, die bei jedem Tastendruck neu gezeichnet wird, ist
    das zu teuer — deshalb einmal je Datenstand rechnen. */
@@ -3091,12 +3160,13 @@ function tafelKennzahlen() {
    Ansicht oder eine Verzweigung auf eine Funktion, die es noch nicht gibt.
    Schritt 4 traegt `budget: katKarten` nach, und mehr ist dort nicht zu tun. */
 const KARTENBAU = { budget: () => katKarten(), verbind: () => verbindKarten() };
-/* U-41: Keine Wahl mehr, nur noch eine Feststellung. Karten, wo es sie gibt —
-   ausser in «Alle Jahre»: dort ist jede Spalte ein Jahr, es gibt kein Ist
-   eines Monats und keinen Ratenplan je Monat. Die Tabelle bleibt genau dafuer
-   stehen und ist der einzige Ort, an dem sie noch erscheint. */
+/* U-41/U-44: Karten, wo es sie gibt — jetzt auch in «Alle Jahre». Dort ist
+   jede Spalte ein Jahr statt ein Monat; sonst ist es dieselbe Ansicht mit
+   denselben Bauteilen. Eingetragen wird dort nichts, weil ein Jahreswert die
+   Summe von zwoelf Monaten ist und keine Zahl, die irgendwo steht — genau
+   wie es die Tabelle vorher hielt. */
 function ansichtVon(bereich) {
-  return (!KARTENBAU[bereich] || S.zeitraum === 'alle') ? 'tabelle' : 'karten';
+  return KARTENBAU[bereich] ? 'karten' : 'tabelle';
 }
 /* U-41: Hier stand der Umschalter «Lesen · Eintragen». Er ist weg, weil die
    Trennung weg ist: die Karte traegt ihre Eingabefelder selbst. Geblieben ist
@@ -3166,7 +3236,11 @@ function spaltenbreiten() {
      liegt beim Anderthalbfachen der Grundbreite: breit genug, dass zwei,
      drei Spalten den gewonnenen Platz noch spueren, schmal genug, dass eine
      einzelne nicht laecherlich wird. */
-  let je = Math.min(126, Math.max(80, Math.floor(rest / zeit)));
+  /* U-43: Deckel von 126 auf 240. Seit die Faltung weg ist, stehen in «Alle
+     Jahre» oft nur vier Spalten — mit dem alten Deckel blieb der Rest liegen,
+     und weil die Namensspalte kein max-width trug, schluckte sie ihn. Jetzt
+     bekommt die Zeit, was uebrig ist, und der Name bleibt, wie er gesetzt ist. */
+  let je = Math.min(240, Math.max(80, Math.floor(rest / zeit)));
   tab.style.setProperty('--wz', je + 'px');
   /* Raender und Trennlinien kosten ein paar Pixel, die sich nicht sauber
      vorausrechnen lassen. Einmal nachmessen und nachziehen genuegt. */
@@ -3877,7 +3951,13 @@ function budgetTabelle() {
        sichtZeilen(s).some(z => Math.abs(wert(z, s)) >= 0.005)
     || Math.abs(saldoRoh(s, alle)) >= 0.005
     || Math.abs(kumRoh(s, alle))   >= 0.005;
-  const sp = spaltenSicht(spAlle, hatWert);
+  /* U-43: Nicht mehr gefaltet. Das Praedikat bleibt stehen — spaltenSicht()
+     nimmt es entgegen und der CSV-Export fragt dieselbe Funktion — aber es
+     antwortet immer mit ja. Die Faltung sparte Breite und kostete Verlaesslich-
+     keit: welche Spalten dastehen, hing vom Inhalt ab, und zwei Monate spaeter
+     stand die Tabelle anders da als gestern. Zwoelf Monate sind zwoelf Monate. */
+  const sp = spaltenSicht(spAlle, () => true);
+  void hatWert;
 
   /* U-21: Welche Zeilen ueberhaupt eine Reihe bekommen. Eine Tabelle hat
      eine Zeilenmenge, aber «Alle Jahre» zeigt viele Jahre nebeneinander:
@@ -3913,14 +3993,11 @@ function budgetTabelle() {
                       && !spAlle.some(s => Math.abs(wertSicht(z, s)) >= 0.005);
   /* Erst planen, dann zeichnen: die zweite Sicherung unten braucht den Blick
      auf die ganze Tabelle und nicht nur auf eine Kategorie. */
-  const geplant = sicht.map(k => {
-    const liste = zeilenReihen(k.id);
-    const leer = S.zeilenAlle ? [] : liste.filter(zeileLeer);
-    /* Eine einzelne Zeile zu falten spart eine Zeilenhoehe und kostet eine
-       Klappzeile — dieselbe Rechnung wie beim Block aus einer Spalte. */
-    return leer.length < 2 ? { k, zeigen: liste, leer: [] }
-                           : { k, zeigen: liste.filter(z => !zeileLeer(z)), leer };
-  });
+  /* U-43: auch senkrecht nicht mehr gefaltet — aus demselben Grund. Eine
+     Position, die dieses Jahr leer ist, ist trotzdem eine Position; sie zu
+     verstecken macht die Tabelle kuerzer und den Kopf unruhiger. */
+  const geplant = sicht.map(k => ({ k, zeigen: zeilenReihen(k.id), leer: [] }));
+  void zeileLeer;
   /* U-23, zweite Sicherung — dieselbe Ueberlegung wie bei der letzten offenen
      Spalte, nur senkrecht: bliebe nach dem Falten keine Zeile mehr stehen, in
      die sich etwas eintragen liesse, faellt die Faltung ganz aus. Das ist
@@ -4006,10 +4083,6 @@ function budgetTabelle() {
         aria-expanded="false">${gewaehlt.length ? gewaehlt.length + ' von ' + kats.length + ' Kategorien' : 'Kategorien'} ▾</button></span>
       <span class="kopfwerkzeug"><button class="knopf klein" id="btnSprung">Springe zu</button></span>
       <button class="knopf klein" id="btnKlappAlle">${S.zu.length ? 'Alle aufklappen' : 'Alle zuklappen'}</button>
-      ${weg || S.monateAlle ? `<button class="knopf klein" data-faltauf="${S.monateAlle?'0':'1'}"
-        >${S.monateAlle ? 'Leere Monate falten' : weg + ' leere Monate gefaltet'}</button>` : ''}
-      ${leerZeilen || S.zeilenAlle ? `<button class="knopf klein" data-zeilenauf="${S.zeilenAlle?'0':'1'}"
-        >${S.zeilenAlle ? 'Leere Zeilen falten' : leerZeilen + ' leere Zeilen gefaltet'}</button>` : ''}
       ${tafelWerkzeug('budget')}
       ${vollbildKnopf()}
     </div>
@@ -4173,47 +4246,52 @@ function offenPosten(j, m) {
   });
   return out.sort((a,b) => b.betrag - a.betrag);
 }
-function offenStreifen() {
+/* ---- U-45: Die offenen Posten als Blatt -----------------------------
+   Die Zahl steht in der Kopfzeile, die Liste kommt auf Klick. Das Band ueber
+   den Karten war bei drei Posten eine Handlungsliste und bei dreiundzwanzig
+   eine Wand; ein Blatt rollt und verstellt nichts.
+   Gebucht wird von hier aus mit denselben drei Griffen wie ueberall —
+   Glaeubigerblatt, rechnungBezahlen(), vorbelegte Buchungsmaske. Sie gehen
+   UEBER dieses Blatt auf (blattAuf(..., ueber)), damit man nach dem Buchen
+   wieder in der Liste steht und den naechsten Posten nehmen kann. */
+function blattOffen() {
   const j = S.jahr, m = S.monat;
   const p = offenPosten(j, m);
-  if (!p.length) return '';
   const sum = rd(p.reduce((s,x) => s + x.betrag, 0));
-  /* WELCHER GRIFF je Posten — dreimal derselbe Satz «buchen», dreimal ein
-     anderer Weg, weil GAEPP drei Arten von Buchung kennt:
-     — Glaeubigerrate: das Schuldblatt auf dem Reiter Zahlung. Es belegt den
-       Betrag aus rate() selbst vor, hier ist nichts mitzugeben.
-     — Rechnung: rechnungBezahlen() ueber data-tat="rstatus:…". Der Bauplan
-       schrieb hier «rzahlen» — diese Art gibt es im Verteiler nicht, der
-       Klick waere in blattAuf('rzahlen', …) gelaufen und haette das Blatt
-       zerlegt.
-     — gewoehnliche Position: die Buchungsmaske des Kontos, vorbelegt.
-     Ohne ein Konto gibt es keinen Ort zum Buchen — dann steht der Posten
-     ohne Knopf da, statt blattAuf() auf ein Konto zu schicken, das es
-     nicht gibt. */
   const griff = x => {
     if (x.verbId) return `data-schuld="${x.verbId}"`;
     if (x.rechId) return `data-tat="rstatus:${x.rechId}"`;
     return konto(x.kontoId) ? `data-buchen="${x.zeileId}:${x.kontoId}:${fmt(x.betrag)}"` : '';
   };
-  const posten = x => {
-    const g = griff(x);
-    return `<div>
-      <div class="txt"><div class="t">${x.name}</div>
-        <div class="z">${[x.kat, x.weg].filter(Boolean).join(' · ')}</div></div>
-      <span class="n">${fmtG(x.betrag)}</span>
-      ${g ? `<button class="knopf klein primaer" type="button" ${g}>Buchen</button>` : ''}</div>`;
+  const koerper = !p.length
+    ? '<p class="meldung">Diesen Monat ist alles gebucht, was budgetiert war.</p>'
+    : `<table class="journal"><tbody>${p.map(x => {
+        const g = griff(x);
+        return `<tr><td>${x.name}<span class="weg" style="margin-left:9px">${
+            [x.kat, x.weg].filter(Boolean).join(' · ')}</span></td>
+          <td class="r num">${fmtG(x.betrag)}</td>
+          <td class="r"><span class="zwerk">${g
+            ? `<button class="knopf klein primaer" type="button" ${g}>Buchen</button>`
+            : '<span class="weg">kein Konto</span>'}</span></td></tr>`;
+      }).join('')}</tbody></table>`;
+  return {
+    weit: true, kennung: 'Budget · ' + MON_LANG[m] + ' ' + j,
+    titel: 'Noch offen: ' + fmtG(sum),
+    koerper: `<p class="notiz">Budgetiert und nicht gebucht. <b>Nach dem Buchen bleibt
+      der Saldo, wie er ist</b> — die Zahl war schon drin, sie war nur noch nicht belegt.</p>
+      ${koerper}`,
+    fuss: `<span class="hint">${p.length} ${p.length === 1 ? 'Position' : 'Positionen'}</span>
+      <button class="knopf" data-zu>Schliessen</button>`
   };
-  return `<div class="offenband">
-    <div class="kopf"><span class="lab">Diesen Monat noch offen</span>
-      <span class="sum">${fmtG(sum)}</span>
-      <span class="z">budgetiert, aber nicht gebucht · ${p.length} ${
-        p.length===1?'Position':'Positionen'}</span>
-      <span class="hin">nach dem Buchen bleibt der Saldo, wie er ist</span></div>
-    <div class="posten">${p.slice(0, 6).map(posten).join('')}</div>
-    ${p.length > 6 ? `<div class="kopf" style="margin:12px 0 0"><span class="z"
-      >und ${p.length - 6} weitere · ${fmtG(rd(p.slice(6).reduce((s,x)=>s+x.betrag,0)))}</span></div>` : ''}
-    </div>`;
 }
+
+/* U-45: Hier stand offenStreifen(), das Band ueber den Kategorie-Karten.
+   Es ist raus. Der Gedanke war richtig und die Form falsch: bei drei offenen
+   Posten war es eine Handlungsliste, bei dreiundzwanzig eine Wand aus Kacheln,
+   die den Blick auf die Kategorien verstellte — und die Kategorie-Karte sagt
+   mit ihrer Spalte «Rest» ohnehin schon, wo etwas offen ist.
+   offenPosten() BLEIBT: die Kopfzeile rechnet damit «Noch offen im Monat»,
+   und eine Liste dazu laesst sich jederzeit wieder anhaengen. */
 
 /* ===================================================================
    U-40 — CSV
@@ -4257,9 +4335,7 @@ function csvExport(bereich) {
     /* Dasselbe Praedikat wie verbindTabelle — inklusive der beiden
        Kopfzahlen. Wer nur die Raten fragt, faltet eine Spalte weg, deren
        Saldo im Jahrestotal weiterzaehlt. */
-    const sp = spaltenSicht(spAlle, s => aktiv.some(v => Math.abs(ratenSp(v, s)) >= 0.005)
-      || Math.abs(saldoRoh(s, alle)) >= 0.005
-      || Math.abs(kumRoh(s, alle))   >= 0.005).filter(s => !s.falt);
+    const sp = spaltenSicht(spAlle, () => true).filter(s => !s.falt);   /* U-43 */
     kopf = ['Gruppe','Gläubiger','Stand heute','Rate ' + MON[S.monat],'Getilgt %','Vereinbarung bis',
       ...sp.map(s => s.label), 'Übertrag'];
     const zeile = (gname, v) => reihen.push([gname, v.bezeichnung,
@@ -4286,10 +4362,7 @@ function csvExport(bereich) {
       ? rd(zeilenVon(k.id, s.key).reduce((a,z)=>a+zeilenJahr(z,s.key)*(z.gegenrichtung?-1:1),0))
       : katSumme(k, S.jahr, s.key);
     /* Wieder woertlich das Praedikat der Tabelle (hatWert in budgetTabelle). */
-    const sp = spaltenSicht(spAlle, s =>
-         sicht.flatMap(k => zeilenVon(k.id, spJahr(s))).some(z => Math.abs(wert(z,s)) >= 0.005)
-      || Math.abs(saldoRoh(s, alle)) >= 0.005
-      || Math.abs(kumRoh(s, alle))   >= 0.005).filter(s => !s.falt);
+    const sp = spaltenSicht(spAlle, () => true).filter(s => !s.falt);   /* U-43 */
     kopf = ['Kategorie','Position','Zahlung','Soll', ...sp.map(s => s.label), 'Jahr'];
     sicht.forEach(k => {
       zeilenVon(k.id, S.jahr).forEach(z => {
@@ -4331,13 +4404,22 @@ function csvExport(bereich) {
    =================================================================== */
 function katKarten() {
   const j = S.jahr, m = S.monat, h = ymOf(heuteISO());
+  /* U-44: EINE Zeitachse fuer alle drei Zeitraeume. spaltenKoepfe() liefert
+     zwoelf Monate oder ein Jahr je Spalte — die Karte fragt nur noch, wie
+     viele es sind und was in einer Spalte steht. */
+  const alle = S.zeitraum === 'alle', sp = spaltenKoepfe();
   const laufend = S.zeitraum === 'monat' && istLaufenderMonat(j, m);
   const kats = D.kategorien.filter(k => katSicht(k, j)).sort((a,b) => a.rang - b.rang);
   const gewaehlt = (S.filterNur || []).filter(id => kats.some(k => k.id === id));
   const sicht = gewaehlt.length ? kats.filter(k => gewaehlt.includes(k.id)) : kats;
-  const monatW = k => S.zeitraum === 'jahr'
-    ? rd([...Array(12).keys()].reduce((s,i) => s + katSumme(k, j, i), 0))
-    : katSumme(k, j, m);
+  /* Wert einer Kategorie in EINER Spalte: im Jahr ein Monat, in «Alle Jahre»
+     ein ganzer Jahrgang. Dieselbe Unterscheidung wie katW() in der Tabelle. */
+  const spW = (k, x) => alle
+    ? rd(zeilenVon(k.id, x.key).reduce((a,z) => a + zeilenJahr(z, x.key) * (z.gegenrichtung?-1:1), 0))
+    : katSumme(k, j, x.key);
+  const totalW = k => rd(sp.reduce((a,x) => a + spW(k, x), 0));
+  const monatW = k => alle ? totalW(k)
+    : S.zeitraum === 'jahr' ? totalW(k) : katSumme(k, j, m);
 
   /* WOHIN eine gespiegelte Kategorie fuehrt. Der Bauplan schrieb hier
      `data-bereich="verbind"` fest — das trifft die Schuldenzeilen, aber
@@ -4367,7 +4449,7 @@ function katKarten() {
     /* Der Jahresverlauf als zwoelf Balken. Math.abs nur fuer die HOEHE —
        eine Kategorie mit Gegenrichtungszeilen kann in einem Monat negativ
        summieren, und ein Balken hat keine Richtung. */
-    const werte = [...Array(12).keys()].map(i => Math.abs(katSumme(k, j, i)));
+    const werte = sp.map(x => Math.abs(spW(k, x)));
     const max = Math.max(...werte, 1);
     return `<article class="streifen ${offen?'offen':''}">
       <div class="reihe" ${ziel ? `data-bereich="${ziel}"` : `data-kklapp="${k.id}"`}>
@@ -4382,17 +4464,19 @@ function katKarten() {
           laufend ? (rest > 0.005 ? fmtG(rest) : '—') : '–'}</div>
         <div class="kbalken"><div class="bar"><div style="width:${Math.round(anteil*100)}%"></div></div>
           <span class="p">${laufend ? Math.round(anteil*100) + ' %' : '–'}</span></div>
-        <div class="n">${fmtG(rd([...Array(12).keys()].reduce((s,i)=>s+katSumme(k,j,i),0)))}</div>
+        <div class="n">${alle ? fmtG(rd(totalW(k) / Math.max(1, sp.length)))
+                                : fmtG(totalW(k))}</div>
         <div class="kjahr">${werte.map((w,i) => `<i class="${
-          i === h.m && j === h.j ? 'jetzt' : (j > h.j || (j === h.j && i > h.m) ? 'kuenftig' : '')
+          alle ? (sp[i].key === h.j ? 'jetzt' : (sp[i].key > h.j ? 'kuenftig' : ''))
+               : (i === h.m && j === h.j ? 'jetzt' : (j > h.j || (j === h.j && i > h.m) ? 'kuenftig' : ''))
           }" style="height:${Math.max(2, Math.round(w / max * 100))}%"></i>`).join('')}</div>
         <div class="pfeil">${ziel ? '' : `<span class="anz">${zeilen.length}</span>`}›</div>
       </div>
       ${offen && !ziel ? katKarteAuf(k) : ''}</article>`;
   };
 
-  const saldo = S.zeitraum === 'jahr'
-    ? rd([...Array(12).keys()].reduce((s,i) => s + saldoBudgetiert(j, i), 0))
+  const saldo = alle ? rd(sp.reduce((a,x) => a + saldoRoh(x, true), 0))
+    : S.zeitraum === 'jahr' ? rd([...Array(12).keys()].reduce((s,i) => s + saldoBudgetiert(j, i), 0))
     : saldoBudgetiert(j, m);
 
   const kopf = `<div class="tafel-kopf">
@@ -4420,20 +4504,21 @@ function katKarten() {
 
   return kopf + `
     <div class="kflaeche k-budget">
-      ${laufend ? offenStreifen() : ''}
       <div class="kkopf"><div style="padding-left:14px">Kategorie</div>
-        <div style="text-align:right">Soll ${S.zeitraum === 'jahr' ? j : MON[m].slice(0,3)}</div>
+        <div style="text-align:right">${alle ? 'Total' : 'Soll ' + (S.zeitraum === 'jahr' ? j : MON[m].slice(0,3))}</div>
         <div style="text-align:right">Ist</div><div style="text-align:right">Rest</div>
         <div style="padding-left:22px">Verbraucht</div>
-        <div style="text-align:right">Jahr ${j}</div>
-        <div style="padding-left:26px">Monatsverlauf ${j}</div><div></div></div>
+        <div style="text-align:right">${alle ? 'Ø je Jahr' : 'Jahr ' + j}</div>
+        <div style="padding-left:26px">${alle ? 'Verlauf ' + sp[0].label + '–' + sp[sp.length-1].label
+                                              : 'Monatsverlauf ' + j}</div><div></div></div>
       ${sicht.map(karte).join('')}
       <div class="kgruppe" style="border-top:1px solid var(--rule);margin-top:10px;padding-top:14px">
         <span class="t">Saldo budgetiert</span>
         <span class="num" style="font-size:17px;color:${saldo<0?'var(--err)':'var(--accent)'}">${
           (saldo>0?'+':'') + fmtG(saldo)}</span>
-        <span class="z">kumuliert ${fmtG(saldoKumuliert(j, m))} · Jahr ${
-          fmtG(rd([...Array(12).keys()].reduce((s,i)=>s+saldoBudgetiert(j,i),0)))}</span></div>
+        <span class="z">${alle ? sp.length + ' Jahrgänge'
+          : 'kumuliert ' + fmtG(saldoKumuliert(j, m)) + ' · Jahr '
+            + fmtG(rd([...Array(12).keys()].reduce((s,i)=>s+saldoBudgetiert(j,i),0)))}</span></div>
     </div>`;
 }
 
@@ -4447,52 +4532,68 @@ function katKarten() {
    Tabelle ab und erfindet die Darstellung nicht neu. */
 function katKarteAuf(k) {
   const j = S.jahr, h = ymOf(heuteISO());
+  const alle = S.zeitraum === 'alle', sp = spaltenKoepfe();
   const zeilen = zeilenVon(k.id, j);
-  const kopf = `<div class="r kopf" data-rkat="${k.id}"><div class="p">Position</div><div class="c">Soll</div>${
-    [...Array(12).keys()].map(i => `<div class="c" ${i===h.m&&j===h.j?'style="color:var(--accent)"':''
-      }>${MON[i].slice(0,3)}</div>`).join('')}<div class="j">Jahr</div></div>`;
+  /* U-44: dieselbe Zeitachse wie die Karte darueber. In «Alle Jahre» steht in
+     einer Spalte ein Jahrgang, und dort wird NICHTS eingetragen: ein
+     Jahreswert ist die Summe von zwoelf Monaten und keine Zahl, die irgendwo
+     steht. Genau so hielt es die Tabelle vorher auch. */
+  const wert = (z, x) => alle ? zeilenJahr(z, x.key) : zeilenwert(z, j, x.key);
+  const katW = x => alle
+    ? rd(zeilenVon(k.id, x.key).reduce((a,z) => a + zeilenJahr(z, x.key) * (z.gegenrichtung?-1:1), 0))
+    : katSumme(k, j, x.key);
+  const jetztSp = x => alle ? x.key === h.j : (x.key === h.m && j === h.j);
+  const kopf = `<div class="r kopf" data-rkat="${k.id}"><div class="p">Position</div>
+    ${alle ? '' : '<div class="c">Soll</div>'}${
+    sp.map(x => `<div class="c" ${jetztSp(x)?'style="color:var(--accent)"':''
+      }>${alle ? x.label : x.label.slice(0,3)}</div>`).join('')}<div class="j">${alle?'Total':'Jahr'}</div></div>`;
   const reihen = zeilen.map(z => {
-    const gesp = gespiegelt(z), fest = gesp || _ro;
+    const gesp = gespiegelt(z), fest = gesp || _ro || alle;
     const soll = zeilenSoll(z, j);
-    /* Das Soll war bis U-41 nur in der Budgettabelle zu pflegen. Da die nur
-       noch in «Alle Jahre» erscheint und dort nichts entgegennimmt, waere es
-       ohne diese Spalte nirgends mehr aenderbar. */
-    const sollZ = fest
+    const sollZ = alle ? '' : (fest
       ? `<div class="c ${gesp?'gespiegelt-wert':''}">${fmtG0(soll)}</div>`
       : `<div class="c bearbeitbar" data-soll="${z.id}"><input type="text" inputmode="decimal"
-           value="${soll ? fmtG(soll) : ''}" placeholder="0"></div>`;
-    const zellen = [...Array(12).keys()].map(i => {
-      const w = zeilenwert(z, j, i), jetzt = i === h.m && j === h.j;
-      const offenHier = jetzt && !gesp && rd(w - istZeile(z, j, i)) > 0.005;
+           value="${soll ? fmtG(soll) : ''}" placeholder="0"></div>`);
+    const zellen = sp.map(x => {
+      const w = wert(z, x), jetzt = jetztSp(x);
+      /* In «Alle Jahre» kann eine Zeile in einem Jahrgang gar nicht gelten —
+         dann bleibt die Zelle leer und nicht null (U-21). */
+      if (alle && !zeileSicht(z, x.key)) return '<div class="c"></div>';
+      const offenHier = jetzt && !gesp && !alle && rd(w - istZeile(z, j, x.key)) > 0.005;
       const kl = `c ${jetzt?'jetzt':''} ${offenHier?'hatoffen':''}`;
       if (fest) return `<div class="${kl}">${fmtG0(w)}</div>`;
-      const mark = S.markiert.includes(z.id + ':' + i) ? ' markiert' : '';
-      return `<div class="${kl} bearbeitbar${mark}" data-z="${z.id}" data-m="${i}"><input
+      const mark = S.markiert.includes(z.id + ':' + x.key) ? ' markiert' : '';
+      return `<div class="${kl} bearbeitbar${mark}" data-z="${z.id}" data-m="${x.key}"><input
         type="text" inputmode="decimal" value="${w ? fmtG(w) : ''}" placeholder="0"></div>`;
     }).join('');
-    /* data-oart/-zeile/-zkat bringen Alt+Pfeil hoch/runter mit — dieselbe
-       Umordnung wie in der Tabelle, ohne eine zweite Mechanik. */
     return `<div class="r" data-oart="zeile" data-zeile="${z.id}" data-zkat="${k.id}">
-      <div class="p">${ordGriff('zeile', z)}<span class="t" data-zblatt="${z.id}"
+      <div class="p">${alle ? '' : ordGriff('zeile', z)}<span class="t" data-zblatt="${z.id}"
           title="Stammdaten, Verlauf und Jahre">${z.bezeichnung}</span>
-        ${gesp || _ro ? '' : `<span class="zwerk"><button type="button" data-weg="${z.id}"
+        ${gesp || _ro || alle ? '' : `<span class="zwerk"><button type="button" data-weg="${z.id}"
           title="Diese Position ab ${j} nicht mehr zeigen">ab ${j} aus</button></span>`}</div>
       ${sollZ}${zellen}
-      <div class="j">${fmtG0(zeilenJahr(z, j))}</div></div>`;
+      <div class="j">${fmtG0(rd(sp.reduce((a,x)=>a+wert(z,x),0)))}</div></div>`;
   }).join('');
-  const summe = `<div class="r summe" data-rkat="${k.id}"><div class="p" style="color:var(--muted)">Summe ${k.name}</div>
-    <div class="c">${fmtG0(rd(zeilen.reduce((a,z)=>a+(zeilenSoll(z,j)||0)*(z.gegenrichtung?-1:1),0)))}</div>${
-    [...Array(12).keys()].map(i => `<div class="c ${i===h.m&&j===h.j?'jetzt':''}">${
-      fmtG0(katSumme(k, j, i))}</div>`).join('')}
-    <div class="j" style="color:#fff">${fmtG0(rd([...Array(12).keys()].reduce(
-      (s,i)=>s+katSumme(k,j,i),0)))}</div></div>`;
-  const rest = istLaufenderMonat(j, S.monat)
+  const summe = `<div class="r summe" data-rkat="${k.id}">
+    <div class="p" style="color:var(--muted)">Summe ${k.name}</div>
+    ${alle ? '' : `<div class="c">${fmtG0(rd(zeilen.reduce((a,z)=>a+(zeilenSoll(z,j)||0)*(z.gegenrichtung?-1:1),0)))}</div>`}${
+    sp.map(x => `<div class="c ${jetztSp(x)?'jetzt':''}">${fmtG0(katW(x))}</div>`).join('')}
+    <div class="j" style="color:#fff">${fmtG0(rd(sp.reduce((a,x)=>a+katW(x),0)))}</div></div>`;
+  const rest = !alle && istLaufenderMonat(j, S.monat)
     ? rd(Math.max(0, katSumme(k, j, S.monat) - istKat(k, j, S.monat))) : 0;
-  return `<div class="kauf"><div class="praster">${kopf}${reihen}${summe}
-    <div class="fuss"><span>Der laufende Monat steht hell${
-      rest > 0.005 ? ` · rot hinterlegt heisst budgetiert und noch nicht gebucht — offen ${fmtG(rest)}` : ''}</span>
+  /* Die Spaltenzahl wechselt mit dem Zeitraum — das Raster erfaehrt sie als
+     Variable, damit Kopf, Zeilen und Summe dieselbe Kante halten. */
+  const pgrid = alle
+    ? `250px repeat(${sp.length},minmax(0,1fr)) 88px`
+    : `250px 84px repeat(${sp.length},minmax(0,1fr)) 88px`;
+  return `<div class="kauf"><div class="praster" style="--pgrid:${pgrid}"
+    >${kopf}${reihen}${summe}
+    <div class="fuss"><span>${alle
+      ? 'Ein Jahrgang je Spalte · eingetragen wird im einzelnen Jahr'
+      : 'Der laufende Monat steht hell' + (rest > 0.005
+        ? ' · rot hinterlegt heisst budgetiert und noch nicht gebucht — offen ' + fmtG(rest) : '')}</span>
       <span style="flex:1"></span>
-      ${_ro ? '' : `<button class="knopf klein" type="button" data-add="${k.id}">Zeile hinzufügen</button>`}
+      ${_ro || alle ? '' : `<button class="knopf klein" type="button" data-add="${k.id}">Zeile hinzufügen</button>`}
       </div></div></div>`;
 }
 
@@ -4507,9 +4608,7 @@ function verbindTabelle() {
      (U-7). Wer nur die Raten fragt, faltet eine Spalte weg, deren Saldo im
      Jahrestotal weiterzaehlt: die sichtbaren Zellen addieren sich dann nicht
      mehr auf das angezeigte Total. Gleiche Bedingung wie in budgetTabelle. */
-  const sp = spaltenSicht(spAlle, s => aktiv.some(v => Math.abs(zahl(v, s)) >= 0.005)
-    || Math.abs(saldoRoh(s, alle)) >= 0.005
-    || Math.abs(kumRoh(s, alle))   >= 0.005);
+  const sp = spaltenSicht(spAlle, () => true);   /* U-43: siehe budgetTabelle */
   /* Die Uebertragsspalte rechnet den Stand per letzter Spalte. Ohne ein einziges
      Budgetjahr gibt spaltenKoepfe() in der Sicht «Alle Jahre» ein leeres Array
      zurueck: spAlle[-1] ist undefined, und stand(v, undefined) stuerzt am Zugriff
@@ -4573,8 +4672,6 @@ function verbindTabelle() {
   const zeit1 = sp.findIndex(x => !x.falt);        /* U-25, wie im Budget */
   return `<div class="tafel-kopf"><span class="titel">Verbindlichkeiten ${zeitTitel()}</span>${tafelKennzahlen()}
       <span class="nr">Konto 08 Schulden</span>
-      ${weg || S.monateAlle ? `<button class="knopf klein" data-faltauf="${S.monateAlle?'0':'1'}"
-        >${S.monateAlle ? 'Leere Monate falten' : weg + ' leere Monate gefaltet'}</button>` : ''}
       ${tafelWerkzeug('verbind')}
       ${vollbildKnopf()}</div>
     <div class="rollflaeche"><table class="gross fixiert t-verbind">
@@ -4614,192 +4711,158 @@ function verbindTabelle() {
    =================================================================== */
 function verbindKarten() {
   const e = zeitEnde(), h = ymOf(heuteISO());
+  const alle = S.zeitraum === 'alle', sp = spaltenKoepfe();
   const aktiv = D.verbindlichkeiten.filter(v => v.aktiv !== false);
   const jahre = Object.keys(D.budget).map(Number).sort();
   const letztes = jahre.length ? jahre[jahre.length - 1] : S.jahr;
-  /* WELCHER STAND — bis heute der wirkliche, danach die Prognose. Das ist
-     die Regel, die schuldVerlauf() im Blatt seit je anwendet, und sie ist
-     hier nicht neu erfunden, sondern uebernommen.
-     Der Bauplan nahm an dieser Stelle standPer() fuer ALLES ausser «Alle
-     Jahre» — das ist die Regel der weggefallenen Kachel. Sie ist falsch,
-     sobald das Periodenende in der Zukunft liegt: standPer() faellt dort
-     auf verbindStand() zurueck, und der kennt nur GEBUCHTE Zahlungen. Im
-     Zeitraum «Jahr» stand die Schuld damit per Dezember hoeher als heute,
-     weil Zins und Gebuehr weiterliefen und keine Rate dagegen. Dieselbe
-     Karte sagte aufgeklappt unter «Stand per Jahresende» etwas anderes —
-     dort rechnet verbindPrognose(). Eine Karte, die sich selbst
-     widerspricht, ist genau der Fehler, den Regel 1 meint.
-       laufender Monat  → verbindStandHeute (dieselbe Zahl wie die Spalte
-                          «Stand» der Tabelle und wie deren Summenzeilen)
-       Vergangenheit    → der Stand, der damals wirklich offen war
-       Zukunft          → die Prognose, wie in der Uebertragsspalte */
   const kuenftig = e.j > h.j || (e.j === h.j && e.m > h.m);
   const st = v => kuenftig ? verbindPrognose(v, e.j, e.m) : standPer(v, e.j, e.m);
+  const spRate = (v, x) => alle
+    ? rd([...Array(12).keys()].reduce((a,m2) => a + rate(v, x.key, m2), 0)) : rate(v, S.jahr, x.key);
+  const rateJetzt = v => alle
+    ? rd(sp.reduce((a,x) => a + spRate(v, x), 0)) : rate(v, S.jahr, S.monat);
+  /* Stand einer Gruppe am Ende einer Spalte — fuer den Verlauf. In «Alle
+     Jahre» das Jahresende, sonst das Monatsende. */
+  const spStand = (liste, x) => rd(liste.reduce((a,v) =>
+    a + Math.max(0, alle ? verbindPrognose(v, x.key, 11) : verbindPrognose(v, S.jahr, x.key)), 0));
 
-  /* Verlaufslinie: Stand je Jahresende bis zum letzten Budgetjahr. Danach
-     steht kein Ratenplan mehr da, und eine Linie ueber leere Jahre sagt
-     nichts als «es geht nicht weiter» — das sagt schon die Spalte daneben. */
-  const spark = v => {
-    const p = [];
-    for (let j = h.j; j <= letztes; j++) p.push(Math.max(0, verbindPrognose(v, j, 11)));
-    const werte = [Math.max(0, st(v)), ...p];
-    const max = Math.max(v.anfangsstand || 0, ...werte, 1);
-    const pts = werte.map((y, i, a) =>
-      (i / Math.max(1, a.length - 1) * 200).toFixed(1) + ',' + (21 - y / max * 19).toFixed(1));
-    return `<div class="kspark"><svg viewBox="0 0 200 22" preserveAspectRatio="none"
-      aria-hidden="true"><polyline points="${pts.join(' ')}"></polyline></svg></div>`;
-  };
-
-  const karte = (v, gid) => {
-    const offen = S.kOffen.includes(v.id);
-    const s = st(v), r = rate(v, S.jahr, S.monat), a = getilgtAnteil(v);
-    /* Wann dieser Glaeubiger getilgt ist, beantwortet tilgungsende() — die
-       Funktion, die der Schuldenplan im Bericht schon benutzt. Eine zweite
-       Fortschreibung an dieser Stelle waere eine zweite Antwort auf dieselbe
-       Frage, und die beiden liefen beim naechsten Eingriff auseinander. */
-    const ende = tilgungsende(v);
-    /* Die Frist steht auf der Karte, wo die Sache liegt — dafuer faellt in
-       Schritt 7 die Sektion «Was ausläuft» im Dashboard weg. */
-    const tage = v.vereinbarungBis
-      ? Math.round((Date.parse(v.vereinbarungBis + 'T00:00:00')
-                  - Date.parse(heuteISO() + 'T00:00:00')) / 86400000) : null;
-    const notiz = tage !== null && tage <= 120
-      ? `<span class="z warn">Vereinbarung läuft am ${v.vereinbarungBis.slice(8,10)}.${
-          v.vereinbarungBis.slice(5,7)}. aus</span>`
-      : `<span class="z">${v.vertreter || (v.herkunft === 'belegt' ? 'Stand belegt' : 'Stand gerechnet')}</span>`;
-    /* data-oart/-verb/-vgrp kosten drei Attribute und bringen Alt+Pfeil
-       hoch/runter mit: ordImBild() sucht ohne Wurzel im ganzen Dokument und
-       findet die Karten so, wie es sonst die Tabellenzeilen findet. Gezogen
-       wird hier nicht — dazu fehlt der Griff, und er fehlt mit Absicht. */
-    return `<article class="streifen ${offen?'offen':''}"
-      data-oart="verb" data-verb="${v.id}" data-vgrp="${gid}">
-      <div class="reihe" data-kklapp="${v.id}">
-        <div class="nam"><span class="chev">${offen?'▾':'▸'}</span>
-          <button class="t" type="button" data-schuld="${v.id}">${v.bezeichnung}</button>${notiz}</div>
-        <div class="n gross">${fmt(s)}</div>
-        <div class="n ${r ? '' : 'leer'}">${r ? fmt(r) : '–'}</div>
-        <div class="kbalken"><div class="bar"><div style="width:${Math.round(a*100)}%"></div></div>
-          <span class="p">${Math.round(a*100)} %</span></div>
-        <div class="n ${ende ? '' : 'leer'}">${ende || '–'}</div>
-        ${spark(v)}
-        <div class="tat"><button class="knopf klein primaer" type="button"
-          data-schuld="${v.id}">Zahlung</button></div>
-      </div>
-      ${offen ? verbindKarteAuf(v) : ''}</article>`;
-  };
-
-  const block = (name, liste, gid, zusatz) => {
+  /* ---- Eine Karte je GRUPPE (U-46) --------------------------------------
+     Dieselbe Anatomie wie im Budget: die Karte ist der Block, das Aufgeklappte
+     ist sein Raster. Bis U-46 war die Karte der einzelne Glaeubiger und die
+     Gruppe eine Textzeile dazwischen — zwei Bauarten fuer dieselbe Sache.
+     Was die Glaeubigerkarte trug (Balken, Verlauf, Ratenplan, die Knoepfe
+     Tilgung und Belege), steht vollstaendig in seinem Blatt; ein Klick auf
+     den Namen im Raster fuehrt dorthin. */
+  const karte = (gid, name, liste, zusatz) => {
     if (!liste.length) return '';
-    const summe = rd(liste.reduce((s,v) => s + st(v), 0));
-    const raten = rd(liste.reduce((s,v) => s + rate(v, S.jahr, S.monat), 0));
-    return `<div class="kgruppe"><span class="t">${name}</span>
-        <span class="num">${fmt(summe)}</span>
-        <span class="z">${liste.length} ${liste.length===1?'Position':'Positionen'} · Raten ${
-          fmt(raten)}${zusatz || ''}</span></div>
-      ${liste.map(v => karte(v, gid)).join('')}`;
+    const offen = S.kOffen.includes('g_' + gid);
+    const stand = rd(liste.reduce((a,v) => a + st(v), 0));
+    const rate1 = rd(liste.reduce((a,v) => a + rateJetzt(v), 0));
+    const anf = rd(liste.reduce((a,v) => a + (v.anfangsstand || 0), 0));
+    const anteil = anf > 0.005 ? Math.max(0, Math.min(1, 1 - stand / anf)) : 0;
+    /* Wann ist die GANZE Gruppe getilgt: der spaeteste ihrer Glaeubiger.
+       Traegt einer kein Ende, hat die Gruppe keines. */
+    const enden = liste.map(tilgungsende);
+    const ende = enden.some(x => !x) ? null
+      : enden.reduce((a,b2) => (b2 && (!a || _endeSpaeter(b2, a))) ? b2 : a, null);
+    const werte = sp.map(x => spStand(liste, x));
+    const max = Math.max(anf, ...werte, 1);
+    return `<article class="streifen ${offen?'offen':''}">
+      <div class="reihe" data-kklapp="g_${gid}">
+        <div class="nam"><span class="chev">${offen?'▾':'▸'}</span>
+          <span class="t">${name}</span>${zusatz ? `<span class="z">${zusatz}</span>` : ''}</div>
+        <div class="n gross">${fmt(stand)}</div>
+        <div class="n ${rate1 ? '' : 'leer'}">${rate1 ? fmt(rate1) : '–'}</div>
+        <div class="kbalken"><div class="bar"><div style="width:${Math.round(anteil*100)}%"></div></div>
+          <span class="p">${Math.round(anteil*100)} %</span></div>
+        <div class="n ${ende ? '' : 'leer'}">${ende || '–'}</div>
+        <div class="kjahr">${werte.map((w,i2) => `<i class="${
+          alle ? (sp[i2].key === h.j ? 'jetzt' : (sp[i2].key > h.j ? 'kuenftig' : ''))
+               : (i2 === h.m && S.jahr === h.j ? 'jetzt' : (S.jahr > h.j || (S.jahr === h.j && i2 > h.m) ? 'kuenftig' : ''))
+          }" style="height:${Math.max(2, Math.round(w / max * 100))}%"></i>`).join('')}</div>
+        <div class="pfeil"><span class="anz">${liste.length}</span>›</div>
+      </div>
+      ${offen ? verbindKarteAuf(gid, liste) : ''}</article>`;
   };
+
   const gruppen = GRUPPEN.map(g =>
-    block(g.name, ordListe('verb', g.id).filter(v => v.aktiv !== false), g.id)).join('');
-
-  /* Ein Glaeubiger mit einer Gruppe, die es nicht gibt, verschwand in der
-     Kachelansicht still — und GRUPPEN.find(...).name warf eine Zeile weiter
-     oben. Beides ist falsch: er gehoert gezeigt. Beim Aufraeumen der JSON
-     ist das kein Sonderfall, sondern der Normalfall eines halben Tages. */
+    karte(g.id, g.name, ordListe('verb', g.id).filter(v => v.aktiv !== false))).join('');
+  /* Ein Glaeubiger mit einer Gruppe, die es nicht gibt, gehoert gezeigt —
+     er zaehlt in der Gesamtsumme mit und verschwand frueher lautlos. */
   const fremd = aktiv.filter(v => !GRUPPEN.some(g => g.id === v.gruppe))
-                     .sort((a,b) => (a.rang || 0) - (b.rang || 0));
-  const fremdBlock = block('Ohne Gruppe', fremd, '', ' — Gruppe unbekannt');
+                     .sort((a,b2) => (a.rang || 0) - (b2.rang || 0));
+  const fremdBlock = karte('', 'Ohne Gruppe', fremd, 'Gruppe unbekannt');
 
-  const total  = rd(aktiv.reduce((s,v) => s + st(v), 0));
-  const ratenM = rd(aktiv.reduce((s,v) => s + rate(v, S.jahr, S.monat), 0));
-  /* schuldenfreiGecacht() gibt ein Objekt zurueck, keinen Text — {monate,
-     jahr, monat} wenn es ein Ende gibt, sonst {monate:null, rest, bis}.
-     Dieselbe Unterscheidung wie auf der Dashboard-Kachel, damit beide
-     dasselbe sagen. */
+  const total  = rd(aktiv.reduce((s2,v) => s2 + st(v), 0));
+  const ratenM = rd(aktiv.reduce((s2,v) => s2 + rateJetzt(v), 0));
   const sf = schuldenfreiGecacht();
   const sfText = sf.monate !== null
     ? 'schuldenfrei ' + MON_LANG[sf.monat] + ' ' + sf.jahr
     : 'nicht getilgt bis Ende ' + sf.bis + ' · Rest ' + fmt(sf.rest);
 
-  return `<div class="tafel-kopf">
+  const kopf = `<div class="tafel-kopf">
       <span class="titel">Verbindlichkeiten ${zeitTitel()}</span>${tafelKennzahlen()}
+      ${_ro ? '' : `<span class="kopfwerkzeug"><button class="knopf klein" type="button"
+        data-vadd="${GRUPPEN[0].id}">Gläubiger erfassen</button></span>`}
       ${tafelWerkzeug('verbind')}
       ${vollbildKnopf()}
-    </div>
+    </div>`;
+  if (!aktiv.length) return kopf + `<div class="kflaeche k-verbind">
+    <p class="meldung">${D.verbindlichkeiten.length
+      ? 'Alle ' + D.verbindlichkeiten.length + ' erfassten Gläubiger sind ausgeblendet.'
+      : 'Noch kein Gläubiger erfasst. «Gläubiger erfassen» oben legt den ersten an.'}</p></div>`;
+
+  return kopf + `
     <div class="kflaeche k-verbind">
-      <div class="kgruppe" style="padding-top:0">
-        <span class="t">Schulden ${S.zeitraum === 'monat' ? MON[S.monat] + ' ' + S.jahr : S.jahr}</span>
-        <span class="num" style="font-size:19px">${fmt(total)}</span>
-        <span class="z">Raten diesen Monat ${fmt(ratenM)} · ${sfText}</span>
-        <!-- U-41: Ein Glaeubiger entstand bis hierher nur ueber die Kopfzeile
-             einer Gruppe in der Tabelle oder ueber den Verwaltungsbaum. Beides
-             ist ein Umweg fuer etwas, das man an dieser Stelle tut. Der Knopf
-             ruft dieselbe Maske (data-vadd) — die Gruppe steht dort als Feld
-             und laesst sich aendern, deshalb genuegt hier eine Vorgabe. -->
-        ${_ro ? '' : `<button class="knopf klein" type="button" style="margin-left:auto"
-          data-vadd="${GRUPPEN[0].id}">Gläubiger erfassen</button>`}</div>
-      <div class="kkopf"><div style="padding-left:14px">Gläubiger</div>
-        <div style="text-align:right">Stand</div><div style="text-align:right">Rate</div>
+      <div class="kkopf"><div style="padding-left:14px">Gruppe</div>
+        <div style="text-align:right">Stand</div>
+        <div style="text-align:right">${alle ? 'Raten total' : 'Rate'}</div>
         <div style="padding-left:22px">Getilgt</div>
         <div style="text-align:right">Letzte Rate</div>
         <div style="padding-left:26px">Verlauf</div><div></div></div>
       ${gruppen}${fremdBlock}
+      <div class="kgruppe" style="border-top:1px solid var(--rule);margin-top:10px;padding-top:14px">
+        <span class="t">Schulden ${alle ? 'alle Jahre' : zeitTitel()}</span>
+        <span class="num" style="font-size:17px">${fmt(total)}</span>
+        <span class="z">${alle ? 'Raten total' : 'Raten diesen Monat'} ${fmt(ratenM)} · ${sfText}</span></div>
     </div>`;
 }
-
-/* Der Budgetplan dieses Glaeubigers: zwoelf Monatsraten und der Stand je
-   Jahresende. Beides gerechnet und nicht gepflegt — deshalb kein Eingabe-
-   feld. Eingetragen werden die Raten in der Tabelle, und dorthin fuehrt
-   der Schalter oben. */
-function verbindKarteAuf(v) {
-  const h = ymOf(heuteISO());
-  const jahre = Object.keys(D.budget).map(Number).sort();
-  const letztes = jahre.length ? jahre[jahre.length - 1] : S.jahr;
-  /* U-41: Die zwoelf Monatsraten sind hier eintragbar. Bis dahin fuehrte der
-     einzige Weg ueber die Tabelle, und die erscheint seit U-41 nur noch in
-     «Alle Jahre» — dort gibt es keinen Ratenplan je Monat. Dieselben
-     data-Attribute wie die Tabellenzelle: der Verteiler oben kennt sie
-     schon, es kommt keine zweite Speicherstelle dazu. */
-  const monate = [...Array(12).keys()].map(m => {
-    const jetzt = S.jahr === h.j && m === h.m, r = rate(v, S.jahr, m);
-    const kopf = `<div class="m">${MON[m].slice(0,3).toUpperCase()}</div>`;
-    if (_ro) return `<div class="${jetzt?'jetzt':''}">${kopf}<div class="v">${fmtG0(r) || '–'}</div></div>`;
-    const mark = S.markiert.includes(v.id + ':' + m) ? ' markiert' : '';
-    return `<div class="${jetzt?'jetzt ':''}bearbeitbar${mark}" data-vr="${v.id}" data-m="${m}">${kopf}
-      <input type="text" inputmode="decimal" value="${r ? fmtG(r) : ''}" placeholder="0"></div>`;
-  }).join('');
-  const jahrSumme = rd([...Array(12).keys()].reduce((s,m) => s + rate(v, S.jahr, m), 0));
-  const stufen = [];
-  for (let j = S.jahr; j <= letztes; j++) stufen.push([j, Math.max(0, verbindPrognose(v, j, 11))]);
-  const kt = konto(v.kontoId);
-  const wege = [kt ? kt.nr + ' ' + kt.name : '',
-                v.zahlung && v.zahlung.iban ? v.zahlung.iban : ''].filter(Boolean).join(' · ');
-  const belege = dokAnzahl('verbind', v);
-  return `<div class="kauf">
-    <div style="display:grid;grid-template-columns:1fr 300px;gap:26px">
-      <div>
-        <div style="display:flex;align-items:baseline;justify-content:space-between">
-          <span class="lab">Raten ${S.jahr} · aus dem Ratenplan</span>
-          <span style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--muted)">${wege}</span></div>
-        <div class="mraster">${monate}</div>
-        <div style="display:flex;justify-content:space-between;
-          font:400 11px/1 'IBM Plex Mono',monospace;color:#757f8c;margin-top:8px">
-          <span>Summe ${S.jahr}</span><span style="color:#c3ccd6">${fmt(jahrSumme)}</span></div>
-      </div>
-      <div>
-        <div class="lab">Stand per Jahresende</div>
-        <div style="display:flex;justify-content:space-between;margin-top:11px;
-          font:400 12px/1 'IBM Plex Mono',monospace;color:var(--muted)">
-          ${stufen.map(([j,w]) => `<span>${j}<br><span style="font-size:13px;color:${
-            w < 0.005 ? 'var(--accent)' : '#c3ccd6'}">${fmtG(w)}</span></span>`).join('')}</div>
-        <div class="tat-reihe">
-          <button class="knopf klein" type="button" data-schuld="${v.id}:tilgung">Tilgung</button>
-          <button class="knopf klein" type="button" data-schuld="${v.id}:dokumente">Belege${
-            belege ? ' ' + belege : ''}</button>
-          <button class="knopf klein" type="button" data-gaend="${v.id}">Stammdaten</button>
-        </div>
-      </div>
-    </div></div>`;
+/* «August 2029» gegen «Mai 2028» vergleichen, ohne ein zweites Datumsformat
+   einzufuehren: tilgungsende() gibt «Monat Jahr» in Klartext zurueck. */
+function _endeSpaeter(a, b2) {
+  const zer = t => { const p2 = String(t).split(' '); return [+p2[1] || 0, MON_LANG.indexOf(p2[0])]; };
+  const x = zer(a), y = zer(b2);
+  return x[0] !== y[0] ? x[0] > y[0] : x[1] > y[1];
 }
+
+/* Das Raster einer Gruppe: ihre Glaeubiger mal die Zeitachse. Dieselben
+   Bauteile wie das Positionsraster im Budget — deshalb dieselbe Klasse.
+   Eingetragen werden hier die Raten; der Stand ist gerechnet und steht fest. */
+function verbindKarteAuf(gid, liste) {
+  const h = ymOf(heuteISO()), alle = S.zeitraum === 'alle', sp = spaltenKoepfe();
+  const wert = (v, x) => alle
+    ? rd([...Array(12).keys()].reduce((a,m2) => a + rate(v, x.key, m2), 0)) : rate(v, S.jahr, x.key);
+  const jetztSp = x => alle ? x.key === h.j : (x.key === h.m && S.jahr === h.j);
+  const kopf = `<div class="r kopf"><div class="p">Gläubiger</div><div class="c">Stand</div>${
+    sp.map(x => `<div class="c" ${jetztSp(x)?'style="color:var(--accent)"':''
+      }>${alle ? x.label : x.label.slice(0,3)}</div>`).join('')}<div class="j">${alle?'Total':'Jahr'}</div></div>`;
+  const reihen = liste.map(v => {
+    const zellen = sp.map(x => {
+      const w = wert(v, x), jetzt = jetztSp(x);
+      if (_ro || alle) return `<div class="c ${jetzt?'jetzt':''}">${fmtG0(w)}</div>`;
+      const mark = S.markiert.includes(v.id + ':' + x.key) ? ' markiert' : '';
+      return `<div class="c ${jetzt?'jetzt':''} bearbeitbar${mark}" data-vr="${v.id}" data-m="${x.key}"><input
+        type="text" inputmode="decimal" value="${w ? fmtG(w) : ''}" placeholder="0"></div>`;
+    }).join('');
+    const tage = v.vereinbarungBis
+      ? Math.round((Date.parse(v.vereinbarungBis + 'T00:00:00')
+                  - Date.parse(heuteISO() + 'T00:00:00')) / 86400000) : null;
+    return `<div class="r" data-oart="verb" data-verb="${v.id}" data-vgrp="${gid}">
+      <div class="p">${alle ? '' : ordGriff('verb', v)}<span class="t" data-schuld="${v.id}"
+          title="Zahlung, Tilgung, Verlauf und Belege">${v.bezeichnung}</span>
+        ${tage !== null && tage <= 120
+          ? `<span class="weg" style="color:var(--err)">bis ${v.vereinbarungBis.slice(8,10)}.${
+              v.vereinbarungBis.slice(5,7)}.</span>` : ''}</div>
+      <div class="c">${fmtG0(verbindStandHeute(v))}</div>${zellen}
+      <div class="j">${fmtG0(rd(sp.reduce((a,x)=>a+wert(v,x),0)))}</div></div>`;
+  }).join('');
+  const summe = `<div class="r summe"><div class="p" style="color:var(--muted)">Summe</div>
+    <div class="c">${fmtG0(rd(liste.reduce((a,v)=>a+verbindStandHeute(v),0)))}</div>${
+    sp.map(x => `<div class="c ${jetztSp(x)?'jetzt':''}">${
+      fmtG0(rd(liste.reduce((a,v)=>a+wert(v,x),0)))}</div>`).join('')}
+    <div class="j" style="color:#fff">${fmtG0(rd(liste.reduce((a,v)=>
+      a + sp.reduce((b2,x)=>b2+wert(v,x),0), 0)))}</div></div>`;
+  const pgrid = `250px 84px repeat(${sp.length},minmax(0,1fr)) 88px`;
+  return `<div class="kauf"><div class="praster" style="--pgrid:${pgrid}">${kopf}${reihen}${summe}
+    <div class="fuss"><span>${alle
+      ? 'Ein Jahrgang je Spalte · eingetragen wird im einzelnen Jahr'
+      : 'Der Name führt zu Zahlung, Tilgung, Verlauf und Belegen'}</span>
+      <span style="flex:1"></span>
+      ${_ro || alle || !gid ? '' : `<button class="knopf klein" type="button"
+        data-vadd="${gid}">Gläubiger hinzufügen</button>`}
+      </div></div></div>`;
+}
+
 /* ---- Rechnungen ------------------------------------------------------ */
 /* Die Rechnungen stehen als Kacheln, nach Faelligkeitsmonat gruppiert —
    dieselbe Anatomie wie Konto und Schuld, dieselbe Zwischenueberschrift wie
@@ -4930,7 +4993,8 @@ function blattZeichnen() {
     kontomaske: blattKontoMaske,
     sync: blattSync, bericht: blattBericht,
     handbuch: blattHandbuch, rechnung: blattRechnung, serie: blattSerie,
-    rechnungzeigen: blattRechnungZeigen, glaeubiger: blattGlaeubiger
+    rechnungzeigen: blattRechnungZeigen, glaeubiger: blattGlaeubiger,
+    offen: blattOffen                                  /* U-45 */
   }[_blatt.art];
   if (!f) { console.warn('Kein Blatt für', _blatt.art); return; }
   const b = f(_blatt.id);
@@ -8913,7 +8977,7 @@ document.addEventListener('click', async ev => {
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
-    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-buchen],[data-csv],#ablage,button');
+    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-buchen],[data-csv],[data-offen],#ablage,button');
   if (!t) return;
 
   /* --- Kachel oeffnet ihr Blatt --- */
@@ -8975,11 +9039,15 @@ document.addEventListener('click', async ev => {
      Die uebrigen Felder stehen mit, damit der Entwurf dieselbe Gestalt hat
      wie der, den maskeBuchung() sonst selbst anlegt. */
   if (t.dataset.csv) return csvExport(t.dataset.csv);
+  if (t.dataset.offen !== undefined) return blattAuf('offen', null);   /* U-45 */
   if (t.dataset.buchen) {
     const [zeileId, kontoId, betrag] = t.dataset.buchen.split(':');
     _entwurf = { kontoId, art:'ausgabe', datum:heuteISO(), ganzerMonat:false,
                  betrag, zeileId, gegenkontoId:'', text:'', verbId:'', sparzielId:'' };
-    return blattAuf('konto', kontoId, 'buchen');
+    /* U-45: Steht schon ein Blatt offen — die Liste der offenen Posten —, geht
+       die Maske DARUEBER auf. Nach dem Schliessen steht man wieder in der
+       Liste und nimmt den naechsten Posten. */
+    return blattAuf('konto', kontoId, 'buchen', !!_blatt);
   }
 
   /* --- U-40/U-41: die eine offene Karte ---
@@ -9066,7 +9134,7 @@ document.addEventListener('click', async ev => {
      erwarten «serienId:datum». Ein Glaeubiger dort haette lautlos die falsche
      Funktion gerufen. Ein Doppelpunkt kommt in keiner Kennung vor (neueId). */
   if (t.dataset.schuld) { const [vId, rt] = t.dataset.schuld.split(':');
-    return blattAuf('schuld', vId, rt || 'zahlung'); }
+    return blattAuf('schuld', vId, rt || 'zahlung', !!_blatt); }   /* U-45: stapelt */
 
   /* --- Blatt --- */
   if (t.dataset.zu !== undefined) return blattZu();
