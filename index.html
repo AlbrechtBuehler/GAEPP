@@ -1565,7 +1565,21 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
    entschieden: In dieser Tabelle kommt kein positiver Betrag vor, die
    beiden Bedeutungen begegnen sich nie. Dokumentiert im Handbuch. */
 .praster .c.gebucht{color:var(--ok)}
-.praster .c.gebucht input{color:var(--ok)}
+/* Der Text steht im Eingabefeld, nicht in der Zelle — die Zellfarbe allein
+   faerbt also nichts. Und `.praster .c.bearbeitbar input` ist GENAUSO
+   spezifisch wie `.praster .c.gebucht input`; bei Gleichstand gewinnt die
+   spaetere Regel, und das war die graue. Deshalb hier eine Klasse mehr:
+   `.c.bearbeitbar.gebucht` schlaegt `.c.bearbeitbar`, unabhaengig davon,
+   wo im Stylesheet die beiden stehen. Auf die Reihenfolge zu bauen hiesse,
+   dass der naechste Umbau die Farbe wieder ausknipst, ohne dass es jemand
+   merkt. */
+.praster .c.gebucht input,
+.praster .c.bearbeitbar.gebucht input,
+/* Auch im laufenden Monat: dort faerbt `.c.jetzt input` weiss, und weiss
+   heisst «dieser Monat», nicht «gebucht». Die Hervorhebung des Monats
+   traegt der Hintergrund — die Farbe der Zahl gehoert der Buchung. */
+.praster .c.jetzt.gebucht input,
+.praster .c.jetzt.bearbeitbar.gebucht input{color:var(--ok)}
 .praster .p .weg{font:400 10.5px/1 'IBM Plex Mono',monospace;color:#757f8c;white-space:nowrap}
 .praster .c{text-align:right;padding-right:12px}
 .praster .c.jetzt{background:rgba(142,230,200,.06);color:#fff;height:100%;
