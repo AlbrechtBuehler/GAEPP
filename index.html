@@ -2503,7 +2503,21 @@ function zeileSicht(z, j) { return jahrSicht(z, j) && katSicht(kategorie(z.kateg
    aendert sich nicht dadurch, dass man sie nicht mehr sehen will. Was
    sich aendert, ist, welche Glaeubiger eine Ansicht oder eine Summe
    ueberhaupt zusammenzaehlt — und das je Jahr, nicht je Objekt. */
-function verbSicht(v, j) { return !!v && v.aktiv !== false && jahrSicht(v, j); }
+/* U-51: `ausAb` blendet nach vorne aus. Nach hinten fehlte das Gegenstueck —
+   und dafuer braucht es kein neues Feld, denn `anfangsdatum` sagt es bereits:
+   vor ihm gibt es die Schuld nicht. U-35 rechnet das laengst richtig (0 statt
+   Anfangsstand), aber die Zeile stand trotzdem in der Tabelle: eine
+   Steuerschuld, die im Januar 2027 entsteht, fuellte den ganzen Jahrgang 2026
+   mit Nullen. Wer eine Zeile sieht, liest sie als «gibt es» — zwoelf Nullen
+   sind keine Antwort, sondern eine Frage.
+   Auch das eine AUSWAHLfrage, je Jahr, nie in verbindLauf(). Die Summen
+   aendern sich dadurch nicht um einen Rappen, weil ein Glaeubiger vor seinem
+   Anfangsdatum ohnehin null beitraegt. Es verschwindet nur, was nichts sagt.
+   Gemeldet von Albrecht am 19.08.2026: «steuern 26 sind noch keine Schuld im
+   2026». */
+function verbSicht(v, j) {
+  return !!v && v.aktiv !== false && jahrSicht(v, j) && j >= ymOf(v.anfangsdatum).j;
+}
 /* Das Jahr ist Pflicht, kein Zusatz — aus demselben Grund wie bei
    zeilenVon(): ohne es waere «sichtbar» wieder eine Eigenschaft des
    Glaeubigers statt eine des Jahres. */
