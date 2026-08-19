@@ -8156,13 +8156,13 @@ function exportHtml() {
    =================================================================== */
 function blattHandbuch() {
   return { weit:true, titel:'Wie GÄPP tickt', koerper:`<div class="hb">
-    <p>Acht Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
+    <p>Zehn Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
        nicht aus Gewohnheit. Der Rest bedient sich von selbst.</p>
 
     <div class="regel"><h3>1. Eine offene Rechnung mindert den Kontostand nicht</h3>
     <p>Der Kontostand bildet ab, was die Bank sagt. Solange du eine Rechnung nicht bezahlt hast,
        ist das Geld noch da — die Bank weiss nichts von ihr. Was sie sehr wohl mindert, ist
-       <b>«Frei per Monatsende»</b> — <b>aber nur, wenn sie auch von einem freien Konto bezahlt
+       <b>«Verfügbar heute»</b> — <b>aber nur, wenn sie auch von einem freien Konto bezahlt
        wird</b>. Läuft sie über Kreditoren, Rückstellungen oder Fixkosten, liegt das Geld dort
        schon bereit und war nie Teil deines freien Betrags.</p></div>
 
@@ -8173,36 +8173,56 @@ function blattHandbuch() {
        dein freies Geld noch in die Budgetzeile «Rechnungen». Sonst stünde sie zweimal da.
        <b>Du entscheidest das je Rechnung</b>, nicht die Position.</p></div>
 
-    <div class="regel"><h3>3. Liquiditätskarte und «Frei per Monatsende» sind dieselbe Zahl</h3>
-    <p>Die Karte oben und die Zeile im Budgetkopf rechnen nach derselben Regel: Bestand auf
-       HHK minus die offenen, ungedeckten Rechnungen dieses Monats, die von dort bezahlt werden.
-       Die Karte bricht den Wert zusätzlich auf die Tage bis zum nächsten Lohn herunter.
-       <b>Nur der laufende Monat trägt einen Wert</b> — vergangene und künftige zeigen «–».</p></div>
+    <div class="regel"><h3>3. Die Zahl im Dashboard und die in der Kopfzeile sind dieselbe</h3>
+    <p>Beide rechnen nach derselben Regel: Bestand auf HHK minus die offenen, ungedeckten
+       Rechnungen dieses Monats, die von dort bezahlt werden. Die Kopfzeile nennt sie
+       <b>«Verfügbar heute»</b> und bricht sie zusätzlich auf die Tage bis zum nächsten Lohn
+       herunter. <b>Nur der laufende Monat trägt einen Wert</b> — vergangene und künftige
+       zeigen «–».</p>
+    <p>Steht daneben <b>«Noch offen im Monat»</b> in Rot, ist die Zahl anklickbar. Dahinter
+       liegt die Liste dessen, was budgetiert und noch nicht gebucht ist, mit einem Knopf je
+       Posten. Nach dem Buchen bleibt der Saldo, wie er ist — die Zahl war schon drin, sie
+       war nur noch nicht belegt.</p></div>
 
-    <div class="regel"><h3>4. Die Kachel öffnet ihr Blatt, das ist kein Ansichtswechsel</h3>
-    <p>Ein Klick auf eine Kachel legt ein Blatt darüber. Die Kachelansicht bleibt darunter stehen,
-       Escape bringt dich zurück, und du landest an derselben Stelle wie vorher.
-       Gearbeitet wird im Blatt, gezeigt wird auf der Kachel.</p></div>
+    <div class="regel"><h3>4. Lesen und Eintragen sind dieselbe Ansicht</h3>
+    <p>Es gibt keinen Modus, zwischen dem du wechselst. Eine Karte zeigt und nimmt entgegen:
+       klappst du eine Kategorie oder eine Gläubigergruppe auf, steht dort ihr Raster, und
+       die Zellen darin sind die Felder, in die du tippst. Damit kannst du auch nicht
+       versehentlich im falschen Modus stehen.</p>
+    <p>Eine Ausnahme: <b>«Alle Jahre» nimmt nichts entgegen.</b> Dort ist jede Spalte ein
+       Jahrgang, und ein Jahreswert ist die Summe von zwölf Monaten — er steht nirgends,
+       also lässt er sich auch nicht ändern. Eingetragen wird im einzelnen Jahr.</p></div>
 
-    <div class="regel"><h3>5. Du tippst nie ein Minuszeichen</h3>
+    <div class="regel"><h3>5. Kachel und Karte führen verschieden, beides ist kein Ansichtswechsel</h3>
+    <p>Ein Klick auf eine <b>Kachel</b> legt ein Blatt darüber — Konten, Sparziele, Reserve
+       arbeiten so. Die Ansicht bleibt darunter stehen, Escape bringt dich zurück, und du
+       landest an derselben Stelle wie vorher. Eine <b>Karte</b> dagegen klappt auf, statt
+       ein Blatt zu legen; Budget und Verbindlichkeiten arbeiten so. Es ist immer nur eine
+       Karte offen: das Raster ist hoch, und zwei offene heben den Vergleich auf, für den
+       die Karten da sind.</p>
+    <p><b>Die Schulden stehen an einem Ort</b>, im Bereich Verbindlichkeiten. Der Bereich
+       Konten führt Konten, Sparziele und Reserve — sonst stünden dieselben Gläubiger
+       zweimal auf zwei verschiedene Arten da.</p></div>
+
+    <div class="regel"><h3>6. Du tippst nie ein Minuszeichen</h3>
     <p>Die Richtung kommt aus der Kategorie: Was unter Fixkosten steht, ist eine Ausgabe.
        In der Maske steht der Betrag, in den Summen erscheint er mit dem richtigen Vorzeichen.
        Einzige Ausnahme ist <b>Lohnabzug | Darlehen</b> — die Zeile steht beim Einkommen,
        läuft aber dagegen.</p></div>
 
-    <div class="regel"><h3>6. Strg-Klick markiert, Doppelklick überträgt</h3>
-    <p>In der Budgettabelle setzt ein einfacher Klick den Schreibcursor.
+    <div class="regel"><h3>7. Strg-Klick markiert, Doppelklick überträgt</h3>
+    <p>Im aufgeklappten Raster einer Kategorie setzt ein einfacher Klick den Schreibcursor.
        <b>Strg-Klick</b> markiert eine Zelle und hebt die Markierung wieder auf.
        <b>Doppelklick</b> überträgt den Wert auf die folgenden Monate, auf Wunsch auch
        auf die Folgejahre.</p></div>
 
-    <div class="regel"><h3>7. Der Punkt neben dem Zahnrad sagt, ob gesichert ist</h3>
+    <div class="regel"><h3>8. Der Punkt neben dem Zahnrad sagt, ob gesichert ist</h3>
     <p>Ocker heisst: es gibt eine Änderung, die noch nicht oben ist. GÄPP sichert von selbst,
        zweieinhalb Sekunden nachdem du aufgehört hast — zehn Handgriffe hintereinander
        ergeben <b>einen</b> Sicherungsvorgang, nicht zehn. Grün mit Uhrzeit heisst: alles oben.
        Rot heisst: es ging etwas schief, der Text daneben sagt was.</p></div>
 
-    <div class="regel"><h3>8. Löschen ist etwas anderes als Ausblenden</h3>
+    <div class="regel"><h3>9. Löschen ist etwas anderes als Ausblenden</h3>
     <p><b>Ausblenden</b> nimmt ein Konto, eine Kategorie oder eine Position aus der Ansicht;
        ihre Werte bleiben, und du holst sie in der Verwaltung zurück. <b>Löschen nimmt sie
        wirklich weg</b>, mit allem, was daran hängt — GÄPP zeigt vorher eine Aufstellung, was
@@ -8213,9 +8233,9 @@ function blattHandbuch() {
        Git-Historie deines Datenrepos, und beim ersten Öffnen am Tag legt GÄPP eine Kopie
        in <b>${ORD_SICHERUNG}</b>.</p></div>
 
-    <div class="regel"><h3>9. Ziehen ordnet um, tippen nicht</h3>
-    <p>Fährst du über eine Budgetzeile, einen Gläubiger oder ein Konto in der Verwaltung,
-       erscheint links ein <b>Griff</b>. Zieh daran, und der Eintrag steht woanders —
+    <div class="regel"><h3>10. Ziehen ordnet um, tippen nicht</h3>
+    <p>Fährst du im aufgeklappten Raster über eine Position oder einen Gläubiger — oder in
+       der Verwaltung über ein Konto —, erscheint links ein <b>Griff</b>. Zieh daran, und der Eintrag steht woanders —
        <b>Alt+Pfeil hoch/runter</b> tut dasselbe ohne Maus. Umgeordnet wird immer nur
        innerhalb des eigenen Blocks: eine Zeile bleibt in ihrer Kategorie, ein Gläubiger in
        seiner Gruppe, ein Konto in seinem Bereich. Das ist Absicht — die Kategorie einer Zeile
