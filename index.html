@@ -2281,9 +2281,19 @@ function zeitTitel() {
   return MON_LANG[S.monat] + ' ' + S.jahr;
 }
 function zeichneKopf() {
-  const jahre = Object.keys(D.budget).map(Number).sort();
-  const spanne = jahre.length ? (jahre[0] === jahre[jahre.length-1] ? String(jahre[0])
-                : jahre[0] + '–' + jahre[jahre.length-1]) : '—';
+  /* U-37: über budgetJahre() statt über ein eigenes .sort() ohne Vergleicher —
+     dieselbe Frage, dieselbe Antwort (vgl. F-18). */
+  const jahre = budgetJahre();
+  /* U-37: Gibt es nur EINEN Jahrgang, war die Spanne das Wort, das eine Zeile
+     tiefer noch einmal steht: «2024» über «2024». Zwei gleich beschriftete
+     Stufen, von denen nur die untere bearbeitbar ist — wer die obere erwischt,
+     steht in «Alle Jahre» und findet dort weder den Knopf «Gläubiger
+     hinzufügen» noch eine Eingabezelle, ohne dass irgendetwas sagt warum.
+     Genau das ist am 18.08.2026 passiert. Die Stufe heisst deshalb bei einem
+     einzigen Jahrgang, was sie ist. */
+  const spanne = !jahre.length ? '—'
+    : jahre[0] === jahre[jahre.length-1] ? 'Alle Jahre'
+    : jahre[0] + '–' + jahre[jahre.length-1];
   $('#lblAlle').textContent  = spanne;
   $('#lblJahr').textContent  = String(S.jahr);
   $('#lblMonat').textContent = MON_LANG[S.monat] + ' ' + S.jahr;
@@ -5251,6 +5261,21 @@ const VW_SEITEN = [
      Kennzeichen, dieselben Handler, eine Wahrheit (G-4). */
   ['konten',   'Konten',            'anlegen, ändern, anordnen'],
   ['struktur', 'Struktur',          'Konten, Kategorien und Positionen'],
+  /* U-37: «Gläubiger» steht als eigenes Register neben den Konten. Der Knopf
+     in der Gruppenzeile der Verbindlichkeitentabelle bleibt, wo er ist — er
+     ist der kurze Weg im Arbeitsfluss. Aber er ist an drei Bedingungen
+     gebunden, die der Benutzer nicht im Kopf hat: die Gruppe muss gezeichnet
+     sein, die Sicht darf nicht «Alle Jahre» sein, und die Datei darf nicht
+     schreibgeschützt geladen haben. Zweimal ist genau daran das Anlegen
+     gescheitert (F-17, und danach an der Jahressicht). Ein Register in der
+     Verwaltung hat keine dieser Bedingungen: Stammdaten stehen dort, wo
+     Stammdaten stehen, und sie stehen immer da.
+     KEINE ZWEITE WAHRHEIT: Der Knopf hier trägt dasselbe Kennzeichen
+     (`data-vadd`), ruft denselben Handler und öffnet dieselbe Maske wie der
+     in der Tabelle. Genau das Muster, das U-35 für die Konten festgelegt hat
+     — Knopf im Baum UND eigenes Register, dieselben Handler, eine Wahrheit
+     (G-4). */
+  ['glaeubiger','Gläubiger',        'anlegen, ändern, ausblenden, löschen'],
   ['steller',  'Rechnungssteller',  'wer dir Rechnungen schickt'],
   ['sparziele','Sparziele',         'worauf du hinsparst'],
   ['aus',      'Ausgeblendet',      'stillgelegte Zeilen und Kategorien'],
@@ -5261,6 +5286,7 @@ const VW_SEITEN = [
 ];
 function vwZaehler(id) {
   if (id === 'konten')    return D.konten.length;
+  if (id === 'glaeubiger') return D.verbindlichkeiten.length;
   if (id === 'steller')   return D.steller.length;
   if (id === 'sparziele') return D.sparziele.length;
   /* U-21: gezaehlt wird, was ein ausAb TRAEGT — nicht, was heute unsichtbar
@@ -5404,8 +5430,61 @@ function vwKontenBlock(sek, titel, leer) {
       : `<p class="meldung">${leer}</p>`}
     <div class="vw-blockfuss"></div></div>`;
 }
+/* U-37 — ein Block je Gläubigergruppe, gebaut wie vwKontenBlock.
+   Das Anordnen bleibt bewusst in der Verbindlichkeitentabelle: der Zug
+   arbeitet mit Kopf- und Fusszeile der Gruppe (`tr.zeile-sub`,
+   `tr.zeile-summe`), die es hier nicht gibt. Ein zweiter Ziehweg mit
+   eigenen Selektoren waere genau die zweite Wahrheit, die G-4 verbietet. */
+function vwGlaeubigerBlock(g) {
+  const liste = ordListe('verb', g.id);
+  const summe = rd(liste.filter(v => v.aktiv !== false)
+    .reduce((a, v) => a + verbindStandHeute(v), 0));
+  return `<div class="vw-kontenblock" data-gsekkopf="${g.id}">
+    <h3 class="vw-blockkopf">${g.name}
+      <span class="meldung">${liste.length} ${liste.length === 1 ? 'Gläubiger' : 'Gläubiger'}${
+        liste.length ? ' · zusammen ' + fmt(summe) : ''}</span>
+      ${_ro ? '' : `<button class="knopf klein" type="button" data-vadd="${g.id}">Gläubiger anlegen</button>`}
+    </h3>
+    ${liste.length ? `<div class="vw-liste vw-kontenliste">${liste.map(v => {
+      const r = ((v.raten && v.raten[String(S.jahr)]) || {}).soll;
+      return `<div class="z ${v.aktiv === false ? 'aus' : ''}" data-gverb="${v.id}">
+        <span class="n">${htmlText(v.bezeichnung)}</span>
+        <span class="rolle">${htmlText(kontoName(v.kontoId))}${
+          v.zinssatz ? ' · ' + v.zinssatz + ' % Monatszins' : ''}${
+          v.gebuehr ? ' · Gebühr ' + fmt(v.gebuehr) : ''}${
+          r ? ' · Rate ' + S.jahr + ' ' + fmt(r) : ''}${
+          v.aktiv === false ? ' · ausgeblendet' : ''}</span>
+        <span class="zahl num">${fmt(verbindStandHeute(v))}</span>
+        <span class="zw">
+          <button class="knopf klein" data-gaend="${v.id}">Ändern</button>
+          <button class="knopf klein" data-gaus="${v.id}">${
+            v.aktiv === false ? 'Einblenden' : 'Ausblenden'}</button>
+          <button class="knopf klein gefahr" data-vwloesch="verbindlichkeit:${v.id}">Löschen</button>
+        </span></div>`;
+    }).join('')}</div>`
+      : `<p class="meldung">Noch kein Gläubiger in dieser Gruppe. «Gläubiger anlegen» rechts macht den ersten.</p>`}
+    <div class="vw-blockfuss"></div></div>`;
+}
+/* Der Name des Zahlungskontos, ohne zu werfen, wenn keines gesetzt ist —
+   beim Anlegen in einer Datei ohne Konten bleibt das Feld leer. */
+function kontoName(id) {
+  const k = id && konto(id);
+  return k ? k.nr + ' ' + k.name : 'kein Zahlungskonto';
+}
 function vwInhalt(seite) {
   const liste = (items, art, leer) => items.length ? vwListe(items, art) : `<p class="meldung">${leer}</p>`;
+  if (seite === 'glaeubiger') return `
+    <div class="vw-kopf"><h2>Gläubiger</h2>
+      <span class="meldung">Alle Verbindlichkeiten, nach Gruppe. Der Stand ist gerechnet:
+        Anfangssaldo minus gebuchte Zahlungen plus Erhöhungen. <b>Die Raten trägst du in der
+        Verbindlichkeitentabelle ein</b> — Monat für Monat, wie beim Budget; dort wird auch
+        die Reihenfolge gezogen.</span></div>
+    <div class="vw-karte">
+      ${GRUPPEN.map(g => vwGlaeubigerBlock(g)).join('')}
+      <p class="meldung" style="margin-top:12px"><b>Ausblenden ist nicht Löschen.</b>
+        Ein ausgeblendeter Gläubiger verschwindet aus Tabelle und Kacheln, seine Zahlen
+        bleiben. Löschen nimmt ihn mit allem, was daran hängt — GÄPP zeigt vorher, was
+        mitgeht, und der Schritt bleibt zwölf Sekunden lang rücknehmbar.</p></div>`;
   if (seite === 'konten') return `
     <div class="vw-kopf"><h2>Konten</h2>
       <span class="meldung">Jedes Konto mit seinem Stand per ${zeitTitel()}.
