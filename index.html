@@ -1379,6 +1379,165 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 /* ---- Kennzahlenband: die wichtigste Zahl ist nicht die kleinste ---- */
 .kennzahlen .v{font-size:19px !important}
 .kennzahlen .k{font-size:10.5px;letter-spacing:.12em}
+
+/* ===================================================================
+   Kartenansichten (U-40). Streifen statt Zeilen: die Spaltenkante der
+   Tabelle bleibt, die Karte kommt dazu. Grid statt table, damit eine
+   Karte aufklappen kann, ohne die Spalten der anderen zu verschieben.
+   =================================================================== */
+.kansicht{display:flex;align-items:center;gap:10px}
+.kansicht .schalter{display:flex;background:var(--bg);border:1px solid var(--line);
+  border-radius:8px;padding:2px}
+.kansicht .schalter button{padding:6px 14px;border:0;border-radius:6px;background:none;
+  font:400 12px/1.4 'Space Grotesk',sans-serif;color:var(--muted);cursor:pointer}
+.kansicht .schalter button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:500}
+.kansicht .schalter button:disabled{opacity:.4;cursor:not-allowed}
+
+.kflaeche{padding:18px var(--edge) 26px}
+.kgruppe{display:flex;align-items:baseline;gap:12px;padding:15px 14px 8px}
+.kgruppe .t{font:600 12.5px/1 'Space Grotesk',sans-serif;color:var(--ink)}
+.kgruppe .num{font:500 12.5px/1 'IBM Plex Mono',monospace;color:#dbe2ea}
+.kgruppe .z{font:400 11px/1 'IBM Plex Mono',monospace;color:#757f8c}
+
+/* Der Spaltenkopf über den Streifen — dieselbe Rasterdefinition wie die
+   Streifen selbst, sonst wandert die Kante beim ersten Umbau auseinander. */
+.kkopf{display:grid;align-items:center;height:30px;border-bottom:1px solid var(--line);
+  font:400 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;
+  text-transform:uppercase;color:#757f8c}
+.streifen{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  margin-bottom:6px;overflow:hidden}
+.streifen>.reihe{display:grid;align-items:center;height:48px;cursor:pointer}
+.streifen.offen{background:var(--sheet);border-color:var(--rule);
+  box-shadow:0 0 0 1px rgba(142,230,200,.3)}
+.streifen.offen>.reihe{height:52px}
+.streifen:hover:not(.offen){border-color:var(--rule)}
+.streifen .nam{padding-left:14px;display:flex;align-items:baseline;gap:10px;overflow:hidden}
+.streifen .nam .chev{font:400 10px/1 'IBM Plex Mono',monospace;color:#5f6874}
+.streifen.offen .nam .chev{color:var(--accent)}
+.streifen .nam .t{font:400 14px/1 'Space Grotesk',sans-serif;color:#dbe2ea;white-space:nowrap}
+.streifen.offen .nam .t{font-weight:500;color:#fff}
+.streifen .nam .z{font:400 11px/1 'IBM Plex Mono',monospace;color:#757f8c;white-space:nowrap}
+.streifen .nam .z.warn{color:var(--err)}
+.streifen .n{text-align:right;font:400 13.5px/1 'IBM Plex Mono',monospace;color:#c3ccd6}
+.streifen .n.gross{font:500 17px/1 'IBM Plex Mono',monospace;color:var(--ink)}
+.streifen.offen .n.gross{font-size:18px;color:#fff}
+.streifen .n.err{font-weight:500;color:var(--err)}
+.streifen .n.leer{color:#5f6874}
+.streifen .n.gespiegelt-wert{font-style:italic;color:#c3ccd6}
+.streifen .tat{padding-right:14px;text-align:right}
+
+/* Getilgt/Verbraucht: derselbe Balken wie auf der Kachel, nur liegend. */
+.kbalken{padding-left:22px;display:flex;align-items:center;gap:10px}
+.kbalken .bar{flex:1;height:4px;background:var(--soft);border-radius:2px;overflow:hidden}
+.kbalken .bar>div{height:100%;background:var(--accent)}
+.kbalken .p{font:400 11px/1 'IBM Plex Mono',monospace;color:var(--muted)}
+.kspark{padding:0 26px}
+.kspark svg{width:100%;height:22px;display:block}
+.kspark polyline{fill:none;stroke:#5c8f80;stroke-width:1.4}
+.streifen.offen .kspark polyline{stroke:var(--accent);stroke-width:1.6}
+/* Jahresverlauf als zwölf Balken (Budget). Der laufende Monat leuchtet. */
+.kjahr{padding:0 26px;display:flex;align-items:flex-end;gap:4px;height:26px}
+.kjahr i{flex:1;background:#2c4a44;border-radius:1px;min-height:2px}
+.kjahr i.kuenftig{background:#232b34}
+.kjahr i.jetzt{background:var(--accent)}
+.streifen .pfeil{font:400 12px/1 'IBM Plex Mono',monospace;color:#5f6874;text-align:center}
+
+/* Der aufgeklappte Teil. Er sitzt IM Streifen, damit die Zeile beim
+   Zuklappen an derselben Stelle stehen bleibt. */
+.kauf{border-top:1px solid var(--rule);background:#0f141a;padding:15px 18px 16px}
+.kauf .lab{font:400 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;
+  text-transform:uppercase;color:#757f8c}
+.kauf .tat-reihe{display:flex;gap:8px;margin-top:14px}
+.kauf .knopf{white-space:nowrap}
+
+/* Monatsraster im aufgeklappten Streifen (Verbindlichkeiten, 12 Zellen). */
+.mraster{display:grid;grid-template-columns:repeat(12,1fr);gap:1px;background:#1a2029;
+  border:1px solid #1a2029;border-radius:7px;overflow:hidden;margin-top:9px}
+.mraster>div{background:var(--card);padding:8px 4px;text-align:center}
+.mraster .m{font:400 9.5px/1 'IBM Plex Mono',monospace;color:#757f8c}
+.mraster .v{font:400 12.5px/1 'IBM Plex Mono',monospace;color:#c3ccd6;margin-top:5px}
+.mraster>div.jetzt{background:#16202a;box-shadow:inset 0 0 0 1px rgba(142,230,200,.4)}
+.mraster>div.jetzt .m{color:var(--accent)}
+.mraster>div.jetzt .v{font-weight:500;color:#fff}
+
+/* Positionsraster im aufgeklappten Streifen (Budget, Positionen × Monate). */
+.praster{margin-top:12px}
+.praster .r{display:grid;align-items:center;height:34px;border-top:1px solid var(--sheet);
+  font:400 13px/1 'IBM Plex Mono',monospace;color:#c3ccd6}
+.praster .r.kopf{height:26px;border:0;font:400 10px/1 'IBM Plex Mono',monospace;
+  letter-spacing:.1em;text-transform:uppercase;color:#757f8c}
+.praster .r.summe{height:36px;border-top:1px solid var(--rule);font-weight:500;color:#dbe2ea}
+.praster .p{padding-left:22px;display:flex;align-items:baseline;gap:9px;overflow:hidden}
+.praster .p .t{font:400 13.5px/1 'Space Grotesk',sans-serif;color:#dbe2ea;white-space:nowrap}
+.praster .p .weg{font:400 10.5px/1 'IBM Plex Mono',monospace;color:#757f8c;white-space:nowrap}
+.praster .c{text-align:right;padding-right:12px}
+.praster .c.jetzt{background:rgba(142,230,200,.06);color:#fff;height:100%;
+  display:flex;align-items:center;justify-content:flex-end;gap:7px}
+.praster .c.jetzt.hatoffen{background:rgba(240,160,141,.1);
+  box-shadow:inset 0 0 0 1px rgba(240,160,141,.45)}
+.praster .c .pkt{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.praster .c.hatoffen .pkt{background:none;border:1px solid var(--err)}
+.praster .j{text-align:right;padding-right:22px;color:var(--ink)}
+.praster .fuss{display:flex;align-items:center;gap:14px;padding:11px 0 0;
+  border-top:1px solid var(--line);margin-top:2px;
+  font:400 11.5px/1 'IBM Plex Mono',monospace;color:#757f8c}
+.praster .fuss .leg{display:flex;align-items:center;gap:6px}
+
+/* Das Band über den Karten: budgetiert und nicht gebucht. */
+.offenband{background:#1a1c1c;border:1px solid #3a2f2b;border-radius:10px;
+  padding:14px 18px 15px;margin-bottom:20px}
+.offenband .kopf{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.offenband .kopf .lab{font:400 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--err)}
+.offenband .kopf .sum{font:500 20px/1 'IBM Plex Mono',monospace;color:#fff}
+.offenband .kopf .z{font:400 11.5px/1 'IBM Plex Mono',monospace;color:var(--muted)}
+.offenband .kopf .hin{margin-left:auto;font:400 11.5px/1 'IBM Plex Mono',monospace;color:#757f8c}
+.offenband .posten{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.offenband .posten>div{display:flex;align-items:center;gap:12px;background:var(--card);
+  border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+.offenband .posten .txt{flex:1;min-width:0}
+.offenband .posten .t{font:500 13.5px/1.2 'Space Grotesk',sans-serif;color:var(--ink)}
+.offenband .posten .z{font:400 10.5px/1 'IBM Plex Mono',monospace;color:#757f8c;margin-top:5px}
+.offenband .posten .n{font:500 17px/1 'IBM Plex Mono',monospace;color:#fff}
+
+/* Die Rasterdefinitionen. Eine Stelle je Bereich, von Kopf und Streifen
+   geteilt — sonst verrutscht die Kante beim nächsten Umbau. */
+.k-verbind .kkopf,.k-verbind .streifen>.reihe{
+  grid-template-columns:400px 130px 110px 190px 130px 1fr 120px}
+.k-budget .kkopf,.k-budget .streifen>.reihe{
+  grid-template-columns:360px 108px 108px 108px 170px 118px 1fr 34px}
+.k-budget .praster .r{grid-template-columns:280px repeat(12,1fr) 100px}
+
+/* Halbbreit: die Spalten fallen weg, die Karte wird zweizeilig (Bild 6b).
+   Kein eigener Bauplan — dieselben Bausteine, anders gestapelt. */
+@media (max-width:1200px){
+  .k-verbind .kkopf,.k-budget .kkopf{display:none}
+  .k-verbind .streifen>.reihe,.k-budget .streifen>.reihe{
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:9px;height:auto;padding:11px 14px 12px}
+  .streifen .nam{padding-left:0;flex:1 1 100%}
+  .streifen .n.gross{margin-left:auto}
+  .kbalken{flex:1 1 100%;padding-left:0}
+  .kspark,.kjahr,.streifen .pfeil{display:none}
+  .streifen .tat{padding-right:0}
+  .offenband .posten{grid-template-columns:1fr}
+  .praster .r{grid-template-columns:1fr}
+  .praster .c,.praster .j{text-align:left;padding:0}
+  /* Statt der zwölf Spalten die Monatstafel — vier mal drei. */
+  .mraster{grid-template-columns:repeat(4,1fr)}
+}
+/* Zwei Regeln, die im Bauplan fehlten und ohne die die Karten am Code
+   scheitern — nicht am Aussehen (U-40):
+   1. .inhalt[data-modus="tabellen"] traegt overflow:hidden; gerollt wird
+      IN der Tafel, und das kann bisher nur .rollflaeche. Ohne dieselben
+      drei Angaben schneidet die achte Karte einfach ab.
+   2. Der Glaeubigername ist ein <button>, damit er mit der Tastatur
+      erreichbar ist. Die Datei hat keinen globalen Knopf-Reset — ohne
+      diese Zeile sitzt der Name in einem grauen Systemknopf. */
+.kflaeche{flex:1 1 auto;min-height:0;overflow:auto}
+.streifen .nam button.t{background:none;border:0;padding:0;cursor:pointer;
+  text-align:left;font-family:inherit}
+.streifen .nam button.t:hover{color:#fff}
+
 </style>
 </head>
 <body>
@@ -1592,7 +1751,13 @@ let S = {                /* der Anzeigezustand — nur localStorage, nie in die 
      keiten verschiedene Vorgaben haben, und nur das, was von der Vorgabe
      ABWEICHT. Sonst friere eine alte Sitzung die heutigen Vorgabewerte
      ein, und eine geaenderte Zahl im Stylesheet kaeme nie an. */
-  vollbild: false, breiten: { budget: {}, verbind: {} }
+  vollbild: false, breiten: { budget: {}, verbind: {} },
+  /* U-40: Die Ansicht ist eine Frage je Bereich, nicht eine der App. Schulden
+     liest man als Karten, das Budget fuellt man als Tabelle aus. Ein globaler
+     Schalter zwaenge dazu, ihn in jedem Bereich neu zu setzen.
+     kOffen haelt die aufgeklappten Karten — leer heisst alle zu, das Gegenteil
+     von S.zu bei der Tabelle. Dort ist Offen der Normalfall, hier Zu. */
+  ansicht: { budget:'karten', verbind:'karten', rechnung:'tabelle' }, kOffen: []
 };
 let GH = { repo:'', branch:'main', token:'' };
 let _sig, _sha = null, _pushT = null, _ro = false;
@@ -1617,6 +1782,19 @@ function persist() {
 function persistAnsicht() {
   if (!D) return;
   try { localStorage.setItem(SCHLUESSEL_DATEN, JSON.stringify({ d: D, s: S })); } catch (err) {}
+}
+/* U-40: Ein alter Stand kennt `ansicht` nicht — dann gilt die Vorgabe. Traegt
+   er eine unbekannte Ansicht, gewinnt sonst die Datei, weil start() den Zustand
+   mit Object.assign UEBER die Vorgabe legt: der Bereich stuende dann leer da,
+   weil zeichneTabellen() weder den einen noch den anderen Zweig nimmt.
+   Deshalb gerufen an beiden Stellen, an denen S von aussen gefuellt wird. */
+function ansichtFangen() {
+  const vor = { budget:'karten', verbind:'karten', rechnung:'tabelle' };
+  S.ansicht = Object.assign({}, vor, S.ansicht || {});
+  Object.keys(vor).forEach(b => {
+    if (S.ansicht[b] !== 'karten' && S.ansicht[b] !== 'tabelle') S.ansicht[b] = vor[b];
+  });
+  if (!Array.isArray(S.kOffen)) S.kOffen = [];
 }
 
 /* ===================================================================
@@ -2645,31 +2823,12 @@ function zeichneKacheln() {
           : n + (n === 1 ? ' Buchung' : ' Buchungen') + (letzte ? ' · zuletzt ' + kurzdatum(letzte) : '') });
     }).join('');
 
-  /* Die Schulden stehen nach ihren drei Gruppen zusammen (A-41). Die Zwischen-
-     ueberschrift ist das vorhandene Bauteil «untertitel», keine neue Form; im
-     Sektionskopf steht bewusst kein Wert — Kontosaldo und Restschuld sind zwei
-     verschiedene Groessen und duerfen dort nicht durcheinandergehen. */
-  const schuldKachel = v => {
-    const st = S.zeitraum === 'alle' ? verbindPrognose(v, e.j, e.m) : standPer(v, e.j, e.m);
-    const r  = rate(v, S.jahr, S.monat);
-    return kachelHtml({ art:'schuld', id:v.id, kennung: GRUPPEN.find(g=>g.id===v.gruppe).name,
-      name:v.bezeichnung, rolle: v.vertreter || (v.herkunft === 'belegt' ? 'Stand belegt' : 'Stand gerechnet'),
-      label:'Stand', wert:st, anteil:getilgtAnteil(v), knopf:'Zahlung',
-      ueberzogen: st > v.anfangsstand,
-      meta:'Rate ' + fmt(r) + ' · getilgt ' + Math.round(getilgtAnteil(v)*100) + ' %' });
-  };
-  const schulden = GRUPPEN.map(g => {
-    const liste = D.verbindlichkeiten.filter(v => v.aktiv !== false && v.gruppe === g.id);
-    if (!liste.length) return '';
-    const summe = rd(liste.reduce((s,v) => s + (S.zeitraum === 'alle'
-      ? verbindPrognose(v, e.j, e.m) : standPer(v, e.j, e.m)), 0));
-    const raten = rd(liste.reduce((s,v) => s + rate(v, S.jahr, S.monat), 0));
-    return `<h3 class="untertitel">${g.name}
-        <span class="num">${fmt(summe)}</span>
-        <span>${liste.length} ${liste.length===1?'Position':'Positionen'} · Raten ${fmt(raten)}</span></h3>
-      <div class="raster">${liste.map(schuldKachel).join('')}</div>`;
-  }).join('');
-
+  /* U-40: Hier stand der Kachelteppich der Schulden. Dieselben Glaeubiger
+     standen im Bereich Verbindlichkeiten noch einmal als Tabelle — zwei Orte,
+     zwei Formen, eine Sache. Sie fuehrt jetzt der Bereich Verbindlichkeiten
+     allein, dort als Streifenkarten mit dem Budgetplan, den die Kachel nie
+     hatte. GRUPPEN, standPer und getilgtAnteil bleiben stehen: verbindKarten()
+     rechnet damit weiter, und das Dashboard tut es ohnehin. */
   const sparziele = D.sparziele.filter(s => s.aktiv !== false).map(s => {
     const st = sparstand(s.id, e.j, e.m);
     return kachelHtml({ art:'sparziel', id:s.id, kennung:'Sparziel', name:s.name, rolle:'',
@@ -2684,9 +2843,6 @@ function zeichneKacheln() {
   const kListe = D.konten.filter(k => k.aktiv !== false && k.sektion === 'konten');
   const kTotal = rd(kListe.reduce((s,k) => s + kontosaldo(k.id, e.j, e.m), 0));
   const kFrei  = rd(kListe.filter(k => k.frei).reduce((s,k) => s + kontosaldo(k.id, e.j, e.m), 0));
-  const vAktiv = D.verbindlichkeiten.filter(v => v.aktiv !== false);
-  const sTotal = rd(vAktiv.reduce((s,v) => s + (S.zeitraum === 'alle'
-    ? verbindPrognose(v, e.j, e.m) : standPer(v, e.j, e.m)), 0));
 
   $('#inhalt').innerHTML =
     /* U-30: Der Leertext stand hier auf null — bei null Konten war der Bereich
@@ -2697,9 +2853,6 @@ function zeichneKacheln() {
       + 'unter «Struktur» an — Konto trägt Kategorie trägt Position, in dieser Reihenfolge.',
       false, kTotal,
       kListe.length + ' Konten · davon frei verfügbar ' + fmt(kFrei)) +
-    sektion('Schulden', schulden, null, true, sTotal,
-      vAktiv.length + ' Gläubiger · Raten diesen Monat ' +
-      fmt(rd(vAktiv.reduce((a,v) => a + rate(v, S.jahr, S.monat), 0)))) +
     sektion('Sparziele', sparziele, 'Noch kein Sparziel angelegt. Du legst eines in der Verwaltung an.') +
     sektion('Reserve', reserve);
 }
@@ -2901,14 +3054,54 @@ function tafelKennzahlen() {
 /* ===================================================================
    Tabellenansicht — drei Reiter (Formensprache L)
    =================================================================== */
+/* ===================================================================
+   U-40 — Lesen und Eintragen
+   -------------------------------------------------------------------
+   «Alle Jahre» kennt kein Ist eines Monats. Die Karten haetten dort eine
+   leere Spalte genau da, wo ihre Aussage sitzt — deshalb geht die Ansicht
+   dort hart auf Tabelle, und der Schalter steht still statt zu luegen.
+   =================================================================== */
+/* Welche Bereiche eine Kartenansicht HABEN, steht an genau einer Stelle.
+   Schalter, Verzweigung und Rueckfall fragen alle hier — waere die Antwort an
+   drei Orten verteilt, gaebe ein halb gebauter Schritt einen Schalter ohne
+   Ansicht oder eine Verzweigung auf eine Funktion, die es noch nicht gibt.
+   Schritt 4 traegt `budget: katKarten` nach, und mehr ist dort nicht zu tun. */
+const KARTENBAU = { verbind: () => verbindKarten() };
+function ansichtVon(bereich) {
+  if (!KARTENBAU[bereich] || S.zeitraum === 'alle') return 'tabelle';
+  return (S.ansicht && S.ansicht[bereich]) === 'tabelle' ? 'tabelle' : 'karten';
+}
+/* Der Schalter steht in BEIDEN Ansichten an derselben Stelle des Tafelkopfs.
+   Stuende er nur auf der Karte, gaebe es aus der Tabelle keinen Weg zurueck —
+   die Falle, in die der Bauplan lief, weil er ihn nur dort auffuehrte.
+   Der CSV-Knopf kommt in Schritt 6 dazu; ein Knopf ohne Funktion ist
+   schlimmer als keiner. */
+function ansichtSchalter(bereich) {
+  if (!KARTENBAU[bereich]) return '';
+  const a = ansichtVon(bereich), fest = S.zeitraum === 'alle';
+  return `<span class="kansicht"><span class="schalter" role="group" aria-label="Ansicht">
+      <button type="button" data-ansicht="${bereich}:karten" aria-pressed="${a==='karten'}"
+        ${fest?'disabled title="In «Alle Jahre» gibt es kein Ist eines Monats"':''}>Lesen</button>
+      <button type="button" data-ansicht="${bereich}:tabelle" aria-pressed="${a==='tabelle'}"
+        >Eintragen</button></span></span>`;
+}
 function zeichneTabellen() {
   /* Die Reiterzeile ist mit U-1 in die Seitenleiste gewandert, die
      Liquiditaetszahlen in die Kopfzeile. Der Inhalt traegt nur die Tafel. */
+  const b = S.reiter;
+  /* U-40: Die Karten zuerst und mit eigenem return — spaltenbreiten() und
+     zebra() unten greifen beide auf `#tafel table`/`tbody` zu. Ohne den
+     return liefen sie ins Leere; das faellt nicht auf, bis eine der beiden
+     eines Tages nicht mehr so hoeflich ist. */
+  if (ansichtVon(b) === 'karten') {
+    $('#inhalt').innerHTML = `<div class="karte tafel" id="tafel">${KARTENBAU[b]()}</div>`;
+    return;
+  }
   $('#inhalt').innerHTML = `<div class="karte tafel" id="tafel"></div>`;
   const t = $('#tafel');
-  if (S.reiter === 'budget')   t.innerHTML = budgetTabelle();
-  if (S.reiter === 'verbind')  t.innerHTML = verbindTabelle();
-  if (S.reiter === 'rechnung') t.innerHTML = rechnungTabelle();
+  if (b === 'budget')   t.innerHTML = budgetTabelle();
+  if (b === 'verbind')  t.innerHTML = verbindTabelle();
+  if (b === 'rechnung') t.innerHTML = rechnungTabelle();
   spaltenbreiten();
   zebra();
 }
@@ -3787,6 +3980,7 @@ function budgetTabelle() {
         >${S.monateAlle ? 'Leere Monate falten' : weg + ' leere Monate gefaltet'}</button>` : ''}
       ${leerZeilen || S.zeilenAlle ? `<button class="knopf klein" data-zeilenauf="${S.zeilenAlle?'0':'1'}"
         >${S.zeilenAlle ? 'Leere Zeilen falten' : leerZeilen + ' leere Zeilen gefaltet'}</button>` : ''}
+      ${ansichtSchalter('budget')}
       ${vollbildKnopf()}
     </div>
     <div class="filterzeile" id="filterzeile" hidden><span class="lab">${gewaehlt.length ? 'Ausgewählt' : 'Alle sichtbar — wähle aus'}</span>
@@ -3919,6 +4113,7 @@ function verbindTabelle() {
       <span class="nr">Konto 08 Schulden</span>
       ${weg || S.monateAlle ? `<button class="knopf klein" data-faltauf="${S.monateAlle?'0':'1'}"
         >${S.monateAlle ? 'Leere Monate falten' : weg + ' leere Monate gefaltet'}</button>` : ''}
+      ${ansichtSchalter('verbind')}
       ${vollbildKnopf()}</div>
     <div class="rollflaeche"><table class="gross fixiert t-verbind">
       <thead><tr class="zeile-titel"><th class="t">Bezeichnung${greifer('w1', true)}</th
@@ -3938,6 +4133,196 @@ function verbindTabelle() {
       </thead><tbody>${rows}</tbody></table></div>`;
 }
 
+
+/* ===================================================================
+   U-40 — Verbindlichkeiten als Streifenkarten
+   -------------------------------------------------------------------
+   Dieselben Zahlen wie verbindTabelle(), andere Anzeige. Steht hier
+   etwas anderes als dort, ist der Fehler HIER — die Rechenregeln sind
+   unberuehrt geblieben, diese Datei ruft sie nur ein zweites Mal.
+
+   Warum Streifen und nicht Kacheln: bei acht Glaeubigern hoert ein
+   Kachelteppich auf, ein Vergleich zu sein. Die Spaltenkante haelt die
+   Lesbarkeit der Tabelle, die Karte bringt Balken und Verlauf dazu.
+
+   Die Reihenfolge kommt aus ordListe('verb', …) und nicht aus einem
+   eigenen filter ueber D.verbindlichkeiten: die Tabelle ordnet seit U-31
+   nach `rang`. Zwei Ansichten derselben Sache in zwei Reihenfolgen waeren
+   genau die zweite Wahrheit, gegen die dieser Umbau gebaut ist.
+   =================================================================== */
+function verbindKarten() {
+  const e = zeitEnde(), h = ymOf(heuteISO());
+  const aktiv = D.verbindlichkeiten.filter(v => v.aktiv !== false);
+  const jahre = Object.keys(D.budget).map(Number).sort();
+  const letztes = jahre.length ? jahre[jahre.length - 1] : S.jahr;
+  /* WELCHER STAND — bis heute der wirkliche, danach die Prognose. Das ist
+     die Regel, die schuldVerlauf() im Blatt seit je anwendet, und sie ist
+     hier nicht neu erfunden, sondern uebernommen.
+     Der Bauplan nahm an dieser Stelle standPer() fuer ALLES ausser «Alle
+     Jahre» — das ist die Regel der weggefallenen Kachel. Sie ist falsch,
+     sobald das Periodenende in der Zukunft liegt: standPer() faellt dort
+     auf verbindStand() zurueck, und der kennt nur GEBUCHTE Zahlungen. Im
+     Zeitraum «Jahr» stand die Schuld damit per Dezember hoeher als heute,
+     weil Zins und Gebuehr weiterliefen und keine Rate dagegen. Dieselbe
+     Karte sagte aufgeklappt unter «Stand per Jahresende» etwas anderes —
+     dort rechnet verbindPrognose(). Eine Karte, die sich selbst
+     widerspricht, ist genau der Fehler, den Regel 1 meint.
+       laufender Monat  → verbindStandHeute (dieselbe Zahl wie die Spalte
+                          «Stand» der Tabelle und wie deren Summenzeilen)
+       Vergangenheit    → der Stand, der damals wirklich offen war
+       Zukunft          → die Prognose, wie in der Uebertragsspalte */
+  const kuenftig = e.j > h.j || (e.j === h.j && e.m > h.m);
+  const st = v => kuenftig ? verbindPrognose(v, e.j, e.m) : standPer(v, e.j, e.m);
+
+  /* Verlaufslinie: Stand je Jahresende bis zum letzten Budgetjahr. Danach
+     steht kein Ratenplan mehr da, und eine Linie ueber leere Jahre sagt
+     nichts als «es geht nicht weiter» — das sagt schon die Spalte daneben. */
+  const spark = v => {
+    const p = [];
+    for (let j = h.j; j <= letztes; j++) p.push(Math.max(0, verbindPrognose(v, j, 11)));
+    const werte = [Math.max(0, st(v)), ...p];
+    const max = Math.max(v.anfangsstand || 0, ...werte, 1);
+    const pts = werte.map((y, i, a) =>
+      (i / Math.max(1, a.length - 1) * 200).toFixed(1) + ',' + (21 - y / max * 19).toFixed(1));
+    return `<div class="kspark"><svg viewBox="0 0 200 22" preserveAspectRatio="none"
+      aria-hidden="true"><polyline points="${pts.join(' ')}"></polyline></svg></div>`;
+  };
+
+  const karte = (v, gid) => {
+    const offen = S.kOffen.includes(v.id);
+    const s = st(v), r = rate(v, S.jahr, S.monat), a = getilgtAnteil(v);
+    /* Wann dieser Glaeubiger getilgt ist, beantwortet tilgungsende() — die
+       Funktion, die der Schuldenplan im Bericht schon benutzt. Eine zweite
+       Fortschreibung an dieser Stelle waere eine zweite Antwort auf dieselbe
+       Frage, und die beiden liefen beim naechsten Eingriff auseinander. */
+    const ende = tilgungsende(v);
+    /* Die Frist steht auf der Karte, wo die Sache liegt — dafuer faellt in
+       Schritt 7 die Sektion «Was ausläuft» im Dashboard weg. */
+    const tage = v.vereinbarungBis
+      ? Math.round((Date.parse(v.vereinbarungBis + 'T00:00:00')
+                  - Date.parse(heuteISO() + 'T00:00:00')) / 86400000) : null;
+    const notiz = tage !== null && tage <= 120
+      ? `<span class="z warn">Vereinbarung läuft am ${v.vereinbarungBis.slice(8,10)}.${
+          v.vereinbarungBis.slice(5,7)}. aus</span>`
+      : `<span class="z">${v.vertreter || (v.herkunft === 'belegt' ? 'Stand belegt' : 'Stand gerechnet')}</span>`;
+    /* data-oart/-verb/-vgrp kosten drei Attribute und bringen Alt+Pfeil
+       hoch/runter mit: ordImBild() sucht ohne Wurzel im ganzen Dokument und
+       findet die Karten so, wie es sonst die Tabellenzeilen findet. Gezogen
+       wird hier nicht — dazu fehlt der Griff, und er fehlt mit Absicht. */
+    return `<article class="streifen ${offen?'offen':''}"
+      data-oart="verb" data-verb="${v.id}" data-vgrp="${gid}">
+      <div class="reihe" data-kklapp="${v.id}">
+        <div class="nam"><span class="chev">${offen?'▾':'▸'}</span>
+          <button class="t" type="button" data-schuld="${v.id}">${v.bezeichnung}</button>${notiz}</div>
+        <div class="n gross">${fmt(s)}</div>
+        <div class="n ${r ? '' : 'leer'}">${r ? fmt(r) : '–'}</div>
+        <div class="kbalken"><div class="bar"><div style="width:${Math.round(a*100)}%"></div></div>
+          <span class="p">${Math.round(a*100)} %</span></div>
+        <div class="n ${ende ? '' : 'leer'}">${ende || '–'}</div>
+        ${spark(v)}
+        <div class="tat"><button class="knopf klein primaer" type="button"
+          data-schuld="${v.id}">Zahlung</button></div>
+      </div>
+      ${offen ? verbindKarteAuf(v) : ''}</article>`;
+  };
+
+  const block = (name, liste, gid, zusatz) => {
+    if (!liste.length) return '';
+    const summe = rd(liste.reduce((s,v) => s + st(v), 0));
+    const raten = rd(liste.reduce((s,v) => s + rate(v, S.jahr, S.monat), 0));
+    return `<div class="kgruppe"><span class="t">${name}</span>
+        <span class="num">${fmt(summe)}</span>
+        <span class="z">${liste.length} ${liste.length===1?'Position':'Positionen'} · Raten ${
+          fmt(raten)}${zusatz || ''}</span></div>
+      ${liste.map(v => karte(v, gid)).join('')}`;
+  };
+  const gruppen = GRUPPEN.map(g =>
+    block(g.name, ordListe('verb', g.id).filter(v => v.aktiv !== false), g.id)).join('');
+
+  /* Ein Glaeubiger mit einer Gruppe, die es nicht gibt, verschwand in der
+     Kachelansicht still — und GRUPPEN.find(...).name warf eine Zeile weiter
+     oben. Beides ist falsch: er gehoert gezeigt. Beim Aufraeumen der JSON
+     ist das kein Sonderfall, sondern der Normalfall eines halben Tages. */
+  const fremd = aktiv.filter(v => !GRUPPEN.some(g => g.id === v.gruppe))
+                     .sort((a,b) => (a.rang || 0) - (b.rang || 0));
+  const fremdBlock = block('Ohne Gruppe', fremd, '', ' — Gruppe unbekannt');
+
+  const total  = rd(aktiv.reduce((s,v) => s + st(v), 0));
+  const ratenM = rd(aktiv.reduce((s,v) => s + rate(v, S.jahr, S.monat), 0));
+  /* schuldenfreiGecacht() gibt ein Objekt zurueck, keinen Text — {monate,
+     jahr, monat} wenn es ein Ende gibt, sonst {monate:null, rest, bis}.
+     Dieselbe Unterscheidung wie auf der Dashboard-Kachel, damit beide
+     dasselbe sagen. */
+  const sf = schuldenfreiGecacht();
+  const sfText = sf.monate !== null
+    ? 'schuldenfrei ' + MON_LANG[sf.monat] + ' ' + sf.jahr
+    : 'nicht getilgt bis Ende ' + sf.bis + ' · Rest ' + fmt(sf.rest);
+
+  return `<div class="tafel-kopf">
+      <span class="titel">Verbindlichkeiten ${zeitTitel()}</span>${tafelKennzahlen()}
+      ${ansichtSchalter('verbind')}
+      ${vollbildKnopf()}
+    </div>
+    <div class="kflaeche k-verbind">
+      <div class="kgruppe" style="padding-top:0">
+        <span class="t">Schulden ${S.zeitraum === 'monat' ? MON[S.monat] + ' ' + S.jahr : S.jahr}</span>
+        <span class="num" style="font-size:19px">${fmt(total)}</span>
+        <span class="z">Raten diesen Monat ${fmt(ratenM)} · ${sfText}</span></div>
+      <div class="kkopf"><div style="padding-left:14px">Gläubiger</div>
+        <div style="text-align:right">Stand</div><div style="text-align:right">Rate</div>
+        <div style="padding-left:22px">Getilgt</div>
+        <div style="text-align:right">Letzte Rate</div>
+        <div style="padding-left:26px">Verlauf</div><div></div></div>
+      ${gruppen}${fremdBlock}
+    </div>`;
+}
+
+/* Der Budgetplan dieses Glaeubigers: zwoelf Monatsraten und der Stand je
+   Jahresende. Beides gerechnet und nicht gepflegt — deshalb kein Eingabe-
+   feld. Eingetragen werden die Raten in der Tabelle, und dorthin fuehrt
+   der Schalter oben. */
+function verbindKarteAuf(v) {
+  const h = ymOf(heuteISO());
+  const jahre = Object.keys(D.budget).map(Number).sort();
+  const letztes = jahre.length ? jahre[jahre.length - 1] : S.jahr;
+  const monate = [...Array(12).keys()].map(m => {
+    const jetzt = S.jahr === h.j && m === h.m;
+    return `<div class="${jetzt?'jetzt':''}"><div class="m">${MON[m].slice(0,3).toUpperCase()}</div>
+      <div class="v">${fmtG0(rate(v, S.jahr, m)) || '–'}</div></div>`;
+  }).join('');
+  const jahrSumme = rd([...Array(12).keys()].reduce((s,m) => s + rate(v, S.jahr, m), 0));
+  const stufen = [];
+  for (let j = S.jahr; j <= letztes; j++) stufen.push([j, Math.max(0, verbindPrognose(v, j, 11))]);
+  const kt = konto(v.kontoId);
+  const wege = [kt ? kt.nr + ' ' + kt.name : '',
+                v.zahlung && v.zahlung.iban ? v.zahlung.iban : ''].filter(Boolean).join(' · ');
+  const belege = dokAnzahl('verbind', v);
+  return `<div class="kauf">
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:26px">
+      <div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between">
+          <span class="lab">Raten ${S.jahr} · aus dem Ratenplan</span>
+          <span style="font:400 11px/1 'IBM Plex Mono',monospace;color:var(--muted)">${wege}</span></div>
+        <div class="mraster">${monate}</div>
+        <div style="display:flex;justify-content:space-between;
+          font:400 11px/1 'IBM Plex Mono',monospace;color:#757f8c;margin-top:8px">
+          <span>Summe ${S.jahr}</span><span style="color:#c3ccd6">${fmt(jahrSumme)}</span></div>
+      </div>
+      <div>
+        <div class="lab">Stand per Jahresende</div>
+        <div style="display:flex;justify-content:space-between;margin-top:11px;
+          font:400 12px/1 'IBM Plex Mono',monospace;color:var(--muted)">
+          ${stufen.map(([j,w]) => `<span>${j}<br><span style="font-size:13px;color:${
+            w < 0.005 ? 'var(--accent)' : '#c3ccd6'}">${fmtG(w)}</span></span>`).join('')}</div>
+        <div class="tat-reihe">
+          <button class="knopf klein" type="button" data-schuld="${v.id}:tilgung">Tilgung</button>
+          <button class="knopf klein" type="button" data-schuld="${v.id}:dokumente">Belege${
+            belege ? ' ' + belege : ''}</button>
+          <button class="knopf klein" type="button" data-gaend="${v.id}">Stammdaten</button>
+        </div>
+      </div>
+    </div></div>`;
+}
 /* ---- Rechnungen ------------------------------------------------------ */
 /* Die Rechnungen stehen als Kacheln, nach Faelligkeitsmonat gruppiert —
    dieselbe Anatomie wie Konto und Schuld, dieselbe Zwischenueberschrift wie
@@ -4368,7 +4753,13 @@ function blattSchuld(id) {
   const st = verbindStandHeute(v);
   const diff = v.auszugswert !== null && v.auszugswert !== undefined ? rd(v.auszugswert - st) : null;
   return {
-    weit: true, kennung: GRUPPEN.find(g=>g.id===v.gruppe).name + ' · ' + zeitTitel(),
+    /* U-40: Ein Glaeubiger mit einer Gruppe, die es nicht gibt, liess das
+       Blatt hier platzen — `.name` auf undefined, und zwar bevor irgendetwas
+       davon sichtbar wurde. Bisher fiel das nicht auf, weil ihn keine Ansicht
+       zeigte; die Karten zeigen ihn jetzt unter «Ohne Gruppe», also fuehrt
+       auch ein Klick hierher. */
+    weit: true, kennung: ((GRUPPEN.find(g=>g.id===v.gruppe) || {}).name || 'Ohne Gruppe')
+      + ' · ' + zeitTitel(),
     titel: v.bezeichnung,
     /* U-27: Dokumente stehen hinten, nicht vorn. Der Reiter, auf dem das
        Blatt aufgeht, muss der sein, auf dem am haeufigsten gearbeitet
@@ -8045,7 +8436,7 @@ document.addEventListener('click', async ev => {
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
-    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],#ablage,button');
+    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-ansicht],[data-kklapp],#ablage,button');
   if (!t) return;
 
   /* --- Kachel oeffnet ihr Blatt --- */
@@ -8098,6 +8489,24 @@ document.addEventListener('click', async ev => {
   if (t.id === 'btnBericht') { _ber = berStandard(); return blattAuf('bericht', 'wahl:'); }
   if (t.id === 'btnHandbuch' || t.dataset.hb !== undefined) {
     entwurfSichern(); return blattAuf('handbuch', null, null, true); }
+
+  /* --- U-40: Lesen und Eintragen, und die eine offene Karte ---
+     `zeichne()` speichert den Anzeigezustand am Ende selbst — ein
+     persistAnsicht() davor waere ein zweiter Schreibvorgang fuer dasselbe. */
+  if (t.dataset.ansicht) {
+    const [b, a] = t.dataset.ansicht.split(':');
+    if (S.ansicht[b] === a) return;
+    S.ansicht[b] = a; return zeichne();
+  }
+  /* EINE offene Karte, nicht viele: das aufgeklappte Raster ist hoch, und zwei
+     offene Karten heben den Vergleich auf, fuer den die Streifen da sind.
+     Deshalb `[id]` und nicht `.concat([id])` — der Unterschied zu S.zu ist
+     Absicht und keine Nachlaessigkeit. */
+  if (t.dataset.kklapp) {
+    const id = t.dataset.kklapp;
+    S.kOffen = S.kOffen.includes(id) ? [] : [id];
+    return zeichne();
+  }
 
   /* --- Klappkoepfe, Filter --- */
   if (t.dataset.klapp) {
@@ -8162,7 +8571,15 @@ document.addEventListener('click', async ev => {
       S.modus = 'tabellen'; S.reiter = ziel; return zeichne();
     }
   }
-  if (t.dataset.schuld) return blattAuf('schuld', t.dataset.schuld, 'zahlung');
+  /* U-40: `data-schuld` traegt jetzt wahlweise «kennung:reiter». Die Karte
+     braucht einen Weg auf den Tilgungsreiter, und den gab es nicht: der
+     Bauplan wollte dafuer `data-tat="vskip:…"` nehmen — beides falsch.
+     `data-tat` verteilt ueber blattAuf(art,…), und `vskip`/`vbuch` sind schon
+     vergeben: sie gehoeren den Serienvorschlaegen im Kontojournal und
+     erwarten «serienId:datum». Ein Glaeubiger dort haette lautlos die falsche
+     Funktion gerufen. Ein Doppelpunkt kommt in keiner Kennung vor (neueId). */
+  if (t.dataset.schuld) { const [vId, rt] = t.dataset.schuld.split(':');
+    return blattAuf('schuld', vId, rt || 'zahlung'); }
 
   /* --- Blatt --- */
   if (t.dataset.zu !== undefined) return blattZu();
@@ -8982,12 +9399,14 @@ async function start() {
   try {
     const roh = JSON.parse(localStorage.getItem(SCHLUESSEL_DATEN) || 'null');
     if (roh && roh.d) { uebernehmen(roh.d); if (roh.s) S = Object.assign(S, roh.s); }
+    ansichtFangen();   /* U-40 */
   } catch (err) {}
   /* Eingefrorener Export: Daten stecken in der Datei, nichts laesst sich aendern (A-65) */
   if (window.GAEPP_FROZEN) {
     D = window.GAEPP_FROZEN; _ro = true;
     document.body.classList.add('readonly');
     try { S = Object.assign(S, JSON.parse(window.GAEPP_STAND || '{}')); } catch (err) {}
+    ansichtFangen();   /* U-40 */
     GH = { repo:'', branch:'main', token:'' };
     setSync('off', 'Eingefrorener Stand');
     zeichne();
