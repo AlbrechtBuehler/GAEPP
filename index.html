@@ -1459,19 +1459,31 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 
 /* Positionsraster im aufgeklappten Streifen (Budget, Positionen × Monate). */
 .praster{margin-top:12px}
-.praster .r{display:grid;align-items:center;height:34px;border-top:1px solid var(--sheet);
+/* U-41: Zeilenhoehe 40 statt 34, und KEINE Trennlinie mehr zwischen den
+   Positionen. Zwoelf Spalten mal acht Zeilen mit einer Linie zwischen jeder
+   ergeben ein Gitter, in dem der Text an den Linien klebt — gemessen stimmte
+   die Ausrichtung, eng war der Rhythmus. Gefuehrt wird jetzt ueber einen
+   sehr leisen Wechsel im Hintergrund, wie zebra() es in der Tabelle tut.
+   Die einzige Linie im Raster steht dort, wo sie etwas trennt: ueber der
+   Summe. */
+.praster .r{display:grid;align-items:center;height:40px;
   font:400 13px/1 'IBM Plex Mono',monospace;color:#c3ccd6}
-.praster .r.kopf{height:26px;border:0;font:400 10px/1 'IBM Plex Mono',monospace;
+.praster .r[data-zeile]:nth-of-type(even){background:rgba(255,255,255,.016)}
+.praster .r.kopf{height:28px;font:400 10px/1 'IBM Plex Mono',monospace;
   letter-spacing:.1em;text-transform:uppercase;color:#757f8c}
-.praster .r.summe{height:36px;border-top:1px solid var(--rule);font-weight:500;color:#dbe2ea}
+.praster .r.summe{height:42px;margin-top:7px;border-top:1px solid var(--rule);
+  font-weight:500;color:#dbe2ea;background:none}
 .praster .p{padding-left:22px;display:flex;align-items:baseline;gap:9px;overflow:hidden}
 .praster .p .t{font:400 13.5px/1 'Space Grotesk',sans-serif;color:#dbe2ea;white-space:nowrap}
 .praster .p .weg{font:400 10.5px/1 'IBM Plex Mono',monospace;color:#757f8c;white-space:nowrap}
 .praster .c{text-align:right;padding-right:12px}
 .praster .c.jetzt{background:rgba(142,230,200,.06);color:#fff;height:100%;
   display:flex;align-items:center;justify-content:flex-end;gap:7px}
-.praster .c.jetzt.hatoffen{background:rgba(240,160,141,.1);
-  box-shadow:inset 0 0 0 1px rgba(240,160,141,.45)}
+/* U-41: Der Rahmen je Zelle ist raus. Bei acht Positionen stossen acht
+   Rahmen aneinander und ergeben einen durchgehenden roten Kasten — dieselbe
+   Klebrigkeit wie bei den Trennlinien, nur in Alarmfarbe. Der Hintergrund
+   allein sagt dasselbe und laesst die Spalte eine Spalte bleiben. */
+.praster .c.jetzt.hatoffen{background:rgba(240,160,141,.12)}
 .praster .c .pkt{width:5px;height:5px;border-radius:50%;background:var(--accent)}
 .praster .c.hatoffen .pkt{background:none;border:1px solid var(--err)}
 .praster .j{text-align:right;padding-right:22px;color:var(--ink)}
@@ -1530,7 +1542,7 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
    =================================================================== */
 .k-budget .praster .r{grid-template-columns:250px 84px repeat(12,1fr) 88px}
 .praster .c.bearbeitbar,.mraster>div.bearbeitbar{padding:0}
-.praster .c.bearbeitbar input{width:100%;height:30px;background:none;
+.praster .c.bearbeitbar input{width:100%;height:34px;display:block;background:none;
   border:1px solid transparent;border-radius:5px;text-align:right;padding:0 9px;
   color:#c3ccd6;font:400 13px/1 'IBM Plex Mono',monospace}
 .praster .c.bearbeitbar.jetzt{display:block}
@@ -1546,6 +1558,15 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .mraster>div.bearbeitbar input:hover{border-color:var(--rule)}
 .mraster>div.bearbeitbar input:focus{border-color:var(--accent);background:#0b1116;
   color:#fff;outline:none}
+/* Ziehen im Raster (U-41). Dieselben Bauteile wie in der Tabelle: der Griff
+   sitzt absolut in der Namenszelle, die Ziellinie ist ein Innenschatten und
+   kein Rahmen — ein Rahmen machte die Zeile zwei Pixel hoeher, und das Raster
+   zappelte bei jedem Wechsel des Ziels. */
+.praster .p{position:relative}
+.praster .r:hover .zeilengriff{opacity:1}
+.praster .r.zieht-mich{opacity:.45}
+.praster .r.zieh-vor{box-shadow:inset 0 2px 0 0 var(--accent)}
+.praster .r.zieh-nach{box-shadow:inset 0 -2px 0 0 var(--accent)}
 .praster .p .zwerk{margin-left:auto;opacity:0;transition:opacity .12s}
 .praster .r:hover .p .zwerk{opacity:1}
 .praster .p .zwerk button{background:none;border:0;padding:0 2px;cursor:pointer;
@@ -3400,8 +3421,15 @@ const ORDNUNG = {
     oid:    el => el.dataset.zeile,
     oblock: el => el.dataset.zkat,
     reihe:  k  => '[data-zkat="' + k + '"]',
-    kopf:   k  => 'tr.zeile-kat[data-kat="' + k + '"], .ast.kategorie[data-kat="' + k + '"]',
-    fuss:   k  => 'tr.zeile-summe[data-katsumme="' + k + '"]',
+    /* U-41: dazu das Kartenraster. Das Band, in dem der Zug gilt, reicht von
+       der Kopfzeile bis zur Summenzeile — dort sind das zwei .r statt zweier
+       <tr>, sonst dieselbe Ueberlegung. Eigener Attributname, weil `data-kat`
+       an der Kategoriezeile der Tabelle haengt und die Sprungliste mit
+       $('[data-kat=…]') das ERSTE Vorkommen greift. */
+    kopf:   k  => 'tr.zeile-kat[data-kat="' + k + '"], .ast.kategorie[data-kat="' + k + '"]'
+                + ', .praster .r.kopf[data-rkat="' + k + '"]',
+    fuss:   k  => 'tr.zeile-summe[data-katsumme="' + k + '"]'
+                + ', .praster .r.summe[data-rkat="' + k + '"]',
   },
   /* ===================================================================
      U-35 — dasselbe fuer die Konten
@@ -3575,8 +3603,11 @@ function ziehAufnehmen(id, art) {
   /* U-35: dritte Wurzel — der Kontenblock der Verwaltung. Der Block und
      nicht die Liste darin, damit Kopf und Fuss (das Band, in dem der Zug
      gilt) im Suchbereich liegen. */
+  /* U-41: vierte Wurzel — das Positionsraster der aufgeklappten Karte. Ohne
+     sie fand ziehAufnehmen() keinen Rahmen und gab null zurueck: der Griff
+     liess sich anfassen, und es geschah nichts. */
   const wurzel = griff.closest('table.gross') || griff.closest('.baum')
-               || griff.closest('.vw-kontenblock');
+               || griff.closest('.vw-kontenblock') || griff.closest('.praster');
   if (!wurzel) return null;
   const reihen = [...wurzel.querySelectorAll(A.reihe(kat))]
     .filter(el => !el.classList.contains('zugeklappt') && el.offsetParent !== null)
@@ -3632,7 +3663,7 @@ document.addEventListener('mousedown', ev => {
      Summen und Faltung), wird erst DANACH vermessen — der Griff, an dem
      der Zeiger haengt, ist dann ein anderes Element. */
   const a = document.activeElement;
-  if (a && a.closest && a.closest('td.bearbeitbar')) a.blur();
+  if (a && a.closest && a.closest('.bearbeitbar')) a.blur();
   const z = ziehAufnehmen(zId, gr.dataset.gart);
   if (!z) return;
   _zzieh = z;
@@ -3694,7 +3725,7 @@ document.addEventListener('keydown', ev => {
   if (!zId || !kat) return;
   /* Dieselbe Reihenfolge wie beim Ziehen und aus demselben Grund. */
   const a = document.activeElement;
-  const td = a && a.closest ? a.closest('td.bearbeitbar') : null;
+  const td = a && a.closest ? a.closest('.bearbeitbar') : null;
   const zurueck = td ? zellSchluessel(td) : null;
   if (td) a.blur();
   if (ordSchieben(art, zId, richtung, ordImBild(art, kat))) zeichne();
@@ -4417,7 +4448,7 @@ function katKarten() {
 function katKarteAuf(k) {
   const j = S.jahr, h = ymOf(heuteISO());
   const zeilen = zeilenVon(k.id, j);
-  const kopf = `<div class="r kopf"><div class="p">Position</div><div class="c">Soll</div>${
+  const kopf = `<div class="r kopf" data-rkat="${k.id}"><div class="p">Position</div><div class="c">Soll</div>${
     [...Array(12).keys()].map(i => `<div class="c" ${i===h.m&&j===h.j?'style="color:var(--accent)"':''
       }>${MON[i].slice(0,3)}</div>`).join('')}<div class="j">Jahr</div></div>`;
   const reihen = zeilen.map(z => {
@@ -4442,15 +4473,14 @@ function katKarteAuf(k) {
     /* data-oart/-zeile/-zkat bringen Alt+Pfeil hoch/runter mit — dieselbe
        Umordnung wie in der Tabelle, ohne eine zweite Mechanik. */
     return `<div class="r" data-oart="zeile" data-zeile="${z.id}" data-zkat="${k.id}">
-      <div class="p"><span class="t" data-zblatt="${z.id}"
+      <div class="p">${ordGriff('zeile', z)}<span class="t" data-zblatt="${z.id}"
           title="Stammdaten, Verlauf und Jahre">${z.bezeichnung}</span>
-        <span class="weg">${zahlungsweg(z)}</span>
         ${gesp || _ro ? '' : `<span class="zwerk"><button type="button" data-weg="${z.id}"
           title="Diese Position ab ${j} nicht mehr zeigen">ab ${j} aus</button></span>`}</div>
       ${sollZ}${zellen}
       <div class="j">${fmtG0(zeilenJahr(z, j))}</div></div>`;
   }).join('');
-  const summe = `<div class="r summe"><div class="p" style="color:var(--muted)">Summe ${k.name}</div>
+  const summe = `<div class="r summe" data-rkat="${k.id}"><div class="p" style="color:var(--muted)">Summe ${k.name}</div>
     <div class="c">${fmtG0(rd(zeilen.reduce((a,z)=>a+(zeilenSoll(z,j)||0)*(z.gegenrichtung?-1:1),0)))}</div>${
     [...Array(12).keys()].map(i => `<div class="c ${i===h.m&&j===h.j?'jetzt':''}">${
       fmtG0(katSumme(k, j, i))}</div>`).join('')}
@@ -4460,7 +4490,7 @@ function katKarteAuf(k) {
     ? rd(Math.max(0, katSumme(k, j, S.monat) - istKat(k, j, S.monat))) : 0;
   return `<div class="kauf"><div class="praster">${kopf}${reihen}${summe}
     <div class="fuss"><span>Der laufende Monat steht hell${
-      rest > 0.005 ? ` · rot umrandet heisst budgetiert und noch nicht gebucht — offen ${fmtG(rest)}` : ''}</span>
+      rest > 0.005 ? ` · rot hinterlegt heisst budgetiert und noch nicht gebucht — offen ${fmtG(rest)}` : ''}</span>
       <span style="flex:1"></span>
       ${_ro ? '' : `<button class="knopf klein" type="button" data-add="${k.id}">Zeile hinzufügen</button>`}
       </div></div></div>`;
@@ -9307,7 +9337,7 @@ function fahneZeigen(td) {
   fahnePlatzieren();
 }
 document.addEventListener('focusin', ev => {
-  const td = ev.target.closest && ev.target.closest('#tafel td.bearbeitbar[data-z]');
+  const td = ev.target.closest && ev.target.closest('#tafel .bearbeitbar[data-z]');
   if (td) fahneZeigen(td); else fahneWeg();
 });
 /* Nicht am Ereignis entscheiden, sondern am Ergebnis: ein focusout des soeben
@@ -9521,7 +9551,7 @@ document.addEventListener('keydown', ev => {
          wie beim Tastaturweg durch die Tabelle (U-16): erst den Fokus
          loesen, damit gespeichert wird, dann neu zeichnen. */
       const a = document.activeElement;
-      if (a && a.closest && a.closest('td.bearbeitbar')) a.blur();
+      if (a && a.closest && a.closest('.bearbeitbar')) a.blur();
       return vollbildSetzen(false);
     }
   }
