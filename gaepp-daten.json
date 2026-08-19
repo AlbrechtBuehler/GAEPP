@@ -1,0 +1,2341 @@
+{
+ "meta": {
+  "schemaVersion": 4,
+  "app": "GÄPP",
+  "stichtag": "2022-01-01",
+  "lohntag": 25,
+  "waehrung": "CHF",
+  "geaendert": "2026-08-19T00:00:00.000Z",
+  "erzeugtAus": "Albrechts eigener Stand vom 19.08.2026, geleert",
+  "quelle": "Leere Huelle: Konten, Kategorien und Budgetzeilen bleiben, alle Zahlen sind entfernt."
+ },
+ "konten": [
+  {
+   "id": "lohn",
+   "nr": "01",
+   "name": "Lohnkonto",
+   "rang": 1,
+   "sektion": "konten",
+   "frei": false,
+   "rolle": "Eingang und Verteilung",
+   "anfangsstand": 0,
+   "iban": "CH26 0900 0000 1601 3057 6",
+   "aktiv": true,
+   "bankwerte": [],
+   "dokumente": []
+  },
+  {
+   "id": "fix",
+   "nr": "02",
+   "name": "Fixkosten",
+   "rang": 2,
+   "sektion": "konten",
+   "frei": false,
+   "rolle": "Miete, Kasse, Abgaben",
+   "anfangsstand": 0,
+   "iban": "CH02 0900 0000 1667 1342 8",
+   "aktiv": true,
+   "bankwerte": [],
+   "dokumente": []
+  },
+  {
+   "id": "hhk",
+   "nr": "03",
+   "name": "HHK",
+   "rang": 3,
+   "sektion": "konten",
+   "frei": true,
+   "rolle": "Täglicher Bedarf",
+   "anfangsstand": 0,
+   "iban": "CH82 0900 0000 1643 5294 8",
+   "aktiv": true,
+   "bankwerte": [],
+   "dokumente": []
+  },
+  {
+   "id": "abo",
+   "nr": "04",
+   "name": "Abonnements",
+   "rang": 4,
+   "sektion": "konten",
+   "frei": false,
+   "rolle": "Wiederkehrend, Karte",
+   "anfangsstand": 0,
+   "iban": "CH46 0900 0000 1667 1341 2",
+   "aktiv": true,
+   "bankwerte": [],
+   "dokumente": []
+  },
+  {
+   "id": "rst",
+   "nr": "05",
+   "name": "Rückstellungen",
+   "rang": 5,
+   "sektion": "konten",
+   "frei": false,
+   "rolle": "Zurückgelegt für Später",
+   "anfangsstand": 0,
+   "iban": "CH50 0900 0000 1611 4961 4",
+   "aktiv": true,
+   "bankwerte": [],
+   "dokumente": []
+  },
+  {
+   "id": "schuld",
+   "nr": "07",
+   "name": "Schulden",
+   "rang": 6,
+   "sektion": "konten",
+   "frei": false,
+   "rolle": "Zahlungen an Gläubiger",
+   "anfangsstand": 0,
+   "iban": "CH92 0900 0000 1667 1345 7",
+   "aktiv": true,
+   "bankwerte": [],
+   "dokumente": []
+  },
+  {
+   "id": "kred",
+   "nr": "06",
+   "name": "Kreditoren",
+   "rang": 5,
+   "sektion": "konten",
+   "frei": false,
+   "rolle": "Offene Rechnungen",
+   "anfangsstand": 0,
+   "iban": "CH41 0900 0000 1635 1240 5",
+   "aktiv": true,
+   "bankwerte": [],
+   "dokumente": []
+  },
+  {
+   "id": "res",
+   "nr": "08",
+   "name": "Reserve",
+   "rang": 8,
+   "sektion": "reserve",
+   "frei": false,
+   "rolle": "Nicht angetastet",
+   "anfangsstand": 0,
+   "iban": "CH93 0900 0000 1670 5487 9",
+   "aktiv": true,
+   "bankwerte": [],
+   "dokumente": []
+  }
+ ],
+ "kategorien": [
+  {
+   "id": "einkommen",
+   "name": "Einkommen",
+   "kontoId": "lohn",
+   "richtung": "ein",
+   "rang": 1,
+   "ausAb": null
+  },
+  {
+   "id": "fix",
+   "name": "Fixkosten",
+   "kontoId": "fix",
+   "richtung": "aus",
+   "rang": 2,
+   "ausAb": null
+  },
+  {
+   "id": "leb",
+   "name": "Lebenshaltung",
+   "kontoId": "hhk",
+   "richtung": "aus",
+   "rang": 3,
+   "ausAb": null
+  },
+  {
+   "id": "abo",
+   "name": "Abonnements",
+   "kontoId": "abo",
+   "richtung": "aus",
+   "rang": 4,
+   "ausAb": null
+  },
+  {
+   "id": "rst",
+   "name": "Rückstellungen",
+   "kontoId": "rst",
+   "richtung": "aus",
+   "rang": 5,
+   "ausAb": null
+  },
+  {
+   "id": "sparen",
+   "name": "Sparen",
+   "kontoId": "res",
+   "richtung": "aus",
+   "rang": 6,
+   "ausAb": 0
+  },
+  {
+   "id": "verb",
+   "name": "Verbindlichkeiten",
+   "kontoId": "schuld",
+   "richtung": "aus",
+   "rang": 7,
+   "ausAb": null
+  },
+  {
+   "id": "rechnungen",
+   "name": "Rechnungen",
+   "kontoId": "kred",
+   "richtung": "aus",
+   "rang": 8,
+   "ausAb": null
+  },
+  {
+   "id": "rente",
+   "name": "Einnahmen (Rente)",
+   "kontoId": "lohn",
+   "richtung": "ein",
+   "rang": 9,
+   "ausAb": 0
+  }
+ ],
+ "zeilen": [
+  {
+   "id": "ein_lohn",
+   "kategorieId": "einkommen",
+   "bezeichnung": "Netto-Lohn",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Gutschrift"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 1,
+   "ausAb": null
+  },
+  {
+   "id": "ein_zul",
+   "kategorieId": "einkommen",
+   "bezeichnung": "Zulagen",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Gutschrift"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 3,
+   "ausAb": null
+  },
+  {
+   "id": "ein_abz",
+   "kategorieId": "einkommen",
+   "bezeichnung": "Lohnabzug | Darlehen",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Abzug"
+   },
+   "gegenrichtung": true,
+   "gespiegeltAus": null,
+   "rang": 4,
+   "ausAb": null
+  },
+  {
+   "id": "fix_miete",
+   "kategorieId": "fix",
+   "bezeichnung": "Miete",
+   "zahlungsweg": {
+    "tag": 1,
+    "art": "Dauerauftrag"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 4,
+   "ausAb": null
+  },
+  {
+   "id": "fix_nk",
+   "kategorieId": "fix",
+   "bezeichnung": "Nebenkosten",
+   "zahlungsweg": {
+    "tag": 1,
+    "art": "Dauerauftrag"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 5,
+   "ausAb": null
+  },
+  {
+   "id": "fix_mobile",
+   "kategorieId": "fix",
+   "bezeichnung": "Mobile",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "eBill"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 6,
+   "ausAb": null
+  },
+  {
+   "id": "fix_net",
+   "kategorieId": "fix",
+   "bezeichnung": "Internet",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "eBill"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 7,
+   "ausAb": null
+  },
+  {
+   "id": "fix_kk",
+   "kategorieId": "fix",
+   "bezeichnung": "Krankenkasse",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "eBill"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 8,
+   "ausAb": null
+  },
+  {
+   "id": "fix_st",
+   "kategorieId": "fix",
+   "bezeichnung": "Steuern",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Dauerauftrag"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 9,
+   "ausAb": null,
+   "periodizitaet": ""
+  },
+  {
+   "id": "fix_swiss",
+   "kategorieId": "fix",
+   "bezeichnung": "Swisscom",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "eBill"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 10,
+   "ausAb": null
+  },
+  {
+   "id": "fix_sbb",
+   "kategorieId": "fix",
+   "bezeichnung": "SBB",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Überweisung"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 11,
+   "ausAb": null
+  },
+  {
+   "id": "leb_essen",
+   "kategorieId": "leb",
+   "bezeichnung": "Essen und trinken",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Bezug"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 12,
+   "ausAb": null
+  },
+  {
+   "id": "leb_haus",
+   "kategorieId": "leb",
+   "bezeichnung": "Haushalt",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Bezug"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 13,
+   "ausAb": null
+  },
+  {
+   "id": "leb_pers",
+   "kategorieId": "leb",
+   "bezeichnung": "Persönliche Ausgaben",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Bezug"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 14,
+   "ausAb": null
+  },
+  {
+   "id": "rs_hausrat",
+   "kategorieId": "rst",
+   "bezeichnung": "Hausratsversicherung",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Rückstellung"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 23,
+   "ausAb": null
+  },
+  {
+   "id": "rs_fr",
+   "kategorieId": "rst",
+   "bezeichnung": "Krankenkasse Franchise",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Rückstellung"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 24,
+   "ausAb": null
+  },
+  {
+   "id": "rs_sb",
+   "kategorieId": "rst",
+   "bezeichnung": "Krankenkasse Selbstbehalt",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Rückstellung"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 25,
+   "ausAb": null
+  },
+  {
+   "id": "rs_localnet",
+   "kategorieId": "rst",
+   "bezeichnung": "Localnet",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Rückstellung"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 26,
+   "ausAb": null
+  },
+  {
+   "id": "rs_serafe",
+   "kategorieId": "rst",
+   "bezeichnung": "Serafe",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Rückstellung"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 27,
+   "ausAb": null
+  },
+  {
+   "id": "rs_zahn",
+   "kategorieId": "rst",
+   "bezeichnung": "Zahnarzt",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Rückstellung"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 28,
+   "ausAb": null
+  },
+  {
+   "id": "verb_steuer",
+   "kategorieId": "verb",
+   "bezeichnung": "Steuerverwaltung",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Dauerauftrag"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": "verbindlichkeiten:steuer",
+   "rang": 100,
+   "ausAb": null
+  },
+  {
+   "id": "verb_privat",
+   "kategorieId": "verb",
+   "bezeichnung": "Schulden Privat",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Dauerauftrag"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": "verbindlichkeiten:privat",
+   "rang": 101,
+   "ausAb": null
+  },
+  {
+   "id": "verb_firmen",
+   "kategorieId": "verb",
+   "bezeichnung": "Schulden Firmen",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Dauerauftrag"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": "verbindlichkeiten:firmen",
+   "rang": 102,
+   "ausAb": null
+  },
+  {
+   "id": "rech_betrag",
+   "kategorieId": "rechnungen",
+   "bezeichnung": "Rechnungen",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "eBill"
+   },
+   "gespiegeltAus": "rechnungen",
+   "rang": 1,
+   "gegenrichtung": false,
+   "ausAb": null
+  },
+  {
+   "id": "rs_nkabr",
+   "kategorieId": "rst",
+   "bezeichnung": "Nebenkostenabrechnung",
+   "zahlungsweg": {
+    "tag": null,
+    "art": "Rückstellung"
+   },
+   "gespiegeltAus": null,
+   "rang": 29,
+   "gegenrichtung": false,
+   "ausAb": null
+  },
+  {
+   "id": "rente_ahv",
+   "kategorieId": "rente",
+   "bezeichnung": "AHV",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Gutschrift"
+   },
+   "gespiegeltAus": null,
+   "rang": 1,
+   "gegenrichtung": false,
+   "ausAb": 0
+  },
+  {
+   "id": "rente_bvg",
+   "kategorieId": "rente",
+   "bezeichnung": "BVG",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Gutschrift"
+   },
+   "gespiegeltAus": null,
+   "rang": 2,
+   "gegenrichtung": false,
+   "ausAb": 0
+  },
+  {
+   "id": "rente_de",
+   "kategorieId": "rente",
+   "bezeichnung": "Rente DE",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Gutschrift"
+   },
+   "gespiegeltAus": null,
+   "rang": 3,
+   "gegenrichtung": false,
+   "ausAb": 0
+  },
+  {
+   "id": "rente_el",
+   "kategorieId": "rente",
+   "bezeichnung": "EL",
+   "zahlungsweg": {
+    "tag": 25,
+    "art": "Gutschrift"
+   },
+   "gespiegeltAus": null,
+   "rang": 4,
+   "gegenrichtung": false,
+   "ausAb": 0
+  },
+  {
+   "id": "ein_13er",
+   "kategorieId": "einkommen",
+   "bezeichnung": "Netto-Lohn | 13.er",
+   "zahlungsweg": {
+    "tag": null,
+    "art": ""
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 2,
+   "ausAb": null
+  },
+  {
+   "id": "abo_claude",
+   "kategorieId": "abo",
+   "bezeichnung": "AI | Claude",
+   "zahlungsweg": {
+    "tag": 24,
+    "art": "Karte"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 15,
+   "ausAb": null
+  },
+  {
+   "id": "abo_spiegel",
+   "kategorieId": "abo",
+   "bezeichnung": "Der Spiegel",
+   "zahlungsweg": {
+    "tag": 14,
+    "art": "LSV"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 16,
+   "ausAb": null
+  },
+  {
+   "id": "abo_godaddy",
+   "kategorieId": "abo",
+   "bezeichnung": "Godaddy",
+   "zahlungsweg": {
+    "tag": 1,
+    "art": "Karte"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 17,
+   "ausAb": null
+  },
+  {
+   "id": "abo_copilot",
+   "kategorieId": "abo",
+   "bezeichnung": "MS Copilot",
+   "zahlungsweg": {
+    "tag": 1,
+    "art": "Karte"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 18,
+   "ausAb": null
+  },
+  {
+   "id": "abo_ms",
+   "kategorieId": "abo",
+   "bezeichnung": "MS Business Standard",
+   "zahlungsweg": {
+    "tag": 31,
+    "art": "Karte"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 19,
+   "ausAb": null
+  },
+  {
+   "id": "abo_obs",
+   "kategorieId": "abo",
+   "bezeichnung": "Obsidian",
+   "zahlungsweg": {
+    "tag": 14,
+    "art": "Karte"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 20,
+   "ausAb": null
+  },
+  {
+   "id": "abo_musik",
+   "kategorieId": "abo",
+   "bezeichnung": "Streaming | Musik",
+   "zahlungsweg": {
+    "tag": 24,
+    "art": "Karte"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 21,
+   "ausAb": null
+  },
+  {
+   "id": "abo_tv",
+   "kategorieId": "abo",
+   "bezeichnung": "Streaming | TV",
+   "zahlungsweg": {
+    "tag": 18,
+    "art": "Karte"
+   },
+   "gegenrichtung": false,
+   "gespiegeltAus": null,
+   "rang": 22,
+   "ausAb": null
+  }
+ ],
+ "budget": {
+  "2024": {
+   "ein_lohn": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "ein_zul": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "ein_abz": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_miete": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_nk": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_mobile": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_net": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_kk": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_st": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_swiss": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_sbb": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_essen": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_haus": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_pers": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_hausrat": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_fr": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_sb": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_localnet": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_serafe": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_zahn": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_nkabr": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_ahv": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_bvg": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_de": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_el": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  "2026": {
+   "ein_lohn": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "ein_zul": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "ein_abz": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_miete": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_nk": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_mobile": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_net": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_kk": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_st": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_swiss": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_sbb": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_essen": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_haus": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_pers": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_hausrat": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_fr": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_sb": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_localnet": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_serafe": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_zahn": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_nkabr": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_ahv": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_bvg": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_de": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_el": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "ein_13er": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_claude": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_spiegel": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_godaddy": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_copilot": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_ms": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_obs": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_musik": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_tv": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  "2027": {
+   "ein_lohn": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "ein_zul": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "ein_abz": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_miete": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_nk": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_mobile": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_net": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_kk": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_st": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_swiss": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "fix_sbb": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_essen": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_haus": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "leb_pers": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_hausrat": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_fr": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_sb": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_localnet": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_serafe": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_zahn": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rs_nkabr": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_ahv": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_bvg": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_de": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "rente_el": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "ein_13er": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_claude": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_spiegel": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_godaddy": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_copilot": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_ms": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_obs": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_musik": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "abo_tv": {
+    "soll": 0,
+    "m": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ },
+ "buchungen": [],
+ "serien": [],
+ "verbindlichkeiten": [],
+ "sparziele": [],
+ "rechnungen": [],
+ "steller": [
+  {
+   "id": "st_sonstige",
+   "name": "Sonstige",
+   "gruppeId": "sg_divers",
+   "aktiv": true
+  }
+ ],
+ "stellerGruppen": [
+  {
+   "id": "sg_lebenshaltung",
+   "name": "Lebenshaltung",
+   "rang": 1
+  },
+  {
+   "id": "sg_gesundheit",
+   "name": "Gesundheit",
+   "rang": 2
+  },
+  {
+   "id": "sg_anschaffungen",
+   "name": "Anschaffungen",
+   "rang": 3
+  },
+  {
+   "id": "sg_oev",
+   "name": "ÖV",
+   "rang": 4
+  },
+  {
+   "id": "sg_online",
+   "name": "Online",
+   "rang": 5
+  },
+  {
+   "id": "sg_divers",
+   "name": "Divers",
+   "rang": 6
+  },
+  {
+   "id": "sg_finanzen",
+   "name": "Finanzen",
+   "rang": 7
+  },
+  {
+   "id": "sg_persoenlich",
+   "name": "Persönlich",
+   "rang": 8
+  }
+ ]
+}
