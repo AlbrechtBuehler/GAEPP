@@ -1030,6 +1030,24 @@ tr.zeile-daten:hover .nz{color:var(--accent)}
 /* --- Bankabgleich in der Fusszeile des Blatts (A-87, Formensprache D) --- */
 .abgleich{display:flex;align-items:flex-end;gap:12px;margin-right:auto}
 .blatt-fuss{align-items:center}
+/* ===================================================================
+   U-48 — die Tabelle der monatlichen Umbuchungen
+   -------------------------------------------------------------------
+   Zwei Regeln, beide aus vorhandenen Werten. Die zweite ist ein
+   bewusster Bruch mit `.journal .zwerk` (opacity:0 bis Hover): In
+   diesem Blatt ist «Buchen» die einzige Handlung der Zeile und kein
+   Werkzeug daneben. Versteckt waere die Tabelle stumm — und auf einem
+   Zeigergeraet ohne Hover unbedienbar.
+   =================================================================== */
+.umb-tab td{height:38px;vertical-align:middle}
+.umb-tab input.num{width:108px;background:var(--bg);border:1px solid var(--line);
+  border-radius:var(--radius-sm);color:var(--ink);font-family:'IBM Plex Mono',monospace;
+  font-variant-numeric:tabular-nums;font-size:13px;text-align:right;padding:5px 9px}
+.umb-tab input.num:focus{outline:none;border-color:var(--accent)}
+.umb-tab .zwerk{opacity:1;display:inline-flex;gap:9px;align-items:center;justify-content:flex-end}
+/* Ocker traegt «noch nicht abgeschlossen»: die Zeile ist in dieser Sitzung
+   bewegt worden und laesst sich noch aendern. */
+.umb-tab tr.umb-bewegt .umb-schon{color:var(--open)}
 .abgleich .feld{width:132px}
 .abgleich .diff{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;
   font-size:13px;padding-bottom:8px;color:var(--ink)}
@@ -2414,6 +2432,88 @@ function zeilenVon(katId, j) {
 function katSumme(k, j, m) {
   return rd(zeilenVon(k.id, j).reduce((s,z) => s + zeilenwert(z, j, m) * (z.gegenrichtung ? -1 : 1), 0));
 }
+/* ===================================================================
+   U-48 — MONATLICHE UMBUCHUNGEN
+   -------------------------------------------------------------------
+   Der Lohn kommt auf ein Konto, und von dort wandert das Geld in die
+   Toepfe. Bisher war jede dieser Umbuchungen ein eigener Gang ins
+   Kontoblatt. Hier stehen sie alle nebeneinander.
+
+   Kein neues Feld im Schema: Jede Kategorie haengt ueber `kontoId` an
+   einem Konto, und was dieses Konto diesen Monat braucht, ist die Summe
+   seiner Kategorien. Dieselbe Denkfigur wie das Offen-Blatt (U-45) —
+   Soll aus dem Budget, Ist aus den Buchungen, Differenz ist die
+   Handlung. Nur eine Ebene hoeher: Konto statt Position.
+
+   Die Buchung traegt KEINE zeileId. Sie verschiebt Geld und erfuellt
+   keine Budgetzeile — das tut erst die Ausgabe ab dem Zielkonto.
+   Andernfalls stuende derselbe Betrag zweimal im Budget: einmal als
+   Umbuchung, einmal als Zahlung.
+   =================================================================== */
+
+/* Quellkonto ist das Konto, an dem die Einnahmen haengen — nicht ein fest
+   verdrahtetes «lohn». Wer seine Konten selbst anlegt (A-105), hat diese
+   Kennung womoeglich nie vergeben. */
+function umbQuelle() {
+  const zaehler = {};
+  D.kategorien.filter(k => k.richtung === 'ein' && k.kontoId)
+              .forEach(k => { zaehler[k.kontoId] = (zaehler[k.kontoId] || 0) + 1; });
+  let best = null, n = 0;
+  Object.keys(zaehler).forEach(id => {
+    const k = konto(id);
+    if (k && k.aktiv !== false && zaehler[id] > n) { n = zaehler[id]; best = k; }
+  });
+  if (best) return best;
+  return D.konten.filter(k => k.aktiv !== false).sort((a,b) => (a.rang||0) - (b.rang||0))[0] || null;
+}
+
+/* Soll je Zielkonto. null heisst: an diesem Konto haengt keine Kategorie —
+   ein Unterschied zu 0, und die Maske zeigt ihn auch so. */
+function umbSoll(kId, j, m) {
+  const ks = D.kategorien.filter(k => k.kontoId === kId && k.richtung !== 'ein' && katSicht(k, j));
+  if (!ks.length) return null;
+  return rd(ks.reduce((s, k) => s + katSumme(k, j, m), 0));
+}
+
+/* Was diesen Monat schon auf dieses Konto umgebucht wurde — gleich von wo
+   und gleich ueber welche Maske. */
+function umbSchon(kId, j, m) {
+  return rd(D.buchungen.filter(b => {
+    if (b.art !== 'umbuchung' || b.gegenkontoId !== kId) return false;
+    const d = ymOf(b.datum); return d.j === j && d.m === m;
+  }).reduce((s, b) => s + b.betrag, 0));
+}
+
+/* Eine Zeile je Zielkonto: alle aktiven Konten ausser dem Quellkonto. */
+function umbZeilen(j, m) {
+  const q = umbQuelle();
+  return D.konten.filter(k => k.aktiv !== false && (!q || k.id !== q.id))
+    .sort((a,b) => (a.rang||0) - (b.rang||0))
+    .map(k => {
+      const soll = umbSoll(k.id, j, m), schon = umbSchon(k.id, j, m);
+      return { k, soll, schon, offen: soll === null ? null : Math.max(0, rd(soll - schon)) };
+    });
+}
+function umbOffenSumme(j, m) {
+  return rd(umbZeilen(j, m).reduce((s, z) => s + (z.offen || 0), 0));
+}
+function umbBedient(j, m) {
+  const z = umbZeilen(j, m);
+  return { bedient: z.filter(x => x.schon > 0).length, total: z.length };
+}
+
+/* Getilgt statt geschuldet: was seit dem Anfangsstand weg ist.
+   Waechst eine Schuld durch Erhoehungen ueber ihren Anfangsstand hinaus,
+   wird `getilgt` negativ — das wird angezeigt und nicht weggerechnet. */
+function getilgtStand() {
+  const v = D.verbindlichkeiten.filter(x => x.aktiv !== false);
+  const anfang = rd(v.reduce((s, x) => s + (x.anfangsstand || 0), 0));
+  const heute  = rd(v.reduce((s, x) => s + verbindStandHeute(x), 0));
+  const getilgt = rd(anfang - heute);
+  return { anfang, heute, getilgt,
+           anteil: anfang > 0 ? Math.max(0, Math.min(1, getilgt / anfang)) : 0 };
+}
+
 /* ---- Saldo budgetiert: Einnahmen minus Ausgaben ---------------------- */
 function saldoBudgetiert(j, m) {
   let ein = 0, aus = 0;
@@ -2970,6 +3070,11 @@ function zeichneDashboard() {
   const frei0   = frei === null ? 0 : frei;
   const schnitt = restMon > 0 && jahresE !== null ? rd((jahresE - frei0) / restMon) : null;
   const sf = schuldenfrei();
+  /* U-48 */
+  const gt = getilgtStand();
+  const ratenMonat = rd(verb.reduce((s2, v) => s2 + rate(v, h.j, h.m), 0));
+  const umbOffen = umbOffenSumme(h.j, h.m);
+  const umbSt = umbBedient(h.j, h.m);
 
   const zahl = (w, kl) => `<span class="v gross ${kl||''} ${w < 0 ? 'neg' : ''}">${fmt(w)}</span>`;
 
@@ -2986,21 +3091,50 @@ function zeichneDashboard() {
         <div style="width:${Math.round((zyklus - tage) / zyklus * 100)}%"></div></div>
       <div class="hero-fuss">
         <span><span class="k">Total diesen Monat</span><span class="num gross2">${fmt(frei)}</span></span>
-        <span><span class="k">Schulden heute</span><span class="num gross2">${fmt(schuld)}</span></span>
+        <span><span class="k">Noch zu verteilen</span><span class="num gross2">${fmt(umbOffen)}</span></span>
       </div>
     </article>
 
-    <article class="karte rechenweg">
-      <span class="kennung">So kommt die Zahl zustande</span>
-      <div class="rechnung">
-        ${hhk.map(k => `<div class="zeile"><span>${k.name}</span><span class="num">${fmt(kontosaldo(k.id,h.j,h.m))}</span></div>`).join('')}
-        <div class="zeile"><span>./. offene Rechnungen ab freiem Konto</span><span class="num">${fmt(offeneAufFreiem(h.j, h.m))}</span></div>
-        <div class="zeile ergebnis"><span>verfügbar</span><span class="num">${fmt(frei)}</span></div>
-        <div class="zeile teiler"><span>geteilt durch ${tage} Tage</span><span class="num">${fmt(pt)}</span></div>
+    <!-- U-48: Hier stand die Karte «So kommt die Zahl zustande» — die
+         Herleitung von «verfuegbar», Zeile fuer Zeile. Sie ist raus: Die
+         Zahl wird taeglich gelesen und ihre Herleitung so gut wie nie.
+         An ihre Stelle tritt die zweite Grundzahl des Dashboards, und sie
+         steht bewusst als GETILGT und nicht als Schuldenstand da — was
+         schon weg ist, traegt weiter als was noch bleibt. Der Rest steht
+         klein darunter und wird nicht verschwiegen. -->
+    <article class="karte kpi hero" data-bereich="verbind">
+      <span class="kennung">Schulden getilgt</span>
+      <div class="hero-zahl">
+        <span class="v riesig ${gt.getilgt < 0 ? 'neg' : ''}">${fmt(gt.getilgt)}</span>
+        <span class="hero-zu">${gt.anfang > 0
+          ? `<b>${Math.round(gt.anteil * 100)} %</b> von ${fmt(gt.anfang)}<br>seit dem Anfangsstand`
+          : 'noch keine Verbindlichkeit erfasst'}</span>
+      </div>
+      <div class="zyklus" title="${Math.round(gt.anteil * 100)} % getilgt">
+        <div style="width:${Math.round(gt.anteil * 100)}%"></div></div>
+      <div class="hero-fuss">
+        <span><span class="k">Restschuld heute</span><span class="num gross2">${fmt(gt.heute)}</span></span>
+        <span><span class="k">Raten diesen Monat</span><span class="num gross2">${fmt(ratenMonat)}</span></span>
       </div>
     </article>
 
   </div>
+
+  ${umbSt.total ? `<div class="sektion"><h2>Was jetzt ansteht</h2>
+    <div class="raster">
+      <article class="karte kachel" data-umbuch>
+        <div><span class="kennung">Umbuchung · ${MON_LANG[h.m]} ${h.j}</span>
+          <button class="name" type="button">Monatsverteilung</button>
+          <div class="rolle">${umbQuelle() ? umbQuelle().nr + ' ' + umbQuelle().name : '—'} &rarr; die Töpfe</div></div>
+        <div class="mitte">
+          <span class="wert"><span class="k">Noch zu verteilen</span>
+            <span class="v gross">${fmt(umbOffen)}</span></span>
+          <div class="balken"><div style="width:${Math.round(umbSt.bedient / umbSt.total * 100)}%"></div></div>
+        </div>
+        <div class="fuss"><span class="meta">${umbSt.bedient} von ${umbSt.total} Konten bedient</span>
+          <button class="knopf klein" type="button" data-umbuch>Verteilen</button></div>
+      </article>
+    </div></div>` : ''}
 
   <div class="sektion"><h2>Wie es weitergeht</h2>
     <div class="raster">
@@ -4456,6 +4590,134 @@ function blattOffen() {
   };
 }
 
+/* ---- U-48: Das Blatt der monatlichen Umbuchungen --------------------
+   Merker fuer das, was DIESE Maske gebucht hat. Nur damit laesst sich eine
+   Fehlbuchung aendern statt verdoppeln. Er lebt in der Sitzung, nicht in den
+   Daten: Nach dem Neuladen ist der Monat teilweise bedient, der Vorschlag
+   zeigt den Rest, und «Buchen» legt richtigerweise eine zweite Buchung an. */
+let _umbB = {};        /* kontoId -> buchungId */
+let _umbF = {};        /* kontoId -> was im Feld steht, ueber das Neuzeichnen hinweg */
+
+/* Eine gemerkte Buchung, die es nicht mehr gibt — geloescht, oder von
+   Rueckgaengig weggenommen —, darf nicht weiter als «gebucht» gelten. */
+function umbMerkerPutzen() {
+  Object.keys(_umbB).forEach(kId => {
+    if (!D.buchungen.some(b => b.id === _umbB[kId])) delete _umbB[kId];
+  });
+}
+function umbGebucht(kId) {
+  const b = D.buchungen.find(x => x.id === _umbB[kId]);
+  return b ? b.betrag : 0;
+}
+/* Die Felder vor jedem Neuzeichnen sichern — sonst verliert das Buchen einer
+   Zeile die halb getippten Betraege der anderen. Dasselbe wie entwurfSichern(). */
+function umbFelderSichern() {
+  $$('#blattKoerper input[data-umbf]').forEach(el => {
+    _umbF[el.dataset.umbf] = el.value.trim() === '' ? 0 : zahl(el.value);
+  });
+}
+
+function blattUmbuch() {
+  umbMerkerPutzen();
+  const j = S.jahr, m = S.zeitraum === 'monat' ? S.monat : ymOf(heuteISO()).m;
+  const q = umbZeilen(j, m), quelle = umbQuelle();
+  const qSaldo = quelle ? kontosaldo(quelle.id, j, m) : 0;
+
+  const zeilen = q.map(z => {
+    const geb  = umbGebucht(z.k.id);
+    const wert = _umbF[z.k.id] !== undefined ? _umbF[z.k.id] : (geb || z.offen || 0);
+    const aend = geb > 0 && Math.abs(wert - geb) < 0.005;
+    /* Kein Knopf statt eines grauen: steht nichts zu tun an, ist er nicht da. */
+    const knopf = (!wert && !geb) ? ''
+      : `<button class="knopf klein" type="button" data-umb="${z.k.id}">${aend ? 'Ändern' : 'Buchen'}</button>`;
+    return `<tr${geb > 0 ? ' class="umb-bewegt"' : ''}>
+      <td>${z.k.nr} ${z.k.name}</td>
+      <td class="r num">${fmt(kontosaldo(z.k.id, j, m))}</td>
+      <td class="r num">${z.soll === null ? '–' : fmt(z.soll)}</td>
+      <td class="r num umb-schon">${z.schon ? fmt(z.schon) : '–'}</td>
+      <td class="r"><input class="num" type="text" inputmode="decimal" data-umbf="${z.k.id}"
+            value="${wert ? fmt(wert) : ''}" placeholder="0.00" aria-label="Betrag ${z.k.name}"></td>
+      <td class="r"><span class="zwerk">${z.soll === null ? '<span class="weg">kein Soll</span>' : ''}${knopf}</span></td>
+    </tr>`;
+  }).join('');
+
+  const summe = rd(q.reduce((s, z) => {
+    const geb = umbGebucht(z.k.id);
+    const w = _umbF[z.k.id] !== undefined ? _umbF[z.k.id] : (geb || z.offen || 0);
+    return s + Math.max(0, rd(w - geb));
+  }, 0));
+  const rest = rd(qSaldo - summe);
+
+  const koerper = !quelle
+    ? '<p class="meldung">Es gibt noch kein Konto. Du legst eines in der Verwaltung unter «Struktur» an.</p>'
+    : `<div class="kennzahlen">
+        <span class="wert"><span class="k">Quellkonto</span><span class="v">${quelle.nr} ${quelle.name}</span></span>
+        <span class="wert"><span class="k">Saldo</span><span class="v">${fmt(qSaldo)}</span></span>
+      </div>
+      <table class="journal umb-tab"><thead><tr><th>Zielkonto</th><th class="r">Saldo</th>
+        <th class="r">Soll Monat</th><th class="r">schon</th><th class="r">Betrag</th><th class="r"></th></tr></thead>
+        <tbody>${zeilen || '<tr><td colspan="6"><span class="meldung">Kein weiteres Konto.</span></td></tr>'}</tbody></table>`;
+
+  return {
+    weit: true,
+    kennung: 'Umbuchung · ' + MON_LANG[m] + ' ' + j,
+    titel: 'Monatliche Umbuchungen',
+    koerper,
+    fuss: `<div class="kennzahlen" style="margin:0 auto 0 0">
+        <span class="wert"><span class="k">Summe</span><span class="v">${fmt(summe)}</span></span>
+        <span class="wert"><span class="k">Rest auf ${quelle ? quelle.name : '—'}</span>
+          <span class="v${rest < 0 ? ' neg' : ''}">${fmt(rest)}</span></span>
+      </div>
+      ${rest < 0 ? `<span class="hint" style="color:var(--err)">übersteigt den Saldo um ${fmt(-rest)}</span>` : ''}
+      <button class="knopf" data-zu>Schliessen</button>
+      ${summe ? '<button class="knopf primaer" data-umball>Alle buchen</button>' : ''}`
+  };
+}
+
+/* Buchen, Aendern und Zuruecknehmen in einem Weg. Bei 0 wird die gemerkte
+   Buchung geloescht — dieselbe Handlung, die sie erzeugt hat, nimmt sie
+   zurueck. */
+function umbBuchen(kId, betrag, ohneMerker) {
+  const q = umbQuelle();
+  if (!q || q.id === kId) return;
+  const alt = D.buchungen.find(b => b.id === _umbB[kId]);
+  const neu = rd(betrag);
+  if (alt && Math.abs(alt.betrag - neu) < 0.005) return;
+  if (!alt && !neu) return;
+
+  const zk = konto(kId);
+  /* Bei «Alle buchen» merkt der Aufrufer EINMAL vorher — sonst ueberschriebe
+     jede Zeile den Merker der vorigen, und Rueckgaengig naehme nur die letzte
+     der sieben zurueck. Dieselbe Falle wie bei uebertragenTun(). */
+  if (!ohneMerker) merkeStand(!neu ? 'Umbuchung auf ' + zk.name + ' zurückgenommen'
+           : alt  ? 'Umbuchung auf ' + zk.name + ' geändert auf ' + fmt(neu)
+                  : 'Umgebucht auf ' + zk.name + ': ' + fmt(neu));
+
+  if (alt && !neu) {
+    D.buchungen = D.buchungen.filter(b => b.id !== alt.id);
+    delete _umbB[kId];
+  } else if (alt) {
+    alt.betrag = neu;
+  } else {
+    const j = S.jahr, m = S.zeitraum === 'monat' ? S.monat : ymOf(heuteISO()).m;
+    const h = ymOf(heuteISO());
+    /* Im laufenden Monat der heutige Tag, sonst der Monatsletzte — eine
+       Umbuchung fuer September darf nicht auf den 19. August fallen. */
+    const datum = (h.j === j && h.m === m) ? heuteISO() : iso(j, m, tageImMonat(j, m));
+    const b = {
+      id: neueId('b'), datum, ganzerMonat: false, kontoId: q.id, art: 'umbuchung',
+      betrag: neu, gegenkontoId: kId, zeileId: null,
+      text: 'Monatliche Umbuchung', serieId: null, rechnungId: null,
+      verbId: null, sparzielId: null, belegDatei: null, belegOffen: false
+    };
+    D.buchungen.push(b);
+    _umbB[kId] = b.id;
+  }
+  _umbF[kId] = neu;
+  persist();
+  blattZeichnen();
+}
+
 /* U-45: Hier stand offenStreifen(), das Band ueber den Kategorie-Karten.
    Es ist raus. Der Gedanke war richtig und die Form falsch: bei drei offenen
    Posten war es eine Handlungsliste, bei dreiundzwanzig eine Wand aus Kacheln,
@@ -5169,7 +5431,8 @@ function blattZeichnen() {
     sync: blattSync, bericht: blattBericht,
     handbuch: blattHandbuch, rechnung: blattRechnung, serie: blattSerie,
     rechnungzeigen: blattRechnungZeigen, glaeubiger: blattGlaeubiger,
-    offen: blattOffen                                  /* U-45 */
+    offen: blattOffen,                                 /* U-45 */
+    umbuch: blattUmbuch                                /* U-48 */
   }[_blatt.art];
   if (!f) { console.warn('Kein Blatt für', _blatt.art); return; }
   const b = f(_blatt.id);
@@ -8401,7 +8664,7 @@ function exportHtml() {
    =================================================================== */
 function blattHandbuch() {
   return { weit:true, titel:'Wie GÄPP tickt', koerper:`<div class="hb">
-    <p>Elf Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
+    <p>Zwölf Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
        nicht aus Gewohnheit. Der Rest bedient sich von selbst.</p>
 
     <div class="regel"><h3>1. Eine offene Rechnung mindert den Kontostand nicht</h3>
@@ -8500,6 +8763,20 @@ function blattHandbuch() {
        kannst ihn dort ändern oder wegnehmen. Weicht er von dem ab, was GÄPP selbst gerechnet
        hätte, steht die Abweichung daneben und ein <b>!</b> in der Standspalte — verrechnet wird
        sie nicht still.</p></div>
+
+    <div class="regel"><h3>12. Die Monatsverteilung verschiebt Geld — sie erfüllt kein Budget</h3>
+    <p>Nach dem Lohneingang wandert das Geld vom Lohnkonto in die Töpfe. Die Kachel
+       <b>«Monatsverteilung»</b> im Dashboard zeigt alle Konten nebeneinander: was dort liegt,
+       was das Budget diesen Monat für dieses Konto vorsieht, was schon umgebucht ist — und den
+       Rest als Vorschlag. <b>Der Vorschlag ist ein Vorschlag.</b> Jedes Feld lässt sich
+       überschreiben, auch das eines Kontos, das rechnerisch bedient ist.</p>
+    <p><b>Diese Umbuchungen tragen keine Position.</b> Sie verschieben Geld zwischen deinen
+       Konten und erfüllen damit keine Budgetzeile — das tut erst die Zahlung ab dem Zielkonto.
+       Stünde die Position schon an der Umbuchung, zählte derselbe Betrag zweimal: einmal beim
+       Verschieben, einmal beim Bezahlen.</p>
+    <p>Steht ein Betrag so gebucht da, heisst der Knopf <b>«Ändern»</b>. Er bucht nichts, er
+       führt zurück ins Feld. Der geänderte Wert ersetzt die Buchung, statt eine zweite
+       anzulegen — und <b>0 nimmt sie ganz zurück</b>. Wo nichts zu tun ist, steht kein Knopf.</p></div>
 
     <h3>Berichte</h3>
     <p>In jedem Bericht lässt sich <b>jede Zeile anklicken</b>. Sie fällt zurück, und alles
@@ -9256,7 +9533,8 @@ document.addEventListener('click', async ev => {
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-vtset],[data-vtdel],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
-    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-buchen],[data-csv],[data-offen],#ablage,button');
+    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-buchen],[data-csv],[data-offen],' +
+    '[data-umbuch],[data-umb],[data-umball],#ablage,button');
   if (!t) return;
 
   /* --- Kachel oeffnet ihr Blatt --- */
@@ -9319,6 +9597,38 @@ document.addEventListener('click', async ev => {
      wie der, den maskeBuchung() sonst selbst anlegt. */
   if (t.dataset.csv) return csvExport(t.dataset.csv);
   if (t.dataset.offen !== undefined) return blattAuf('offen', null);   /* U-45 */
+  /* --- U-48: monatliche Umbuchungen --- */
+  if (t.closest('[data-umbuch]')) { _umbF = {}; return blattAuf('umbuch', null); }
+  if (t.dataset.umb) {
+    /* Erst sichern, dann buchen: das Neuzeichnen danach darf die uebrigen
+       Felder nicht verlieren. */
+    umbFelderSichern();
+    const kId = t.dataset.umb, geb = umbGebucht(kId);
+    const wert = _umbF[kId] !== undefined ? _umbF[kId] : geb;
+    /* «Ändern» bucht nicht — es fuehrt zurueck ins Feld. */
+    if (geb > 0 && Math.abs(wert - geb) < 0.005) {
+      const el = $(`input[data-umbf="${kId}"]`);
+      if (el) { el.focus(); el.select(); }
+      return;
+    }
+    return umbBuchen(kId, wert);
+  }
+  if (t.dataset.umball !== undefined) {
+    umbFelderSichern();
+    const j = S.jahr, m = S.zeitraum === 'monat' ? S.monat : ymOf(heuteISO()).m;
+    const tun = umbZeilen(j, m).map(z => {
+      const geb = umbGebucht(z.k.id);
+      const w = _umbF[z.k.id] !== undefined ? _umbF[z.k.id] : (geb || z.offen || 0);
+      return (w && Math.abs(w - geb) >= 0.005) ? { id: z.k.id, w } : null;
+    }).filter(Boolean);
+    if (!tun.length) return;
+    /* Einmal merken, VOR der ersten Mutation — dann nimmt Rueckgaengig den
+       ganzen Vorgang zurueck und nicht nur die letzte Zeile. */
+    merkeStand(tun.length === 1 ? 'Eine Umbuchung gebucht'
+                                : tun.length + ' Umbuchungen gebucht');
+    tun.forEach(x => umbBuchen(x.id, x.w, true));
+    return;
+  }
   if (t.dataset.buchen) {
     const [zeileId, kontoId, betrag] = t.dataset.buchen.split(':');
     _entwurf = { kontoId, art:'ausgabe', datum:heuteISO(), ganzerMonat:false,
@@ -9784,6 +10094,11 @@ function nachbarZelle(td, richtung) {
   return null;
 }
 document.addEventListener('keydown', ev => {
+  /* U-48: Enter im Betragsfeld bucht die Zeile — wie Enter in einer Budgetzelle
+     uebernimmt (F-08). Wer tippt, will nicht zur Maus greifen. */
+  if (ev.key === 'Enter' && ev.target.dataset && ev.target.dataset.umbf) {
+    ev.preventDefault(); umbFelderSichern(); return umbBuchen(ev.target.dataset.umbf, _umbF[ev.target.dataset.umbf] || 0);
+  }
   if (ev.key === 'Escape' && !$('#dialogHg').hidden) { ev.preventDefault(); return dialogZu(); }
   /* U-28: Alt+Pfeil hoch/runter gehoert dem Umordnen der Zeile und ist
      dort schon abgearbeitet — dieser Zuhoerer haengt spaeter am selben
