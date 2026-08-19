@@ -1538,6 +1538,34 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
   font-weight:500;color:#dbe2ea;background:none}
 .praster .p{padding-left:22px;display:flex;align-items:baseline;gap:9px;overflow:hidden}
 .praster .p .t{font:400 13.5px/1 'Space Grotesk',sans-serif;color:#dbe2ea;white-space:nowrap}
+/* U-50: die kleine Datumszeile unter «Anfang» und «Ende». Sie sagt, auf
+   welchen Tag sich der Saldo bezieht — ohne sie hiessen zwei Spalten
+   dasselbe und meinten Verschiedenes. */
+.praster .kopf .c .kl{display:block;font-size:9px;font-weight:400;color:var(--muted);
+  letter-spacing:0;margin-top:1px;white-space:nowrap}
+.praster .c.leer{color:var(--muted)}
+/* ===================================================================
+   U-50 — die Saldozeile und die gruene Buchung
+   -------------------------------------------------------------------
+   Beide Regeln zielen ausdruecklich auf `.saldo-r` und `.gebucht` und
+   nicht auf `.praster .r` — dieselbe Klasse benutzt das aufgeklappte
+   Kategorieraster im Budget, und was hier steht, gilt sonst dort mit.
+   =================================================================== */
+.praster .r.saldo-r{border-bottom:1px solid var(--hairline);padding-top:0;padding-bottom:5px}
+.praster .r.saldo-r:hover{background:none}
+.praster .r.saldo-r .p{padding-left:26px}
+.praster .r.saldo-r .st{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.praster .r.saldo-r .c{font-size:11.5px;color:#9fb0c2;font-variant-numeric:tabular-nums}
+/* Bis heute gerechnet, danach geplant — dieselbe Trennung wie die
+   gestrichelte Linie im Verlauf, andere Bauteile. */
+.praster .r.saldo-r .c.plan{color:#5b6b7c}
+.praster .r.saldo-r .c.jetzt{color:var(--ink);font-weight:600}
+/* Gruen heisst hier «dafuer gibt es eine Buchung». Ausnahme von der Regel
+   «Gruen ist das positive Vorzeichen», mit Albrecht am 19.08.2026 so
+   entschieden: In dieser Tabelle kommt kein positiver Betrag vor, die
+   beiden Bedeutungen begegnen sich nie. Dokumentiert im Handbuch. */
+.praster .c.gebucht{color:var(--ok)}
+.praster .c.gebucht input{color:var(--ok)}
 .praster .p .weg{font:400 10.5px/1 'IBM Plex Mono',monospace;color:#757f8c;white-space:nowrap}
 .praster .c{text-align:right;padding-right:12px}
 .praster .c.jetzt{background:rgba(142,230,200,.06);color:#fff;height:100%;
@@ -2669,6 +2697,63 @@ function standKopfGruppe() {
   return S.zeitraum === 'alle' ? 'Stand zuletzt'
        : S.zeitraum === 'jahr' ? 'Stand 31.12.' + e.j
        : 'Stand Ende ' + MON[e.m] + ' ' + e.j;
+}
+/* ---- U-50: Anfang, Heute, Ende -------------------------------------
+   Das Raster der Verbindlichkeiten trug EINEN Saldo, ganz links, und ganz
+   rechts eine Spalte «Jahr». Beides zusammen war irrefuehrend: Links stand
+   der Stand von HEUTE, auch wenn man 2028 ansah; rechts, wo man nach zwoelf
+   Monatsspalten den Endsaldo erwartet, stand die Summe der ZAHLUNGEN. Die
+   Zeile liess sich nicht von links nach rechts lesen — man musste raten,
+   welche Zahl worauf zeigt.
+
+   Sie traegt jetzt die drei Zahlen, aus denen ein Jahr besteht, in der
+   Reihenfolge, in der sie entstehen:
+
+       Anfang  −  (die zwoelf Monatsspalten)  =  Ende
+       Heute steht daneben, weil man ihn im Alltag braucht.
+
+   Die Summe der Zahlungen behaelt ihre Spalte, aber nicht mehr ihren Platz
+   ganz rechts und nicht mehr den Namen «Jahr»: Sie heisst «Zahlungen» und
+   steht VOR dem Endsaldo — dort, wo sie in der Rechnung steht.
+
+   Warum «Heute» nicht in jedem Jahrgang eine Zahl traegt: Es gibt kein
+   «heute» im Jahr 2029. Wo das laufende Jahr nicht im gezeigten Zeitraum
+   liegt, steht ein Strich statt einer Zahl, die etwas anderes meint als
+   ihre Spaltenueberschrift sagt. */
+function standAnfang(v, j) {
+  const x = vortrag(v, j);
+  if (x !== null) return x;
+  /* «Der Anfang eines Jahres ist das Ende des Vorjahres» gilt nur, wenn es
+     das Vorjahr fuer diese Schuld gab. Im ERSTEN Jahr gibt es keins: Vor
+     ihrem Anfangsdatum existiert die Schuld nicht (U-35), die
+     Rueckwaertsrechnung liefert dort null — und eine Zeile, die mit null
+     anfaengt und mit sechstausend aufhoert, geht nicht auf.
+     Faengt die Schuld MITTEN im Jahr an, steht hier trotzdem ihr
+     Anfangsstand und nicht null. Sonst stimmte die Rechnung
+     «Anfang minus Zahlungen ergibt Ende» in genau diesem Jahr nicht. */
+  const a = ymOf(v.anfangsdatum);
+  if (a.j > j)   return 0;                 /* gibt es in diesem Jahr noch nicht */
+  if (a.j === j) return rd(v.anfangsstand || 0);
+  return rd(verbindPrognose(v, j - 1, 11));
+}
+/* Die zwoelf Monatsstaende eines Jahres — der Verlauf, den die Saldozeile
+   zeigt. Stand nach dem Monat, also nach Zins, Gebuehr und Zahlung. */
+function verbMonatsSaldi(v, j) {
+  const out = [];
+  for (let m = 0; m < 12; m++) out.push(rd(verbindPrognose(v, j, m)));
+  return out;
+}
+function standEnde(v, j) { return rd(verbindPrognose(v, j, 11)); }
+/* Der Zeitraum in drei Zahlen — einmal gerechnet, von Reihe und Summe
+   gemeinsam benutzt, damit die Summenzeile nicht eine zweite Rechnung ist. */
+function verbDreiSaldi(v, jahre) {
+  const h = ymOf(heuteISO());
+  const erst = jahre[0], letzt = jahre[jahre.length - 1];
+  return {
+    anfang: standAnfang(v, erst),
+    heute:  (h.j >= erst && h.j <= letzt) ? verbindStandHeute(v) : null,
+    ende:   standEnde(v, letzt)
+  };
 }
 function standSpalteKopf() {
   const h = ymOf(heuteISO());
@@ -5324,15 +5409,73 @@ function verbindKarteAuf(gid, liste) {
      im laufenden Jahr der Stand von heute, sonst der Stand per 1.1. des
      gewaehlten Jahrgangs. Zwei Ansichten derselben Sache duerfen nicht zwei
      verschiedene Zahlen zeigen; deshalb rufen beide standSpalte(). */
-  const kopf = `<div class="r kopf"><div class="p">Gläubiger</div><div class="c">${standSpalteKopf()}</div>${
+  /* U-50: die Jahre, ueber die dieses Raster laeuft. In «Alle Jahre» ist
+     das die ganze Spaltenreihe, sonst genau der gewaehlte Jahrgang. */
+  const jahre = alle ? sp.map(x => x.key) : [S.jahr];
+  const hj = ymOf(heuteISO()).j;
+  const zeigtHeute = hj >= jahre[0] && hj <= jahre[jahre.length - 1];
+  /* Die Saldozeile gibt es nur im einzelnen Jahrgang (siehe saldoReihe). */
+  const zeigtSaldoZeile = !alle;
+  const hm = ymOf(heuteISO()).m;
+  /* Kuenftig heisst: nach dem laufenden Monat. Ein vergangener Monat ohne
+     Buchung ist NICHT kuenftig — er ist vergangen und trotzdem nur geplant;
+     das sagt die gruene Markierung in der Zeile darueber, nicht diese. */
+  const kuenftigSp = x => alle ? x.key > hj
+    : (S.jahr > hj || (S.jahr === hj && x.key > hm));
+  const kopf = `<div class="r kopf"><div class="p">Gläubiger</div>
+    <div class="c">Anfang<br><span class="kl">${alle ? '1.1.' + jahre[0] : '1.1.' + S.jahr}</span></div>
+    <div class="c">Heute</div>${
     sp.map(x => `<div class="c" ${jetztSp(x)?'style="color:var(--accent)"':''
-      }>${alle ? x.label : x.label.slice(0,3)}</div>`).join('')}<div class="j">${alle?'Total':'Jahr'}</div></div>`;
+      }>${alle ? x.label : x.label.slice(0,3)}</div>`).join('')}<div class="c">Zahlungen</div>
+    <div class="j">Ende<br><span class="kl">31.12.${jahre[jahre.length-1]}</span></div></div>`;
+  /* verbindPrognose laeuft je Aufruf ueber alle Monate seit dem
+     Anfangsdatum. Bei zehn Glaeubigern mal drei Saldi mal Reihe und Summe
+     waeren das sechzig Laeufe fuer dieselben sechs Zahlen — deshalb einmal
+     rechnen und merken. */
+  const _drei = {};
+  const dreiVon = v => (_drei[v.id] || (_drei[v.id] = verbDreiSaldi(v, jahre)));
+  /* ---- U-50: die zweite Zeile ----------------------------------------
+     Sie traegt den Stand NACH jedem Monat und macht die Zeile darueber
+     lesbar: Anfang, zwoelf Abgaenge, Ende. Bewusst ohne data-vr, ohne
+     Ordnungsattribut und ohne bearbeitbare Zelle — damit ist sie fuer den
+     Tastaturweg (nachbarZelle sucht die naechste Reihe MIT bearbeitbarer
+     Zelle), fuer das Ziehen und fuer die Markierung unsichtbar. Kein
+     einziger dieser drei Mechanismen musste angefasst werden.
+
+     In «Alle Jahre» faellt sie weg: Dort ist jede Spalte ein Jahr, und der
+     Stand am Jahresende steht bereits in der Zeile darueber — sie waere
+     dieselbe Zahlenreihe ein zweites Mal.
+
+     Bis heute ist der Saldo Ist, danach Prognose. Beides gleich aussehen zu
+     lassen waere in einer Zeile, die wie ein Kontoauszug gelesen wird, die
+     teuerste Verwechslung von allen. */
+  const saldoReihe = v => {
+    if (alle || !zeigtSaldoZeile) return '';
+    const st = verbMonatsSaldi(v, S.jahr);
+    return `<div class="r saldo-r">
+      <div class="p"><span class="st">Saldo</span></div>
+      <div class="c"></div><div class="c"></div>
+      ${sp.map((x,i) => `<div class="c ${jetztSp(x)?'jetzt':''}${
+        kuenftigSp(x) ? ' plan' : ''}">${fmtG(st[x.key])}</div>`).join('')}
+      <div class="c"></div><div class="j"></div></div>`;
+  };
   const reihen = liste.map(v => {
     const zellen = sp.map(x => {
       const w = wert(v, x), jetzt = jetztSp(x);
-      if (_ro || alle) return `<div class="c ${jetzt?'jetzt':''}">${fmtG0(w)}</div>`;
+      /* U-50: Gruen heisst «dafuer gibt es eine Buchung». In dieser Tabelle
+         steht kein einziger positiver Betrag, deshalb begegnet sich die
+         Farbe hier nie ihrer sonstigen Bedeutung (Plus). Die Ausnahme ist
+         mit Albrecht am 19.08.2026 ausdruecklich so entschieden und steht
+         im Handbuch — sie ist keine Unachtsamkeit.
+         Weicht die Buchung vom Plan ab, sagt es der Titel: die Zelle zeigt
+         weiter den Plan, denn in sie wird der Plan getippt. */
+      const ist = alle ? 0 : istVerb(v, S.jahr, x.key);
+      const gb = ist > 0.005 ? ' gebucht' : '';
+      const tit = gb ? ` title="Gebucht: ${fmt(ist)}${
+        Math.abs(ist - w) > 0.005 ? ' — geplant war ' + fmt(w) : ''}"` : '';
+      if (_ro || alle) return `<div class="c ${jetzt?'jetzt':''}${gb}"${tit}>${fmtG0(w)}</div>`;
       const mark = S.markiert.includes(v.id + ':' + x.key) ? ' markiert' : '';
-      return `<div class="c ${jetzt?'jetzt':''} bearbeitbar${mark}" data-vr="${v.id}" data-m="${x.key}"><input
+      return `<div class="c ${jetzt?'jetzt':''} bearbeitbar${mark}${gb}"${tit} data-vr="${v.id}" data-m="${x.key}"><input
         type="text" inputmode="decimal" value="${w ? fmtG(w) : ''}" placeholder="0"></div>`;
     }).join('');
     const tage = v.vereinbarungBis
@@ -5344,16 +5487,23 @@ function verbindKarteAuf(gid, liste) {
         ${tage !== null && tage <= 120
           ? `<span class="weg" style="color:var(--err)">bis ${v.vereinbarungBis.slice(8,10)}.${
               v.vereinbarungBis.slice(5,7)}.</span>` : ''}</div>
-      <div class="c">${fmtG0(standSpalte(v))}${alle ? '' : vortragMarke(v, S.jahr)}</div>${zellen}
-      <div class="j">${fmtG0(rd(sp.reduce((a,x)=>a+wert(v,x),0)))}</div></div>`;
+      <div class="c">${fmtG(dreiVon(v).anfang)}${alle ? '' : vortragMarke(v, S.jahr)}</div>
+      <div class="c${zeigtHeute ? '' : ' leer'}">${zeigtHeute ? fmtG(dreiVon(v).heute) : '–'}</div>${zellen}
+      <div class="c">${fmtG0(rd(sp.reduce((a,x)=>a+wert(v,x),0)))}</div>
+      <div class="j">${fmtG(dreiVon(v).ende)}</div></div>` + saldoReihe(v);
   }).join('');
   const summe = `<div class="r summe"><div class="p" style="color:var(--muted)">Summe</div>
-    <div class="c">${fmtG0(rd(liste.reduce((a,v)=>a+standSpalte(v),0)))}</div>${
+    <div class="c">${fmtG(rd(liste.reduce((a,v)=>a+dreiVon(v).anfang,0)))}</div>
+    <div class="c${zeigtHeute ? '' : ' leer'}">${zeigtHeute
+      ? fmtG(rd(liste.reduce((a,v)=>a+dreiVon(v).heute,0))) : '–'}</div>${
     sp.map(x => `<div class="c ${jetztSp(x)?'jetzt':''}">${
       fmtG0(rd(liste.reduce((a,v)=>a+wert(v,x),0)))}</div>`).join('')}
-    <div class="j" style="color:#fff">${fmtG0(rd(liste.reduce((a,v)=>
-      a + sp.reduce((b2,x)=>b2+wert(v,x),0), 0)))}</div></div>`;
-  const pgrid = `250px 84px repeat(${sp.length},minmax(0,1fr)) 88px`;
+    <div class="c">${fmtG0(rd(liste.reduce((a,v)=>
+      a + sp.reduce((b2,x)=>b2+wert(v,x),0), 0)))}</div>
+    <div class="j" style="color:#fff">${fmtG(rd(liste.reduce((a,v)=>a+dreiVon(v).ende,0)))}</div></div>`;
+  /* Zwei Spalten mehr links, eine mehr rechts. Die Namensspalte gibt den
+     Platz her — sie war mit 250 px die breiteste und braucht ihn nicht. */
+  const pgrid = `196px 78px 78px repeat(${sp.length},minmax(0,1fr)) 82px 88px`;
   return `<div class="kauf"><div class="praster" style="--pgrid:${pgrid}">${kopf}${reihen}${summe}
     <div class="fuss"><span>${alle
       ? 'Ein Jahrgang je Spalte · eingetragen wird im einzelnen Jahr'
@@ -8466,25 +8616,41 @@ function berichtSchuld(vId) {
 }
 
 /* ---- Alle Verbindlichkeiten ueber alle Jahre ------------------------ */
+/* U-49: Eine Zelle fuer ein Jahr, in dem es diesen Glaeubiger nicht gibt.
+   Sie traegt bewusst KEIN data-w: berichtRechnen() liest den Rohwert von
+   dort, und eine Null waere eine Aussage ueber einen Stand — hier gibt es
+   aber keinen Stand, sondern die Schuld selbst nicht mehr. Der Strich ist
+   dieselbe Schreibweise, die zz() fuer «nichts geflossen» benutzt. */
+function zzWeg() { return '<td class="bzahl"><span class="nix">–</span></td>'; }
 function berichtSchuldenplan() {
   const jahre = Object.keys(D.budget).map(Number).sort();
   const nJ = jahre.length;
   const rows = GRUPPEN.map(g => {
-    const liste = D.verbindlichkeiten.filter(v => v.aktiv !== false && v.gruppe === g.id);
+    /* U-49: Ein Glaeubiger steht im Bericht, sobald er in IRGENDEINEM
+       gezeigten Jahr gilt — dieselbe Regel wie in der Ansicht «Alle Jahre».
+       Wer ihn hier weglaesst, weil er heute ausgeblendet ist, nimmt ihm
+       auch die Jahre, in denen er abbezahlt wurde; und genau die soll
+       dieser Bericht zeigen. */
+    const liste = D.verbindlichkeiten.filter(v =>
+      v.gruppe === g.id && jahre.some(j => verbSicht(v, j)));
     if (!liste.length) return '';
     const kopf = `<tr class="grp" data-gsum="${g.id}"><td class="bn">${g.name}</td>
       ${jahre.map((_,i) => `<td class="bzahl" data-sum="${i+1}" data-sig="wert"></td>`).join('')}
       <td class="bn"></td></tr>`;
     return kopf + liste.map(v => `<tr class="bz" data-g="${g.id}" data-bgrp="${v.bezeichnung}">
-      <td class="bn">${v.bezeichnung}</td>
-      ${jahre.map(j => zz(verbindPrognose(v, j, 11))).join('')}
-      <td class="bn">${tilgungsende(v) || '<span class="err">nach Plan nicht</span>'}</td></tr>`).join('');
+      <td class="bn">${v.bezeichnung}${v.ausAb ? `<div class="bsub">ausgeblendet ab ${v.ausAb}</div>` : ''}</td>
+      ${jahre.map(j => verbSicht(v, j) ? zz(verbindPrognose(v, j, 11)) : zzWeg()).join('')}
+      <td class="bn">${v.ausAb
+        ? 'ausgeblendet ab ' + v.ausAb
+        : (tilgungsende(v) || '<span class="err">nach Plan nicht</span>')}</td></tr>`).join('');
   }).join('');
   const summen = jahre.map(j => schuldenPrognose(j, 11));
   const verlauf = _ber.verlauf ? verlaufSvg(summen, jahre.map(String), 160) : '';
 
   /* Anteil am heutigen Schuldenberg — mit Rate, Zins und Balken. */
-  const heute = D.verbindlichkeiten.filter(v => v.aktiv !== false)
+  /* U-49: «heute» heisst das laufende Jahr — wer ab ihm ausgeblendet ist,
+     gehoert nicht in eine Aufstellung des heutigen Schuldenbergs. */
+  const heute = verbHeute()
     .map(v => ({ v, st: verbindStandHeute(v) }))
     .sort((a,b) => b.st - a.st);
   const anteilZeilen = heute.map(x => `<tr class="bz" data-bgrp="${x.v.bezeichnung}">
@@ -8499,7 +8665,7 @@ function berichtSchuldenplan() {
   return berichtKopf('GÄPP · Verbindlichkeiten', 'Über alle Jahre',
       'Stand am Stichtag ' + dmy(D.meta.stichtag) + ' und prognostizierte Entwicklung',
       [['Am Stichtag', fmt(schuldenStichtag()), 'err'],
-       ['Heute', fmt(rd(D.verbindlichkeiten.reduce((s,v)=>s+verbindStandHeute(v),0))), 'err'],
+       ['Heute', fmt(rd(verbHeute().reduce((s,v)=>s+verbindStandHeute(v),0))), 'err'],   /* U-49 */
        ['Ende ' + jahre[nJ-1], fmt(summen[nJ-1]), summen[nJ-1] > 0.005 ? 'err' : 'ok']]) +
     verlauf +
     `<h2 class="bh">Stand am 31. Dezember, Jahr für Jahr</h2>
@@ -8518,7 +8684,8 @@ function berichtSchuldenplan() {
        <tbody>${anteilZeilen}</tbody>
        <tfoot><tr><td class="bn">Summe</td>${fz('1')}${fz('2','minus')}<td class="bzahl"></td>
          <td class="bn"></td><td class="banteil"></td></tr></tfoot></table>` +
-    berichtFuss('Jahreswerte sind Stände am 31.12., gerechnet mit Zins und Gebühr');
+    berichtFuss('Jahreswerte sind Stände am 31.12., gerechnet mit Zins und Gebühr · '
+      + 'ein Strich heisst: in diesem Jahr gibt es diesen Gläubiger nicht');
 }
 
 function tilgungsende(v) {
@@ -8735,7 +8902,7 @@ function exportHtml() {
    =================================================================== */
 function blattHandbuch() {
   return { weit:true, titel:'Wie GÄPP tickt', koerper:`<div class="hb">
-    <p>Zwölf Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
+    <p>Dreizehn Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
        nicht aus Gewohnheit. Der Rest bedient sich von selbst.</p>
 
     <div class="regel"><h3>1. Eine offene Rechnung mindert den Kontostand nicht</h3>
@@ -8856,6 +9023,22 @@ function blattHandbuch() {
     <p>Steht ein Betrag so gebucht da, heisst der Knopf <b>«Ändern»</b>. Er bucht nichts, er
        führt zurück ins Feld. Der geänderte Wert ersetzt die Buchung, statt eine zweite
        anzulegen — und <b>0 nimmt sie ganz zurück</b>. Wo nichts zu tun ist, steht kein Knopf.</p></div>
+
+    <div class="regel"><h3>13. Die Schuldenzeile liest sich von links nach rechts</h3>
+    <p>Ganz links steht der <b>Anfang</b> — der Stand am 1. Januar des Jahres, das du ansiehst —,
+       daneben der Stand <b>heute</b>. Dann kommen die zwölf Monate mit deinen Zahlungen, und
+       rechts <b>Zahlungen</b> und <b>Ende</b>. Anfang minus Zahlungen ergibt Ende; geht das
+       nicht auf, stimmt etwas in den Daten nicht — und dann ist das die Stelle, an der du es
+       siehst.</p>
+    <p>Unter jeder Gläubigerzeile steht eine zweite mit dem <b>Saldo nach jedem Monat</b>. Sie
+       ist gerechnet; getippt wird in der Zeile darüber. Bis heute zeigt sie den wirklichen
+       Stand, danach die Prognose nach deinem Ratenplan — das Geplante in leiserer Farbe. In
+       «Alle Jahre» gibt es sie nicht, dort ist jede Spalte schon ein Jahresende.</p>
+    <p><b>Grüne Zahlen heissen: dafür gibt es eine Buchung.</b> Sonst trägt Grün in GÄPP das
+       positive Vorzeichen — in dieser einen Tabelle nicht, weil dort kein positiver Betrag
+       vorkommt und sich die beiden Bedeutungen nie begegnen. Eine bewusste Ausnahme, kein
+       Versehen. Zeigt eine grüne Zelle eine andere Zahl, als du gebucht hast, sagt es der Text
+       beim Darüberfahren: die Zelle trägt den Plan, nicht die Buchung.</p></div>
 
     <h3>Berichte</h3>
     <p>In jedem Bericht lässt sich <b>jede Zeile anklicken</b>. Sie fällt zurück, und alles
