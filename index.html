@@ -563,6 +563,18 @@ table.klein.liste tr:hover td{background:var(--soft)}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kachel .mitte{flex:1 1 auto}
 .kachel .mitte .balken{margin-top:10px}
+/* U-88: Die zweite Zahl der Kontokachel. Sie steht UNTER dem Saldo und
+   nicht daneben — nebeneinander laesen sich zwei Betraege als ein Paar,
+   und man muss erst herausfinden, welcher der Hauptwert ist. Untereinander
+   ist die Rangfolge ohne Nachdenken da: gross ist der Stand, klein die
+   Vorschau. Sie traegt ihr eigenes Label, weil eine nackte zweite Zahl auf
+   einer Kachel eine Zumutung ist. */
+.kachel .mitte .vorschau{
+  display:flex;align-items:baseline;gap:7px;margin-top:7px;
+  font-size:12.5px;color:var(--muted);
+}
+.kachel .mitte .vorschau .num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px}
+.kachel .mitte .vorschau .num.neg{color:var(--err)}
 .kachel .fuss{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   border-top:1px solid var(--line);padding-top:10px;
@@ -3685,6 +3697,12 @@ function kachelHtml(o) {
   const balken = o.anteil === undefined ? '' :
     `<div class="balken"><div style="width:${Math.round(o.anteil*100)}%"></div></div>`;
   const etikett = o.ueberzogen ? '<span class="etikett">überzogen</span>' : '';
+  /* U-88: Rein additiv — ohne das Feld verhaelt sich die Funktion wie vorher.
+     Dieselbe Bauart wie `klasse` aus U-54. */
+  const vorschau = o.vorschau === undefined ? '' :
+    `<div class="vorschau"><span class="k">${o.vorschauWort || 'Vorschau'}</span>
+      <span class="num ${o.vorschau < 0 ? 'neg' : ''}">${fmt(o.vorschau)}</span>
+      <span>${o.vorschauZusatz || ''}</span></div>`;
   return `<article class="karte kachel${o.klasse ? ' ' + o.klasse : ''}" data-oeffne="${o.art}:${o.id}">
     <div>
       <span class="kennung">${o.kennung}</span>
@@ -3694,6 +3712,7 @@ function kachelHtml(o) {
     <div class="mitte">
       <span class="wert"><span class="k">${o.label}</span>
         <span class="v gross ${o.wert < 0 ? 'neg' : ''}">${fmt(o.wert)}</span>${etikett}</span>
+      ${vorschau}
       ${balken}
     </div>
     <div class="fuss">
@@ -3896,8 +3915,51 @@ function sparkHtml(werte) {
    im Schema, im Glaeubigerblatt und im Bericht — nur diese zweite Anzeige
    derselben Aussage geht. */
 
+/* ===================================================================
+   U-88 — Zwei Zahlen je Kontokachel: Stand und Vorschau
+   -------------------------------------------------------------------
+   Die Kachel zeigte nur den Saldo, also das GEBUCHTE. Was noch zu zahlen
+   ist, stand als Text in der Fusszeile — und wurde dort vom Knopf
+   abgeschnitten: «2 offene Rechnungen · 477…». Ausgerechnet die Zahl, um
+   die es geht, fiel weg.
+
+   Albrechts Satz dazu, wortgetreu: «Ich brauche zwei Zahlen: ueberzogen
+   (tatsaechlich gebucht) und Vorschau (tatsaechlich gebucht plus die 2
+   offenen Rechnungen), so sehe ich, was ich auf das Konto ueberweisen
+   muss. Darum geht es mir.» Und zu den Rechnungen: «Bei Kreditoren sind
+   das zudem erwartet UND erfasst, weil beide meine Planung beeinflussen.»
+
+   DIE ABGRENZUNG IST DIESELBE WIE BEI «FREI PER MONATSENDE», und sie ist
+   der einzige heikle Teil dieser Funktion: Jeder Franken zaehlt genau
+   einmal.
+   — Eine Rechnung zaehlt ueber SICH SELBST, nicht zusaetzlich ueber die
+     gespiegelte Budgetzeile «Rechnungen». Genau jene Posten tragen ein
+     `rechId` und fallen deshalb aus dem Budgetteil heraus.
+   — Eine GLAEUBIGERrechnung zaehlt ueber ihre RATE, die als eigener Posten
+     im Budget steht (F-01). Sie faellt deshalb aus dem Rechnungsteil
+     heraus — sonst ginge sie zweimal ab.
+
+   ZEITRAUM: Die Rechnungen zaehlen OHNE Fristgrenze — eine offene Rechnung
+   ist offen, gleich wann sie faellig wird, und «was muss ich ueberweisen»
+   fragt nicht nach dem Monat. Die Budgetposten dagegen sind von Natur aus
+   monatlich; sie folgen dem gewaehlten Monat, in Jahr und «Alle Jahre»
+   dem laufenden. Zwei Zeitraeume in einer Zahl waeren schlimmer, aber es
+   sind zwei verschiedene Fragen an dasselbe Konto.
+   =================================================================== */
+function kontoOffen(kId, j, m) {
+  const rech = rd(D.rechnungen.reduce((s,r) =>
+    (r.kontoId === kId && r.status !== 'erledigt' && !r.verbId) ? s + r.betrag : s, 0));
+  const anzahl = D.rechnungen.filter(r =>
+    r.kontoId === kId && r.status !== 'erledigt' && !r.verbId).length;
+  const budget = rd(offenPosten(j, m).reduce((s,x) =>
+    (x.kontoId === kId && !x.rechId) ? s + x.betrag : s, 0));
+  return { rech, anzahl, budget, summe: rd(rech + budget) };
+}
 function zeichneKacheln() {
   const e = zeitEnde();
+  /* U-88: Die Budgetposten der Vorschau folgen dem gewaehlten Monat; in
+     «Jahr» und «Alle Jahre» gibt es keinen, dort gilt der laufende. */
+  const vm = S.zeitraum === 'monat' ? { j: S.jahr, m: S.monat } : ymOf(heuteISO());
   /* Die Liquiditaetskarte ist mit U-5 ins Dashboard gewandert. Hier stand
      sie doppelt (U-10). */
 
@@ -3912,15 +3974,29 @@ function zeichneKacheln() {
          eingetroffen und noch nicht freigegeben, also `erfasst`. Eine
          erwartete Rechnung liegt noch nirgends und gehoert nicht in die
          Zahl auf der Kontokachel. */
-      const offen = D.rechnungen.filter(r => r.status === 'erfasst' && r.kontoId === k.id);
       const rech = k.id === 'kred';
+      /* U-88: Die Vorschau. `off.summe` ist, was von diesem Konto noch
+         abgeht; der Saldo minus das ist der Stand, auf den es zulaeuft.
+         Ist nichts offen, steht keine zweite Zahl da — eine Vorschau, die
+         den Saldo wiederholt, ist Laerm. */
+      const off = kontoOffen(k.id, vm.j, vm.m);
+      /* Der Zusatz nennt, WORAUS die Vorschau entsteht — nicht wie viel.
+         Wie viel ist der Abstand zwischen den beiden Zahlen, und der steht
+         schon da; ihn auszuschreiben waere die dritte Zahl fuer dieselbe
+         Auskunft (G-8). */
+      const rZahl = off.anzahl + (off.anzahl === 1 ? ' Rechnung' : ' Rechnungen');
+      const zusatz = '· nach ' + (off.rech > 0.005 && off.budget > 0.005
+        ? rZahl + ' und ' + fmt(off.budget) + ' Budget'
+        : off.rech > 0.005
+          ? (off.anzahl === 1 ? '1 offenen Rechnung' : off.anzahl + ' offenen Rechnungen')
+          : fmt(off.budget) + ' Budget');
       return kachelHtml({ art:'konto', id:k.id, kennung:'Konto ' + k.nr, name:k.name, rolle:k.rolle,
         label:'Saldo', wert:s, ueberzogen: s < 0,
+        vorschau: off.summe > 0.005 ? rd(s - off.summe) : undefined,
+        vorschauZusatz: zusatz,
         knopf: rech ? 'Rechnung' : 'Buchen', tat: rech ? 'rechnungneu:' + k.id : null,
-        meta: rech
-          ? (offen.length ? offen.length + (offen.length===1?' offene Rechnung · ':' offene Rechnungen · ')
-              + fmt(rd(offen.reduce((s2,r)=>s2+r.betrag,0))) : 'keine offene Rechnung')
-          : n + (n === 1 ? ' Buchung' : ' Buchungen') + (letzte ? ' · zuletzt ' + kurzdatum(letzte) : '') });
+        meta: n + (n === 1 ? ' Buchung' : ' Buchungen')
+              + (letzte ? ' · zuletzt ' + kurzdatum(letzte) : '') });
     }).join('');
 
   /* U-40: Hier stand der Kachelteppich der Schulden. Dieselben Glaeubiger
