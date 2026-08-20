@@ -516,6 +516,14 @@ table.klein.liste tr:hover td{background:var(--soft)}
 /* U-53: Die Gruppe der ueberfaelligen traegt Rot — sie ist die eine Stelle,
    an der die Tafel selbst etwas meldet. */
 .untertitel.spaetkopf{color:var(--err)}
+/* U-69: Die Gruppe der erwarteten steht zuoberst und traegt KEINE Farbe.
+   Ihre Zahl faellt eigens auf --muted zurueck, denn .untertitel .num ist
+   sonst rot — und erwartet ist keine Meldung, sondern eine Vorschau. */
+.untertitel.erwartetkopf,.untertitel.erwartetkopf .num{color:var(--muted)}
+/* U-69: Dieselbe Kachel, um einen Rang leiser — dasselbe Mittel wie bei
+   .erledigt (U-54, Formensprache H) und ausdruecklich keine zweite
+   Kachelgestalt. */
+.kachel.ruhig .name,.kachel.ruhig .mitte .v,.kachel.ruhig .mitte .v.neg{color:var(--muted)}
 /* Ein Gruppenkopf braucht Luft nach oben, sonst klebt er an den Kacheln der
    Gruppe darueber und liest sich als deren Fusszeile. Der erste nicht — er
    steht schon unter dem Tafelkopf. */
@@ -565,6 +573,13 @@ table.klein.liste tr:hover td{background:var(--soft)}
 .liq .herleitung{border-left:1px solid var(--line);padding-left:18px}
 .liq .herleitung .zeile{display:flex;justify-content:space-between;gap:20px;font-size:12.5px;padding:1.5px 0;color:var(--muted)}
 .liq .herleitung .zeile.ergebnis{color:var(--ink);border-top:1px solid var(--line);margin-top:4px;padding-top:5px;font-weight:600}
+/* U-83: Zeilen, die NICHT in die Summe eingehen. Sie stehen da, weil die
+   Frage «und was ist mit dieser Rechnung?» sonst offenbliebe — aber wer
+   die Spalte addiert, darf sie nicht mitnehmen. Eingerueckt, blasser und
+   mit einem Zeichen davor: eine Zeile, die aussieht wie ein Summand,
+   wird als Summand gelesen. */
+.liq .herleitung .zeile.nebenbei{padding-left:11px;opacity:.72}
+.liq .herleitung .zeile.nebenbei>span:first-child::before{content:'↳ '}
 .liq-schmal{display:flex;gap:30px;align-items:center;padding:11px var(--pad);flex:0 0 auto;margin-bottom:var(--gap)}
 .liq-schmal .wert .v{font-size:17px}
 
@@ -1601,6 +1616,21 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
    traegt der Hintergrund — die Farbe der Zahl gehoert der Buchung. */
 .praster .c.jetzt.gebucht input,
 .praster .c.jetzt.bearbeitbar.gebucht input{color:var(--ok)}
+/* ---- U-84: dasselbe fuer die ZELLE, nicht nur fuer ihr Eingabefeld ---
+   Der Fall darueber war fuer das input geloest und fuer die Zelle
+   vergessen. Gemessen im laufenden Monat: eine voll gebuchte Zelle
+   (`c jetzt gebucht`) und eine gar nicht gebuchte (`c jetzt`) kamen
+   beide in rgb(255,255,255) heraus — pixelgleich, das Gruen kam nicht
+   an. Grund ist derselbe wie oben: `.praster .c.gebucht` und
+   `.praster .c.jetzt` sind beide (0,3,0) spezifisch, und die spaetere
+   gewinnt; das ist die weisse. Betroffen ist jede Zelle OHNE
+   Eingabefeld — die gespiegelten Zeilen (Raten, Rechnungen) immer, und
+   im Schreibschutz (eingefrorener Export) jede Zeile.
+   Geloest wird es NICHT durch Umsortieren: der Kommentar oben warnt
+   ausdruecklich davor, auf die Reihenfolge zu bauen, weil der naechste
+   Umbau die Farbe dann wieder ausknipst, ohne dass es jemand merkt.
+   Eine Klasse mehr (0,4,0) schlaegt beide, wo immer sie stehen. */
+.praster .c.jetzt.gebucht{color:var(--ok)}
 .praster .p .weg{font:400 10.5px/1 'IBM Plex Mono',monospace;color:#757f8c;white-space:nowrap}
 .praster .c{text-align:right;padding-right:12px}
 .praster .c.jetzt{background:rgba(142,230,200,.06);color:#fff;height:100%;
@@ -2027,6 +2057,15 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 
    Die Datendatei liegt im privaten Repo (A-79), diese Datei ist die leere
    Huelle (A-78): keine Betraege, keine Kontonummern, keine Belege.
+
+   U-85 — und das gilt auch fuer die KOMMENTARE. Wer eine Regel im
+   Kommentar erklaert, erklaert sie OHNE die Daten, an denen sie
+   aufgefallen ist: der Grund traegt auch ohne den Betrag, an dem er
+   auffiel, und ein Glaeubiger steht mit seiner Rolle da, nicht mit
+   seinem Namen. Wo eine Groessenordnung noetig ist, steht eine
+   offensichtlich erfundene runde Zahl. Neun Stellen trugen bis zum
+   20.08.2026 echte Betraege, eine davon einen Glaeubigernamen; sie
+   sind bereinigt.
    =================================================================== */
 'use strict';
 
@@ -2038,7 +2077,7 @@ const MON_LANG  = ['Januar','Februar','März','April','Mai','Juni','Juli','Augus
 const TAGE      = [31,28,31,30,31,30,31,31,30,31,30,31];
 const SCHLUESSEL_DATEN = 'gaepp.v1';        /* wird nie gehoben (Datenanbindung) */
 const SCHLUESSEL_GH    = 'gaepp.github';
-const SCHEMA_APP = 6;                        /* Stand dieser App (A-88). Von 2 auf 3 am 17.08.2026:
+const SCHEMA_APP = 7;                        /* Stand dieser App (A-88). Von 2 auf 3 am 17.08.2026:
    die Entitaet «rechnungen» traegt seither ein Feld fuer die Verbindlichkeit
    (F-01). Von 3 auf 4 am 18.08.2026: Zeilen und Kategorien tragen statt
    `aktiv` ein `ausAb` (U-21) — eine aeltere Fassung wuerde ein ausgeblendetes
@@ -2053,8 +2092,24 @@ const SCHEMA_APP = 6;                        /* Stand dieser App (A-88). Von 2 a
    Beschreibung. Eine aeltere Fassung ueberliest sie und gibt sie beim
    Speichern unveraendert zurueck — kein Rappen aendert sich. Wer die
    Nummer bei jedem neuen Feld hebt, sperrt Albrecht aus Gruenden aus,
-   die keine sind, und dann glaubt ihr niemand mehr, wenn es zaehlt. */
+   die keine sind, und dann glaubt ihr niemand mehr, wenn es zaehlt.
+   U-69 hebt sie von 6 auf 7, und diesmal MUSS sie steigen: der Status
+   einer Rechnung heisst nicht mehr `offen`/`bezahlt`, sondern
+   `erwartet`/`erfasst`/`erledigt`. Eine aeltere Fassung liest den neuen
+   Wert nicht — sie faende in `r.status !== 'offen'` jede erfasste
+   Rechnung als bezahlt vor und zaehlte sie ins Ist. Das ist genau der
+   Fall, fuer den die Nummer da ist: nicht ein Feld ist neu, sondern
+   dieselben Zahlen werden anders gelesen. */
 const DATEI_IM_REPO = 'gaepp-daten.json';
+/* U-69: Die drei Zustaende einer Rechnung, in ihrer Reihenfolge — sie ist
+   zugleich die Reihenfolge der Segmente im Schalter und die der Gruppen in
+   der Tafel. Ein Zustand steht an EINER Stelle; waere die Liste an drei
+   Orten aufgeschrieben, hiesse der vierte Zustand eines Tages an einem
+   davon anders. `erwartet` bedeutet: die Rechnung ist angekuendigt, aber
+   noch nicht da — sie zaehlt trotzdem im Budget-Soll, weil Albrecht sehen
+   will, wie der Monat aussieht, WENN sie kommt. */
+const R_STATUS = ['erwartet', 'erfasst', 'erledigt'];
+const R_STATUS_WORT = { erwartet:'erwartet', erfasst:'erfasst', erledigt:'erledigt' };
 
 /* ---- Zahlen und Datum, Schweizer Konventionen ------------------------ */
 function tageImMonat(j, m) { return (m === 1 && ((j % 4 === 0 && j % 100 !== 0) || j % 400 === 0)) ? 29 : TAGE[m]; }
@@ -2234,6 +2289,7 @@ function rueckgaengigTun() {
      getippter Entwurf, ein Uebertragungsdialog, ein Blatt zu einer wieder
      vorhandenen Rechnung. Alles zu, dann steht die Ansicht sauber. */
   _entwurf = null; _ueber = null; _loesch = null; _jahrLeer = null; _dlgTun = null;
+  _frei = null; _rueck = null;                                  /* U-69/U-70 */
   _stapel = []; _blatt = null; S.blatt = null;
   $('#blattHg').hidden = true; $('#dialogHg').hidden = true;
   persist();
@@ -2458,6 +2514,57 @@ function migriere4(d) {
     delete o.aktiv;
   }));
 }
+/* ---- U-69: zwei Zustaende werden drei (Schema 6 -> 7) ---------------
+   `offen` heisst jetzt `erfasst`, `bezahlt` heisst `erledigt`. `erwartet`
+   kommt neu DAVOR und entsteht durch die Migration nie: eine Rechnung, die
+   schon in der Datei steht, war immer schon da. Sie waere nur zu erraten,
+   und geraten wird hier nicht.
+   Umgeschrieben wird ausschliesslich, was einen der beiden alten Werte
+   traegt — die Migration laeuft nach dem Vorbild von migriere4 auf JEDER
+   geladenen Datei, auch auf einer laengst migrierten, und darf einen
+   bereits gesetzten dritten Zustand nicht wieder einebnen.
+   Ein leerer oder unbekannter Wert wird `erfasst` und nicht `erledigt`:
+   wer raten muss, raet zugunsten der Arbeit, die noch zu tun ist, nicht
+   zugunsten der, die angeblich schon getan sei. */
+function migriere7(d) {
+  (d.rechnungen || []).forEach(r => {
+    if (r.status === 'bezahlt')            r.status = 'erledigt';
+    else if (r.status === 'offen')         r.status = 'erfasst';
+    else if (R_STATUS.indexOf(r.status) < 0) r.status = 'erfasst';
+  });
+}
+/* ---- U-70: was die Migration NICHT still geraderueckt ---------------
+   Eine Rechnung, die nach der Umstellung `erfasst` heisst und trotzdem
+   eine Zahlungsbuchung traegt, ist widerspruechlich — das Geld ist ab,
+   die Rechnung gilt als offen (I-11, belegt in Albrechts Daten seit dem
+   17.08.2026, Ursache im Klickverteiler unten). Beide denkbaren
+   Aufloesungen aendern Zahlen: die eine setzt den Status, die andere
+   loescht eine Buchung. Deshalb entscheidet sie niemand ausser Albrecht.
+   Hier wird nur GESAMMELT; die Liste zeigt blattWiderspruch().
+   Die Liste entsteht bei jedem Laden neu. Wer sie wegklickt, ohne zu
+   entscheiden, sieht sie beim naechsten Start wieder — der Widerspruch
+   ist ja noch da. Genau das ist gewollt. */
+/* U-82: BEIDE Richtungen. Bis hierher suchte diese Liste nur «nicht
+   erledigt, hat aber eine Buchung». Die Gegenrichtung — «erledigt, hat
+   aber keine Buchung» — wurde nie gemeldet, obwohl sie derselbe
+   Widerspruch ist, nur von hinten: die Rechnung gilt als bezahlt, und
+   auf keinem Konto steht der Franken. Sie entsteht auf demselben Weg
+   (ein Zustandswechsel oder eine Loeschung, die die andere Seite
+   stehenlaesst) und braucht denselben Entscheid.
+   Zurueckgegeben wird deshalb nicht mehr die nackte Rechnung, sondern
+   {r, art}: die Aufloesung ist je Richtung eine andere, und ein Blatt,
+   das die Richtung erst wieder erraten muesste, raet irgendwann falsch.
+   `art` ist absichtlich benannt und nicht ein Wahrheitswert — es gibt
+   keinen Grund, warum es nie eine dritte Lage geben koennte. */
+function widersprueche(d) {
+  if (!d || !Array.isArray(d.rechnungen)) return [];
+  return d.rechnungen.map(r => {
+    const hat = (d.buchungen || []).some(b => b.rechnungId === r.id);
+    if (r.status !== 'erledigt' && hat)  return { r, art:'zahlungOhneStatus' };
+    if (r.status === 'erledigt' && !hat) return { r, art:'statusOhneZahlung' };
+    return null;
+  }).filter(Boolean);
+}
 /* ---- Schemaversion und Ueberschreibschutz (A-88) --------------------
    Bei Geldbetraegen ist Verhindern besser als Wiederherstellen. */
 function uebernehmen(geladen) {
@@ -2470,6 +2577,9 @@ function uebernehmen(geladen) {
      d.kategorien, und die legt normalisieren an, falls sie in der Datei
      fehlen. Umgekehrt wuerde die Migration an einer fehlenden Liste werfen. */
   if (geladen && typeof geladen === 'object') migriere4(geladen);
+  /* U-69: nach migriere4 und vor der Versionspruefung — die Statuswerte
+     muessen stehen, bevor irgendeine Zeichenfunktion sie liest. */
+  if (geladen && typeof geladen === 'object') migriere7(geladen);
   if (v > SCHEMA_APP) {
     D = geladen; _ro = true;
     document.body.classList.add('readonly');
@@ -2550,6 +2660,13 @@ function gespiegelteRate(gruppe, j, m) {
 function rechnungImBudget(r) {
   return !r.gedeckt && !r.verbId;
 }
+/* U-69: Der Status kommt hier bewusst NICHT vor. Das Soll ist, was der
+   Monat kosten wird — eine erwartete, eine erfasste und eine laengst
+   erledigte Rechnung standen alle drei im Budget dieses Monats. Genau
+   deshalb zaehlt `erwartet` hier mit, ohne dass eine Zeile dazukommt:
+   Albrecht sieht sein Budget so, wie es aussieht, WENN die angekuendigte
+   Rechnung da ist. Das Gegenstueck ist istRechnungen(), das nur
+   `erledigt` kennt. */
 function gespiegelteRechnung(j, m) {
   return rd(D.rechnungen.reduce((s, r) => {
     const f = ymOf(r.faelligkeit);
@@ -2748,6 +2865,18 @@ function umbZeilen(j, m) {
 function umbOffenSumme(j, m) {
   return rd(umbZeilen(j, m).reduce((s, z) => s + (z.offen || 0), 0));
 }
+/* ---- U-75: der Monat der Monatsverteilung ---------------------------
+   Die Kachel rechnete mit HEUTE, das Blatt dahinter mit der gewaehlten
+   Zeit. Wer den Monat wechselte, bekam auf der Kachel eine andere Zahl
+   als im Blatt, das sie oeffnet — zwei Antworten auf dieselbe Frage.
+
+   Beide fragen jetzt hier. Massgebend ist die Zeitwahl der Seitenleiste
+   (A-01, A-05: jede Ansicht folgt der getroffenen Wahl). Steht sie auf
+   Jahr oder auf «alle», gibt es keinen gewaehlten Monat — dann der
+   laufende, denn verteilt wird immer in genau einem Monat. */
+function umbZeit() {
+  return { j: S.jahr, m: S.zeitraum === 'monat' ? S.monat : ymOf(heuteISO()).m };
+}
 function umbBedient(j, m) {
   const z = umbZeilen(j, m);
   return { bedient: z.filter(x => x.schon > 0).length, total: z.length };
@@ -2766,10 +2895,15 @@ function umbBedient(j, m) {
        const anfang = v.reduce(… x.anfangsstand …);     // Werte von DAMALS
 
    Vollstaendig getilgte und ueber `ausAb` ausgeblendete Glaeubiger fielen
-   damit aus ZAEHLER UND NENNER. Gemessen am 19.08.2026 zeigte die Kachel
-   33'715.35 / 45.2 % von 74'639.35; richtig sind 57'710.66 / 58.5 % von
-   98'634.66. **Jede fertig bezahlte Schuld machte die Zahl kleiner statt
-   groesser** — eine Nebenwirkung von U-49.
+   damit aus ZAEHLER UND NENNER. Am 19.08.2026 an Albrechts Stand gemessen:
+   Die Kachel nannte einen deutlich zu kleinen getilgten Betrag UND einen
+   ebenso zu kleinen Ausgangsberg — beide um die weggefallenen Glaeubiger
+   vermindert, und der Prozentsatz daraus war entsprechend zu niedrig.
+   **Jede fertig bezahlte Schuld machte die Zahl kleiner statt groesser** —
+   eine Nebenwirkung von U-49.
+   (U-85: Die gemessenen Betraege standen hier ausgeschrieben. Sie sind
+   raus — A-78 verlangt eine Huelle ohne Daten, und der Befund traegt auch
+   ohne die Zahlen, an denen er auffiel.)
 
    Drei Bezugsgroessen sind moeglich und alle drei ehrlich; sie
    unterscheiden sich darin, WORAN der Erfolg gemessen wird. Albrechts
@@ -2830,8 +2964,10 @@ function getilgtStand() {
    U-64 — Ein Jahrgang, in dem nichts budgetiert ist, hat keinen Saldo
    -------------------------------------------------------------------
    Gemeldet von Albrecht am 20.08.2026, mit Bildschirmfoto: Die Sektion
-   «Saldo budgetiert» zeigte fuer 2024 −29'595.21 und fuer 2025 −23'920,
-   und die kumulierte Reihe trug das bis 2027 mit. Sein Satz dazu: «Es
+   «Saldo budgetiert» zeigte fuer die beiden nachgetragenen Jahrgaenge 2024
+   und 2025 je ein fuenfstelliges Minus (U-85: die Betraege selbst gehoeren
+   nicht in die oeffentliche Huelle), und die kumulierte Reihe trug das bis
+   2027 mit. Sein Satz dazu: «Es
    sieht so aus, als haette ich Minus gemacht. Habe ich nicht.»
 
    Woher die Zahl kam: Die drei Schuldenzeilen des Budgets sind
@@ -3076,7 +3212,9 @@ function verbindLauf(v, bisJ, bisM, mitPlan, sammler) {   /* U-56: sammler optio
   if (bisJ < a.j || (bisJ === a.j && bisM < a.m)) return 0;
   /* U-67: Und das Spiegelbild dazu. «Ausgebucht ist ausgebucht. Gilt fuer
      mich als getilgt» — Albrecht am 20.08.2026, nachdem das Blatt aus U-66
-     Cedric mit 2'500 unter «Offen» zeigte, obwohl er Ende 2025 bezahlt war.
+     einen ausgebuchten Glaeubiger noch unter «Offen» zeigte, obwohl er Ende
+     2025 bezahlt war. (U-85: hier standen sein Vorname und sein Restbetrag.
+     Fuer die Regel braucht es beides nicht — nur die Rolle.)
 
      Warum das hier steht und nicht in einer Auswahlfunktion:
      U-49 hat die Regel aufgestellt, `ausAb` sei eine SICHTBARKEITSfrage und
@@ -3134,8 +3272,10 @@ function verbindLauf(v, bisJ, bisM, mitPlan, sammler) {   /* U-56: sammler optio
        Rechenfehler der Fortschreibung und «bezahlt wird hoechstens, was noch
        aussteht».
        Warum das falsch war: Der Schnitt hat einen FEHLER IM RATENPLAN
-       stillschweigend ausgeglichen. Wer im Oktober 1'250 eingetragen hat,
-       obwohl nur noch 250 offen waren, sieht danach eine Zeile, die aufgeht —
+       stillschweigend ausgeglichen. Wer im Oktober eine Rate von 500
+       eingetragen hat, obwohl nur noch 100 offen waren (U-85: erfundene
+       Zahlen, das Verhaeltnis ist der Punkt), sieht danach eine Zeile, die
+       aufgeht —
        und korrigiert nie. Ein Plan, der nicht aufgeht, ist ein Befund und
        keine Aufgabe fuer den Taschenrechner. Ein negativer Stand sagt sehr
        wohl etwas: dass hier zu viel eingeplant ist.
@@ -3149,8 +3289,10 @@ function verbindLauf(v, bisJ, bisM, mitPlan, sammler) {   /* U-56: sammler optio
                                       schuldenfrei()
          NICHT geklemmt:              schuldenSumme(), schuldenPrognose()
        Damit senkt ein ueberzahlter Glaeubiger den Schuldenberg in Dashboard
-       und Kopfzeile: am Pruefstand gemessen 18'169.39 statt 23'069.39 —
-       4'900 Guthaben gegen fremde Schulden verrechnet. Fachlich ist das
+       und Kopfzeile: am Pruefstand gemessen fiel die Gesamtsumme um genau
+       das Guthaben des ueberzahlten Glaeubigers — sein Plus wurde gegen die
+       Schulden aller anderen verrechnet (U-85: die gemessenen Staende
+       standen hier und sind raus). Fachlich ist das
        fraglich: Ein Guthaben bei einem Glaeubiger laesst sich nicht bei
        einem anderen einsetzen. Die Frage gehoert Albrecht und wird nicht
        nebenbei entschieden; sie steht in
@@ -3250,17 +3392,48 @@ function getilgtAnteil(v) {
   if (!v.anfangsstand) return 0;
   return Math.max(0, Math.min(1, 1 - jetzt / v.anfangsstand));
 }
-/* ---- Frei per Monatsende (A-82, E-4) --------------------------------
+/* ---- Frei per Monatsende (A-82, E-4, E-2) ---------------------------
    Nur der laufende Monat traegt einen Wert. Vergangene und kuenftige
    Monate zeigen «–» — die Prognoseformel ist mit E-5 entfallen. */
 function istLaufenderMonat(j, m) { const h = ymOf(heuteISO()); return j === h.j && m === h.m; }
+/* ===================================================================
+   U-87 — U-77 ist zurueckgenommen. «Verfuegbar heute» rechnet wieder
+   wie vor dem 20.08.2026, und das ist Absicht.
+   -------------------------------------------------------------------
+   U-77 hatte E-2 umgesetzt: abgezogen wird alles, was budgetiert oder in
+   Kreditoren erfasst und noch nicht durch ist. Gebaut, gemessen — und am
+   Bildschirm des Nutzers falsch. Der Grund steht in einem Satz:
+
+   BEI DER UMSCHLAGMETHODE IST DER ABZUG SCHON PASSIERT, durch das
+   Verteilen und nicht durch Rechnen. Nach Lohneingang wandert das Geld
+   vom Lohnkonto in die Toepfe; was danach auf dem einen freien Konto
+   liegt, IST bereits der Rest nach allen Verpflichtungen. Wer davon noch
+   einmal saemtliche Budgetposten abzieht, zieht zweimal ab — einmal
+   physisch, einmal rechnerisch. Gemessen lief die Zahl damit den halben
+   Monat tief ins Minus und heilte sich erst gegen Monatsende.
+
+   Der Satz des Nutzers, der zu E-2 fuehrte — «nach Abzug aller Ausgaben,
+   die budgetiert und in Kreditoren erfasst sind» — war eine BESCHREIBUNG
+   seines Verfahrens und keine Rechenanweisung. Sein Urteil am gebauten
+   Stand, wortgetreu: «Ich sehe da kein Problem.»
+
+   WAS DAS FUER F-04 HEISST: Der Befund bleibt richtig — die Deckungsregel
+   fragt, WELCHES Konto zahlt, nie ob dort etwas liegt. Er tritt bei dieser
+   Arbeitsweise nur nicht auf, weil der Topf zum Zahlungszeitpunkt gefuellt
+   ist. F-04 bleibt in der Themensammlung stehen, mit diesem Vermerk.
+
+   WER DAS HIER WIEDER UMBAUEN WILL, lese zuerst diesen Kasten. Es ist
+   nicht uebersehen worden, sondern gebaut, gemessen und zurueckgenommen.
+   =================================================================== */
 /* Eine Rechnung mindert das freie Geld nur, wenn sie auch davon bezahlt wird.
    Liegt ihr Zahlungskonto woanders — Kreditoren, Rückstellungen, Fixkosten —,
    ist das Geld dort schon reserviert und war nie Teil des freien Betrags.
    Dasselbe gilt fuer eine Rechnung mit gesetztem Haken «Rueckstellung». */
 function mindertFreies(r, j, m) {
   const f = ymOf(r.faelligkeit);
-  if (r.status !== 'offen' || r.gedeckt) return false;
+  /* U-69: «noch nicht durch» heisst nicht erledigt — eine erst erwartete
+     Rechnung zaehlt hier mit, wenn sie ueber ein freies Konto laeuft. */
+  if (r.status === 'erledigt' || r.gedeckt) return false;
   /* F-01: Eine Glaeubigerrechnung mindert das freie Geld nicht — ihre Rate
      ist im Budget schon eingeplant und laeuft ueber das Schuldenkonto. */
   if (r.verbId) return false;
@@ -3423,10 +3596,23 @@ function kopfbandZeichnen() {
       'Prognose: rechnet die geplanten Raten weiter'));
   }
   if (bereich === 'rechnung') {
-    const off = D.rechnungen.filter(r => r.status === 'offen')
+    /* U-69: «Offen» und «Erwartet» sind zwei verschiedene Auskuenfte und
+       standen bis hierher in einer Zahl. Offen ist Geld, das Albrecht
+       schuldet und ueberweisen muss; erwartet ist Geld, von dem er weiss,
+       dass es kommt — er kann es weder zahlen noch mahnen. Eine Summe aus
+       beidem beantwortet keine der beiden Fragen. Rot traegt nur das
+       Offene; das Erwartete steht ruhig daneben.
+       «Naechste» rechnet mit beiden: das naechste Faelligkeitsdatum ist
+       das naechste, gleich ob die Rechnung schon im Briefkasten lag. */
+    const off = D.rechnungen.filter(r => r.status === 'erfasst')
       .sort((a,b2) => a.faelligkeit < b2.faelligkeit ? -1 : 1);
+    const erw = D.rechnungen.filter(r => r.status === 'erwartet')
+      .sort((a,b2) => a.faelligkeit < b2.faelligkeit ? -1 : 1);
+    const naechst = off.concat(erw).sort((a,b2) => a.faelligkeit < b2.faelligkeit ? -1 : 1)[0];
     teile.push(w('Offen', fmtG(rd(off.reduce((a,r) => a + r.betrag, 0))), off.length ? 'err' : ''));
-    teile.push(w('Nächste', off.length ? kurzdatum(off[0].faelligkeit) : '—', '', true));
+    if (erw.length) teile.push(w('Erwartet', fmtG(rd(erw.reduce((a,r) => a + r.betrag, 0))), '', false,
+      'Angekündigt, noch nicht eingetroffen — zählt im Budget-Soll'));
+    teile.push(w('Nächste', naechst ? kurzdatum(naechst.faelligkeit) : '—', '', true));
   }
   b.innerHTML = haupt + (teile.length
     ? `<span class="kb-strich"></span><div class="kb-werte">${teile.join('')}</div>` : '');
@@ -3553,9 +3739,20 @@ function zeichneDashboard() {
   const zyklus = tageImMonat(h.j, h.m);
   const verb = verbHeute();                                          /* U-49 */
   const schuld = rd(verb.reduce((s,v) => s + verbindStandHeute(v), 0));
-  const offen  = D.rechnungen.filter(r => r.status === 'offen')
+  /* U-69, beim Zusammenfuehren nachgezogen: Diese Stelle gehoerte keinem der
+     vier Bauauftraege und stand danach als einzige noch auf dem alten Wert
+     `'offen'` — sie haette ab sofort IMMER eine leere Liste geliefert und
+     «nichts offen» behauptet, waehrend Rechnungen faellig sind.
+     «Offen» heisst hier `erfasst`: die Rechnung ist da und noch nicht
+     freigegeben. Eine ERWARTETE steht daneben und nicht mitgezaehlt — sonst
+     verspraeche die Kachel einen Betrag, den noch niemand in Rechnung
+     gestellt hat. Dieselbe Trennung wie in der Kopfzeile des Bereichs
+     Rechnungen. */
+  const offen  = D.rechnungen.filter(r => r.status === 'erfasst')
                    .sort((a,b) => a.faelligkeit < b.faelligkeit ? -1 : 1);
   const offenS = rd(offen.reduce((s,r) => s + r.betrag, 0));
+  const erwart = D.rechnungen.filter(r => r.status === 'erwartet');
+  const erwartS = rd(erwart.reduce((s,r) => s + r.betrag, 0));
 
   const nm = h.m === 11 ? { j: h.j + 1, m: 0 } : { j: h.j, m: h.m + 1 };
   const naechst = verfuegbarPer(nm.j, nm.m);
@@ -3567,8 +3764,14 @@ function zeichneDashboard() {
   /* U-48 */
   const gt = getilgtStand();
   const ratenMonat = rd(verb.reduce((s2, v) => s2 + rate(v, h.j, h.m), 0));
-  const umbOffen = umbOffenSumme(h.j, h.m);
-  const umbSt = umbBedient(h.j, h.m);
+  /* U-75: Die Kachel rechnete mit h — heute — und oeffnete ein Blatt, das
+     mit der gewaehlten Zeit rechnet. Beide fragen jetzt umbZeit(). Wo die
+     Wahl vom laufenden Monat abweicht, nennt die Beschriftung den Monat:
+     eine Zahl, deren Zeitraum man raten muss, ist keine Auskunft. */
+  const uz = umbZeit();
+  const umbOffen = umbOffenSumme(uz.j, uz.m);
+  const umbSt = umbBedient(uz.j, uz.m);
+  const umbAnders = !(uz.j === h.j && uz.m === h.m);
 
   const zahl = (w, kl) => `<span class="v gross ${kl||''} ${w < 0 ? 'neg' : ''}">${fmt(w)}</span>`;
 
@@ -3585,7 +3788,7 @@ function zeichneDashboard() {
         <div style="width:${Math.round((zyklus - tage) / zyklus * 100)}%"></div></div>
       <div class="hero-fuss">
         <span><span class="k">Total diesen Monat</span><span class="num gross2">${fmt(frei)}</span></span>
-        <span><span class="k">Noch zu verteilen</span><span class="num gross2">${fmt(umbOffen)}</span></span>
+        <span><span class="k">Noch zu verteilen${umbAnders ? ' · ' + MON_LANG[uz.m] : ''}</span><span class="num gross2">${fmt(umbOffen)}</span></span>
       </div>
     </article>
 
@@ -3617,7 +3820,7 @@ function zeichneDashboard() {
   ${umbSt.total ? `<div class="sektion"><h2>Was jetzt ansteht</h2>
     <div class="raster">
       <article class="karte kachel" data-umbuch>
-        <div><span class="kennung">Umbuchung · ${MON_LANG[h.m]} ${h.j}</span>
+        <div><span class="kennung">Umbuchung · ${MON_LANG[uz.m]} ${uz.j}</span>
           <button class="name" type="button">Monatsverteilung</button>
           <div class="rolle">${umbQuelle() ? umbQuelle().nr + ' ' + umbQuelle().name : '—'} &rarr; die Töpfe</div></div>
         <div class="mitte">
@@ -3638,8 +3841,9 @@ function zeichneDashboard() {
         wert: jahresE, meta: schnitt === null ? '—' : 'im Schnitt ' + (schnitt >= 0 ? '+' : '') + fmt(schnitt) + ' pro Monat · ' + restMon + ' Monate' })}
       ${schuldkachelHtml(sf, verb, schuld)}
       ${kpiHtml({ bereich:'rechnung', kennung:'Rechnungen', name:'Offen', wert: offenS,
-        meta: offen.length ? offen.length + (offen.length===1?' Rechnung · fällig ':' Rechnungen · nächste ')
-              + kurzdatum(offen[0].faelligkeit) : 'nichts offen' })}
+        meta: (offen.length ? offen.length + (offen.length===1?' Rechnung · fällig ':' Rechnungen · nächste ')
+              + kurzdatum(offen[0].faelligkeit) : 'nichts offen')
+              + (erwart.length ? ' · ' + fmt(erwartS) + ' erwartet' : '') })}
     </div></div>
 `;
   /* U-40: Hier stand ${fristenHtml(verb)}. Die Frist steht jetzt auf der
@@ -3704,7 +3908,11 @@ function zeichneKacheln() {
       const letzte = D.buchungen.filter(b => b.kontoId === k.id).map(b => b.datum).sort().pop();
       /* Konto 05 fuehrt die offenen Rechnungen — von dort wird eine erfasst,
          nicht gebucht. Die Kachel traegt deshalb ein anderes Wort. */
-      const offen = D.rechnungen.filter(r => r.status === 'offen' && r.kontoId === k.id);
+      /* U-69: «offen» heisst hier weiterhin genau das, was es vorher hiess —
+         eingetroffen und noch nicht freigegeben, also `erfasst`. Eine
+         erwartete Rechnung liegt noch nirgends und gehoert nicht in die
+         Zahl auf der Kontokachel. */
+      const offen = D.rechnungen.filter(r => r.status === 'erfasst' && r.kontoId === k.id);
       const rech = k.id === 'kred';
       return kachelHtml({ art:'konto', id:k.id, kennung:'Konto ' + k.nr, name:k.name, rolle:k.rolle,
         label:'Saldo', wert:s, ueberzogen: s < 0,
@@ -3788,11 +3996,34 @@ function liqKarteHtml() {
   const jahrW = verfuegbarPer(h.j, 11);
   const hhk = D.konten.filter(k => k.frei);
   const bestand = rd(hhk.reduce((s,k) => s + kontosaldo(k.id, h.j, h.m), 0));
-  const offen = offeneAufFreiem(h.j, h.m);
-  const woanders = rd(D.rechnungen.reduce((s,r) => {
+  const offen  = offeneAufFreiem(h.j, h.m);
+  /* U-83, mit U-87 nachgezogen: Die Herleitung muss zeigen, was die Zahl TUT.
+     Sonst steht hier ein zweiter, aelterer Rechenweg neben dem gueltigen, und
+     der wird geglaubt (F-16, F-23).
+
+     Frueher stand hier EINE Zeile fuer ZWEI Faelle — «zurueckgestellt oder
+     Glaeubigerrate — zaehlt hier nicht». Fuer die Rueckstellung stimmt das.
+     Fuer die Glaeubigerrechnung nicht: nicht abgezogen wird nur ihr
+     RECHNUNGSBETRAG, gemindert wird ueber die RATE, und die steht im Budget.
+     Wer die Spalte addierte, kam nicht auf das Ergebnis — und eine
+     Herleitung, die nicht aufgeht, ist schlimmer als keine.
+
+     Seit U-87 gibt es einen dritten Fall, der auch vorher schon wirkte und
+     nie eigens dastand: die Rechnung laeuft ueber ein Konto ohne Haken
+     `frei`. Jeder Fall bekommt jetzt seine eigene Zeile mit seinem eigenen
+     Grund, und alle drei tragen die Marke «nicht in der Summe», damit sie
+     niemand als Summanden liest.
+
+     Gebaut wird aus DENSELBEN Bedingungen, gegen die mindertFreies() prueft,
+     und in derselben Reihenfolge — nicht aus einer abgeschriebenen Regel.
+     Aendert sich die Regel, wandert dieser Text mit. */
+  const wo = (bed) => rd(D.rechnungen.reduce((s,r) => {
     const f = ymOf(r.faelligkeit);
-    return (r.status === 'offen' && f.j === h.j && f.m === h.m && !mindertFreies(r, h.j, h.m))
-      ? s + r.betrag : s; }, 0));
+    return (r.status !== 'erledigt' && f.j === h.j && f.m === h.m
+            && !mindertFreies(r, h.j, h.m) && bed(r)) ? s + r.betrag : s; }, 0));
+  const zurueck  = wo(r => !!r.gedeckt);
+  const rate     = wo(r => !r.gedeckt && !!r.verbId);
+  const woanders = wo(r => !r.gedeckt && !r.verbId);
   if (S.modus === 'tabellen') {
     return `<div class="karte liq-schmal">
       <span class="wert"><span class="k">Jahr</span><span class="v">${fmt(jahrW)}</span></span>
@@ -3807,8 +4038,10 @@ function liqKarteHtml() {
       <span class="z">${t} Tage bis zum ${D.meta.lohntag}.</span></span>
     <div class="herleitung">
       ${hhk.map(k => `<div class="zeile"><span>${k.name}</span><span class="num">${fmt(kontosaldo(k.id,h.j,h.m))}</span></div>`).join('')}
-      <div class="zeile"><span>offene Rechnungen ab ${hhk.map(k=>k.name).join(', ')}</span><span class="num">${offen ? '−' + fmt(offen) : '0.00'}</span></div>
-      ${woanders ? `<div class="zeile"><span>offen, ab einem anderen Konto gedeckt</span><span class="num">${fmt(woanders)}</span></div>` : ''}
+      <div class="zeile"><span>Rechnungen ${MON_LANG[h.m]} ab ${hhk.map(k=>k.name).join(', ')}</span><span class="num">${offen ? '−' + fmt(offen) : '0.00'}</span></div>
+      ${woanders ? `<div class="zeile nebenbei"><span>ab einem anderen Konto zu zahlen — dort liegt das Geld schon bereit</span><span class="num">${fmt(woanders)}</span></div>` : ''}
+      ${zurueck ? `<div class="zeile nebenbei"><span>zurückgestellt — kommt aus dem Rückstellungstopf, geht hier nicht ab</span><span class="num">${fmt(zurueck)}</span></div>` : ''}
+      ${rate ? `<div class="zeile nebenbei"><span>Gläubigerrechnungen — nicht ihr Betrag geht ab, sondern ihre Rate, und die steht im Budget</span><span class="num">${fmt(rate)}</span></div>` : ''}
       <div class="zeile ergebnis"><span>verfügbar</span><span class="num">${fmt(frei)}</span></div>
     </div></div></div>`;
 }
@@ -4660,8 +4893,9 @@ function kumRoh(s, alle) {
   const jahre = Object.keys(D.budget).map(Number).sort();
   /* U-64: Die Reihe beginnt beim ersten Jahrgang, in dem etwas budgetiert
      ist. Sonst schleppt ein Jahr, das nur Schuldentilgung kennt, sein
-     scheinbares Minus bis in die Zukunft — im gemeldeten Fall standen zwei
-     gute Jahre hinter einem Kumuliert von −52'487.79. */
+     scheinbares Minus bis in die Zukunft — im gemeldeten Fall verschwanden
+     zwei gute Jahre hinter einem fuenfstelligen Kumuliert im Minus (U-85:
+     der Betrag gehoert nicht in die oeffentliche Huelle). */
   let x = 0;
   for (const j of jahre) {
     if (j > s.key) break;
@@ -4989,14 +5223,21 @@ function istVerb(v, j, m) {
     return (d.j === j && d.m === m) ? s + Math.abs(b.betrag) : s;
   }, 0));
 }
-/* Eine bezahlte Rechnung ist keine offene mehr — mehr braucht es hier nicht.
-   Gefiltert wird mit rechnungImBudget(), demselben Praedikat wie in
+/* Gefiltert wird mit rechnungImBudget(), demselben Praedikat wie in
    gespiegelteRechnung(): sonst zaehlte das Ist eine Rechnung mit, die das
-   Soll gar nie enthielt. */
+   Soll gar nie enthielt.
+   U-69: Hier stand `r.status !== 'offen'` — «alles ausser offen». Mit drei
+   Zustaenden ist das falsch herum gefragt: eine erwartete Rechnung ist
+   ebenfalls nicht `offen` und waere ploetzlich als bezahlt ins Ist
+   gerutscht, obwohl sie noch nicht einmal eingetroffen ist. Das Ist kennt
+   genau einen Zustand, und der heisst `erledigt` — im E-Banking
+   hochgeladen und freigegeben. Erwartet und erfasst stehen im SOLL
+   (gespiegelteRechnung, die ohnehin nach Faelligkeit und nicht nach Status
+   fragt). */
 function istRechnungen(j, m) {
   return rd(D.rechnungen.reduce((s,r) => {
     const f = ymOf(r.faelligkeit);
-    return (r.status !== 'offen' && rechnungImBudget(r) && f.j === j && f.m === m) ? s + r.betrag : s;
+    return (r.status === 'erledigt' && rechnungImBudget(r) && f.j === j && f.m === m) ? s + r.betrag : s;
   }, 0));
 }
 function istKat(k, j, m) {
@@ -5010,8 +5251,9 @@ function istKat(k, j, m) {
    kann, ohne eine neue zu erfinden: Soll minus Ist, Position fuer
    Position. Damit wird das Budget vom Nachweis zur Arbeitsflaeche.
 
-   Eine gespiegelte Zeile wird in ihre Glaeubiger aufgeloest — «Rate
-   Staatssteuer 2021» ist eine Sache, «Verbindlichkeiten 1'200» keine.
+   Eine gespiegelte Zeile wird in ihre Glaeubiger aufgeloest — «Rate an
+   einen namentlich genannten Glaeubiger» ist eine Sache,
+   «Verbindlichkeiten 900» keine (U-85: erfundene Zahl).
 
    ZWEI AUSSCHLUESSE, und beide sind Absicht:
    — Einkommen (k.richtung === 'ein'). Einen Lohn bucht man, wenn er
@@ -5022,6 +5264,36 @@ function istKat(k, j, m) {
      stuende ein erwarteter Zufluss unter «noch offen» und die Summe
      des Bands zaehlte ihn wie eine Schuld mit.
    =================================================================== */
+/* ===================================================================
+   U-74 — Die offenen Posten tragen ihre Gruppe mit
+   -------------------------------------------------------------------
+   Dreiundzwanzig Zeilen in EINER Reihe, und der Knopf daneben tat je
+   nach Zeile etwas anderes: das verstiess gegen G-2 (eine Form pro
+   Bedeutung) und gegen die Knopf-Definition der Formensprache.
+
+   Die Gliederung wird nicht erfunden, sie steht schon in den Daten —
+   `zahlungsweg.art`. Drei Bedeutungen, drei Gruppen:
+
+   `zahlung`  Dauerauftrag, eBill, Ueberweisung, Karte, LSV, Abzug und
+              jeder unbekannte Weg. Geld verlaesst das Haus — ein Klick
+              bucht es (offenSofortBuchen).
+   `rate`     Posten mit verbId. Sie fuehren ins Glaeubigerblatt, weil
+              dort mehr zu entscheiden ist als ein Betrag.
+   `topf`     Bezug und Rueckstellung. Das sind KEINE Ausgaben, sondern
+              Geld, das vom Lohnkonto in einen Topf wandert. Dafuer gibt
+              es die Monatsverteilung (U-48); blattOffen() zeigt sie
+              deshalb als eine einzige Zeile statt als neun.
+
+   Gefiltert wird hier NICHT: die Kopfzeile rechnet mit derselben Liste
+   «Noch offen im Monat», und eine Zahl, die in der Liste anders
+   ausfaellt als im Kopf, waere eine zweite Wahrheit. Wer die Gruppen
+   sehen will, fragt sie ab — wer die Summe will, bekommt sie ganz.
+   =================================================================== */
+/* Die zwei Wege, die in einen eigenen Topf fuehren statt aus dem Haus.
+   Aus ZAHLUNGSWEGE, damit ein Tippfehler hier auffaellt und nicht still
+   eine Zeile in die falsche Gruppe schiebt. */
+const WEGE_TOPF = ['Bezug', 'Rückstellung'];
+
 function offenPosten(j, m) {
   const out = [];
   D.kategorien.filter(k => katSicht(k, j)).forEach(k => {
@@ -5035,23 +5307,29 @@ function offenPosten(j, m) {
           .forEach(v => {
             const rest = rd(rate(v, j, m) - istVerb(v, j, m));
             if (rest > 0.005) out.push({ name:'Rate ' + v.bezeichnung, betrag:rest,
-              kat:k.name, weg:'', kontoId:v.kontoId, verbId:v.id });
+              kat:k.name, weg:'', kontoId:v.kontoId, verbId:v.id, gruppe:'rate' });
           });
         return;
       }
       if (z.gespiegeltAus === 'rechnungen') {
         D.rechnungen.forEach(r => {
           const f = ymOf(r.faelligkeit);
-          if (r.status === 'offen' && rechnungImBudget(r) && f.j === j && f.m === m)
+          /* U-74: «noch nicht durch» heisst `!== 'erledigt'` und nicht
+             «ist erfasst» — eine erwartete Rechnung ist so offen wie eine
+             erfasste, und ein Test auf einen einzelnen Status liesse die
+             dritte Lage still liegen. */
+          if (r.status !== 'erledigt' && rechnungImBudget(r) && f.j === j && f.m === m)
             out.push({ name: (steller(r.stellerId) || {}).name || 'Rechnung',
               betrag:r.betrag, kat:k.name, weg:'fällig ' + kurzdatum(r.faelligkeit),
-              kontoId:r.kontoId, rechId:r.id });
+              kontoId:r.kontoId, rechId:r.id, gruppe:'zahlung' });
         });
         return;
       }
       const rest = rd(zeilenwert(z, j, m) - istZeile(z, j, m));
+      const art = (z.zahlungsweg || {}).art || '';
       if (rest > 0.005) out.push({ name:z.bezeichnung, betrag:rest, kat:k.name,
-        weg:zahlungsweg(z), kontoId:k.kontoId, zeileId:z.id });
+        weg:zahlungsweg(z), kontoId:k.kontoId, zeileId:z.id,
+        gruppe: WEGE_TOPF.includes(art) ? 'topf' : 'zahlung' });
     });
   });
   return out.sort((a,b) => b.betrag - a.betrag);
@@ -5060,10 +5338,13 @@ function offenPosten(j, m) {
    Die Zahl steht in der Kopfzeile, die Liste kommt auf Klick. Das Band ueber
    den Karten war bei drei Posten eine Handlungsliste und bei dreiundzwanzig
    eine Wand; ein Blatt rollt und verstellt nichts.
-   Gebucht wird von hier aus mit denselben drei Griffen wie ueberall —
-   Glaeubigerblatt, rechnungBezahlen(), vorbelegte Buchungsmaske. Sie gehen
-   UEBER dieses Blatt auf (blattAuf(..., ueber)), damit man nach dem Buchen
-   wieder in der Liste steht und den naechsten Posten nehmen kann. */
+   Gebucht wird von hier aus mit denselben Griffen wie ueberall. Wo ein
+   Griff ein Blatt oeffnet — Glaeubigerblatt —, geht es UEBER diesem auf
+   (blattAuf(..., ueber)), damit man nach dem Buchen wieder in der Liste
+   steht und den naechsten Posten nehmen kann.
+   U-74: Die vorbelegte Buchungsmaske ist nicht mehr darunter — eine
+   Zahlung wird hier mit einem Klick gebucht (offenSofortBuchen). Ueber
+   bleibt es fuer die Rate und fuer die Monatsverteilung. */
 /* ===================================================================
    U-66 — Das Blatt hinter der Kachel «Schulden getilgt»
    -------------------------------------------------------------------
@@ -5142,26 +5423,133 @@ function blattGetilgt() {
       <button class="knopf" data-zu>Schliessen</button>`
   };
 }
+/* ===================================================================
+   U-74 — Die Liste «Noch offen» ist dreigeteilt
+   -------------------------------------------------------------------
+   Drei Abschnitte statt einer Reihe, und in jedem tut der Knopf genau
+   EINE Sache — das ist die Bedingung, unter der ein Knopf ein Knopf
+   sein darf (Formensprache, Form 3).
+
+   Der Abschnitt «In den Topf» zeigt seine Posten nicht mehr einzeln.
+   Sie sind keine Ausgaben; sie stehen in der Monatsverteilung, und die
+   stand bisher an zwei Orten. Eine Zeile fuehrt dorthin.
+
+   Die zwei Zahlen dieses Abschnitts sind absichtlich verschieden: in
+   der Ueberschrift die Summe der eingeklappten Budgetposten, in der
+   Zeile der Betrag, der laut Monatsverteilung noch vom Lohnkonto in
+   die Toepfe gehoert (umbOffenSumme). Das ist dasselbe Geld aus zwei
+   Blickwinkeln — die Budgetzeile wird erst durch die AUSGABE ab dem
+   Topf erfuellt, nicht durch das Verschieben. Deshalb steht an beiden
+   Zahlen dran, was sie meint.
+
+   KEIN ABHAK-STATUS. Entscheid E-3 vom 17.08.2026 gilt weiter: ein
+   Abhaken je Budgetzeile und Monat gibt es nicht. Hier werden aus zwei
+   Klicks einer; die Zahl kommt nach wie vor aus einer echten Buchung
+   und aus keinem Merker. Wer das fuer einen Verstoss haelt, hat den
+   Unterschied zwischen «gebucht» und «abgehakt» vor sich.
+   =================================================================== */
 function blattOffen() {
   const j = S.jahr, m = S.monat;
   const p = offenPosten(j, m);
   const sum = rd(p.reduce((s,x) => s + x.betrag, 0));
-  const griff = x => {
-    if (x.verbId) return `data-schuld="${x.verbId}"`;
-    if (x.rechId) return `data-tat="rstatus:${x.rechId}"`;
-    return konto(x.kontoId) ? `data-buchen="${x.zeileId}:${x.kontoId}:${fmt(x.betrag)}"` : '';
+  const inGrp = g => p.filter(x => x.gruppe === g);
+  const zahlungen = inGrp('zahlung'), raten = inGrp('rate'), topf = inGrp('topf');
+  /* Der Betrag der Verteilzeile kommt aus umbZeit() und nicht aus (j, m):
+     Sie fuehrt in die Monatsverteilung, und die rechnet mit umbZeit(). Zwei
+     Zahlen, die einen Klick auseinanderliegen, muessen dieselbe sein — im
+     Regelfall (Zeitwahl steht auf einem Monat) ist es ohnehin derselbe. Wo
+     nicht, nennt die Zeile den Monat, den sie meint. */
+  const uzeit = umbZeit();                                           /* U-74 */
+  const zuVert = umbOffenSumme(uzeit.j, uzeit.m);
+  const summe = a => rd(a.reduce((s2,x) => s2 + x.betrag, 0));
+
+  /* ---- U-80: die Zeile sagt, was ihr Knopf tut --------------------
+     Bis hierher bekam JEDER Posten mit `rechId` unbedingt
+     `data-tat="rstatus:…"`, und der Klickverteiler kennt darunter nur
+     den Fall `erfasst`; bei `erwartet` fiel er in ein leeres `return`.
+     Gemessen hiess das: ein Knopf «Buchen», der nichts tut — kein
+     Dialog, keine Buchung, keine Meldung. offenPosten() nimmt aber
+     jede Rechnung auf, die nicht `erledigt` ist, also auch die
+     erwartete.
+     Zwei Regeln der Formensprache greifen hier ineinander:
+     — Ein Knopf, der nichts ausloesen kann, steht nicht da. Statt
+       seiner die Auskunft, warum — genau wie beim Posten ohne Konto,
+       den es hier schon lange gibt.
+     — Ein Knopf sagt, was er beim naechsten Druck tut. Die erfasste
+       Rechnung fuehrt in den Freigabedialog, also heisst er dort
+       «Freigeben» — dasselbe Wort, das rechnungKachel() fuer dieselbe
+       Tat traegt. Nur die Budgetzeile bucht sofort, und nur dort
+       bleibt «Buchen» stehen.
+     Der Name des Abschnitts wird deshalb nicht mehr durchgereicht,
+     sondern je Zeile entschieden. */
+  const werk = (x, name) => {
+    if (x.verbId) return { griff:`data-schuld="${x.verbId}"`, wort:name };
+    if (x.rechId) {
+      const r = D.rechnungen.find(y => y.id === x.rechId);
+      if (r && r.status === 'erfasst')
+        return { griff:`data-tat="rstatus:${r.id}"`, wort:'Freigeben' };
+      /* Erwartet: budgetiert, aber noch nicht eingetroffen — hier ist
+         nichts auszuloesen. Sie bleibt sichtbar, denn sie drueckt auf
+         den Monat; der Knopf faellt weg, weil er nichts koennte. */
+      return { griff:'', hinweis:'erwartet' };
+    }
+    /* Ein Posten ohne Konto bekommt weiterhin keinen Knopf — es gibt
+       kein Konto, auf das gebucht werden koennte. */
+    return konto(x.kontoId)
+      ? { griff:`data-buchen="${x.zeileId}:${x.kontoId}:${fmt(x.betrag)}"`, wort:name }
+      : { griff:'', hinweis:'kein Konto' };
   };
-  const koerper = !p.length
+  const zl = (x, name, prim) => {
+    const w = werk(x, name);
+    return `<tr><td>${x.name}<span class="weg" style="margin-left:9px">${
+        [x.kat, x.weg].filter(Boolean).join(' · ')}</span></td>
+      <td class="r num">${fmtG(x.betrag)}</td>
+      <td class="r"><span class="zwerk">${w.griff
+        ? `<button class="knopf klein${prim ? ' primaer' : ''}" type="button" ${w.griff}>${w.wort}</button>`
+        : `<span class="weg">${w.hinweis}</span>`}</span></td></tr>`;
+  };
+  /* Die Ueberschrift borgt die Form von .gt-h (U-66) statt eine zweite
+     Abschnittsmarke zu erfinden. */
+  const kopf = (t, n, s2) => `<h4 class="gt-h">${t} · ${n}${s2 === null ? '' : ' · ' + fmtG(s2)}</h4>`;
+  const teil = (t, was, rows, name, prim) => !rows.length ? '' :
+    `${kopf(t, rows.length, summe(rows))}
+     <p class="gt-was">${was}</p>
+     <table class="journal"><tbody>${rows.map(x => zl(x, name, prim)).join('')}</tbody></table>`;
+
+  /* Auch dann, wenn gerade keine Bezugs-Position offen ist: verteilt ist
+     deswegen noch nichts, und der Weg dorthin gehoert auf diese Seite. */
+  const topfTeil = (!topf.length && zuVert <= 0.005) ? '' :
+    `${topf.length
+        ? kopf('In den Topf', topf.length + (topf.length === 1 ? ' Position' : ' Positionen'), summe(topf))
+        : '<h4 class="gt-h">In den Topf</h4>'}
+     <p class="gt-was">Bezug und Rückstellung sind keine Ausgaben, sondern Geld,
+        das vom Lohnkonto in einen Topf wandert. Das steht in der Monatsverteilung —
+        ein Ort, ein Weg.</p>
+     <table class="journal"><tbody><tr>
+       <td>Monatsverteilung<span class="weg" style="margin-left:9px">${
+         MON_LANG[uzeit.m]} ${uzeit.j} · noch zu verteilen</span></td>
+       <td class="r num">${fmtG(zuVert)}</td>
+       <td class="r"><span class="zwerk"><button class="knopf klein" type="button"
+            data-umbuch>Verteilen</button></span></td></tr></tbody></table>`;
+
+  const koerper = !p.length && zuVert <= 0.005
     ? '<p class="meldung">Diesen Monat ist alles gebucht, was budgetiert war.</p>'
-    : `<table class="journal"><tbody>${p.map(x => {
-        const g = griff(x);
-        return `<tr><td>${x.name}<span class="weg" style="margin-left:9px">${
-            [x.kat, x.weg].filter(Boolean).join(' · ')}</span></td>
-          <td class="r num">${fmtG(x.betrag)}</td>
-          <td class="r"><span class="zwerk">${g
-            ? `<button class="knopf klein primaer" type="button" ${g}>Buchen</button>`
-            : '<span class="weg">kein Konto</span>'}</span></td></tr>`;
-      }).join('')}</tbody></table>`;
+    /* U-80: Der Satz galt fuer die Haelfte der Zeilen. «Ein Klick bucht
+       den offenen Rest auf heute — ohne Maske» stimmt fuer die
+       Budgetzeile und fuer keine Rechnung: die erfasste fuehrt in den
+       Freigabedialog, die erwartete nirgendwohin. Ein Satz, der fuer
+       die Haelfte der Zeilen falsch ist, ist schlimmer als keiner —
+       jetzt verweist er auf den Knopf, und der sagt es je Zeile. */
+    : teil('Zahlungen', 'Was ein Klick tut, steht auf dem Knopf: <b>Buchen</b> bucht den '
+         + 'offenen Rest sofort auf heute — ohne Maske, weil in ihr nichts stünde, was '
+         + 'nicht schon in der Zeile steht. <b>Freigeben</b> gibt die eingetroffene Rechnung '
+         + 'frei und fragt vorher nach dem Ausführungstag. Eine erwartete Rechnung ist '
+         + 'budgetiert, aber noch nicht da — '
+         + 'an ihr ist hier nichts zu tun.',
+           zahlungen, 'Buchen', true)
+      + teil('Raten', 'Führt ins Gläubigerblatt: dort hängt mehr an einer Zahlung als ein Betrag.',
+           raten, 'Öffnen', false)
+      + topfTeil;
   return {
     weit: true, kennung: 'Budget · ' + MON_LANG[m] + ' ' + j,
     titel: 'Noch offen: ' + fmtG(sum),
@@ -5171,6 +5559,38 @@ function blattOffen() {
     fuss: `<span class="hint">${p.length} ${p.length === 1 ? 'Position' : 'Positionen'}</span>
       <button class="knopf" data-zu>Schliessen</button>`
   };
+}
+
+/* ---- U-74: Der Knopf bucht sofort -----------------------------------
+   G-3: was zwei Schritte braucht, darf keine drei haben. Die Maske zeigte
+   Betrag, Konto und Position — alles drei stand schon in der Zeile.
+
+   merkeStand() VOR der Mutation, wie ueberall: der Rueckgaengig-Streifen
+   ist das ganze Netz unter einem Klick, der ohne Rueckfrage bucht.
+
+   Das Datum ist heute, solange der gewaehlte Monat der laufende ist —
+   sonst der Monatsletzte des gewaehlten. Ein Klick im September, der auf
+   den August bucht, saehe wie ein Knopf ohne Wirkung aus: die Zeile
+   bliebe offen stehen. Dieselbe Regel und derselbe Grund wie umbBuchen().
+
+   Die Liste bleibt offen (blattZeichnen statt blattZu) und zeigt den
+   naechsten Posten — dafuer ist die Stapelung seit U-45 da. */
+function offenSofortBuchen(zeileId, kontoId, betrag) {
+  if (_ro) return;
+  const k = konto(kontoId);
+  if (!k || !betrag) return;
+  const z = zeileId ? zeile(zeileId) : null;
+  const j = S.jahr, m = S.monat, h = ymOf(heuteISO());
+  const datum = (h.j === j && h.m === m) ? heuteISO() : iso(j, m, tageImMonat(j, m));
+  merkeStand('Gebucht: ' + (z ? z.bezeichnung : k.name) + ' ' + fmt(betrag));
+  D.buchungen.push({
+    id: neueId('b'), datum, ganzerMonat: false, kontoId: k.id, art: 'ausgabe',
+    betrag: rd(betrag), gegenkontoId: null, zeileId: zeileId || null,
+    text: '', serieId: null, rechnungId: null, verbId: null, sparzielId: null,
+    belegDatei: null, belegOffen: false
+  });
+  persist();
+  blattZeichnen();
 }
 
 /* ---- U-48: Das Blatt der monatlichen Umbuchungen --------------------
@@ -5199,10 +5619,18 @@ function umbFelderSichern() {
     _umbF[el.dataset.umbf] = el.value.trim() === '' ? 0 : zahl(el.value);
   });
 }
+/* U-75: Der Knopf der Zeile folgt dem Feld, ohne dass das Blatt neu
+   gezeichnet wird — Neuzeichnen naehme dem Nutzer mitten im Tippen den
+   Fokus und den halben Betrag. */
+function umbKnopfZeigen(feld) {
+  const kId = feld.dataset.umbf;
+  const kn = $(`button[data-umb="${kId}"]`);
+  if (kn) kn.hidden = !zahl(feld.value) && !umbGebucht(kId);
+}
 
 function blattUmbuch() {
   umbMerkerPutzen();
-  const j = S.jahr, m = S.zeitraum === 'monat' ? S.monat : ymOf(heuteISO()).m;
+  const { j, m } = umbZeit();                                        /* U-75 */
   const q = umbZeilen(j, m), quelle = umbQuelle();
   const qSaldo = quelle ? kontosaldo(quelle.id, j, m) : 0;
 
@@ -5210,9 +5638,19 @@ function blattUmbuch() {
     const geb  = umbGebucht(z.k.id);
     const wert = _umbF[z.k.id] !== undefined ? _umbF[z.k.id] : (geb || z.offen || 0);
     const aend = geb > 0 && Math.abs(wert - geb) < 0.005;
-    /* Kein Knopf statt eines grauen: steht nichts zu tun an, ist er nicht da. */
-    const knopf = (!wert && !geb) ? ''
-      : `<button class="knopf klein" type="button" data-umb="${z.k.id}">${aend ? 'Ändern' : 'Buchen'}</button>`;
+    /* U-75: Hier stand `(!wert && !geb) ? '' : …` — der Knopf wurde beim
+       Zeichnen entschieden. Ein Konto ohne Budgetkategorie hat kein Soll,
+       also keinen Vorschlag, also keinen Knopf: in Reserve und Sparziele
+       liess sich nichts schieben, auch wenn der Nutzer wollte. Und wer
+       eintippte, bekam den Knopf trotzdem nicht — es zeichnete ja nichts
+       neu. Entscheid 2 der Umbuchungsmaske sagt seit langem das Gegenteil:
+       alle Konten sind bebuchbar.
+       Jetzt steht der Knopf auf jeder Zeile und ist nur verborgen, solange
+       nichts zu tun ist; umbKnopfZeigen() blendet ihn beim Tippen ein. Die
+       alte Regel bleibt damit sichtbar erhalten — ein grauer Knopf, der
+       nichts tut, waere der schlechtere Weg. */
+    const knopf = `<button class="knopf klein" type="button" data-umb="${z.k.id}"${
+      (!wert && !geb) ? ' hidden' : ''}>${aend ? 'Ändern' : 'Buchen'}</button>`;
     return `<tr${geb > 0 ? ' class="umb-bewegt"' : ''}>
       <td>${z.k.nr} ${z.k.name}</td>
       <td class="r num">${fmt(kontosaldo(z.k.id, j, m))}</td>
@@ -5282,7 +5720,7 @@ function umbBuchen(kId, betrag, ohneMerker) {
   } else if (alt) {
     alt.betrag = neu;
   } else {
-    const j = S.jahr, m = S.zeitraum === 'monat' ? S.monat : ymOf(heuteISO()).m;
+    const { j, m } = umbZeit();                                      /* U-75 */
     const h = ymOf(heuteISO());
     /* Im laufenden Monat der heutige Tag, sonst der Monatsletzte — eine
        Umbuchung fuer September darf nicht auf den 19. August fallen. */
@@ -5668,8 +6106,52 @@ function katKarteAuf(k) {
       /* In «Alle Jahre» kann eine Zeile in einem Jahrgang gar nicht gelten —
          dann bleibt die Zelle leer und nicht null (U-21). */
       if (alle && !zeileSicht(z, x.key)) return '<div class="c"></div>';
-      const offenHier = jetzt && !gesp && !alle && rd(w - istZeile(z, j, x.key)) > 0.005;
-      const kl = `c ${jetzt?'jetzt':''} ${offenHier?'hatoffen':''}`;
+      /* U-78: Gebuchtes steht gruen — dasselbe Bauteil wie im Raster der
+         Verbindlichkeiten (`.praster .c.gebucht`, U-50), nur mit einer
+         bewusst strengeren Regel: gruen erst, wenn der Monat VOLLSTAENDIG
+         gebucht ist, nicht schon bei der ersten Buchung.
+         Der Grund liegt in der Art der Zeilen: «Essen und trinken» wird
+         laufend in kleinen Betraegen gebucht. Bei «es gibt eine Buchung»
+         waere sie nach der ersten Ausgabe gruen, waehrend der groesste Teil
+         noch offen ist. Gruen soll ueberall dasselbe heissen: erledigt. Bei
+         den Verbindlichkeiten fallen beide Regeln zusammen — eine Rate ist
+         gezahlt oder nicht —, dort aendert sich also nichts.
+         FARBE: --ok traegt in GAEPP das positive Vorzeichen. Ihre Verwendung
+         fuer «gebucht» ist die am 19.08.2026 fuer die Verbindlichkeiten
+         benannte Ausnahme; U-78 dehnt sie ausdruecklich auf das Budgetraster
+         aus. Das Raster faerbt sonst nichts nach Vorzeichen (`.c.minus` gibt
+         es nur in der Verbindlichkeitenkarte), hier meint gruen also nur
+         eines.
+         Vier Grenzen, alle geprueft:
+         — OHNE SOLL bleibt die Zelle dunkel. Null von null ist nicht
+           erledigt, sondern leer; ohne die Schranke waere jeder leere Monat
+           jeder Zeile gruen und die Farbe saegte sich selbst ab.
+         — EINKOMMEN macht mit. Das Offenband schliesst `richtung === 'ein'`
+           aus, weil ein noch nicht gebuchter Lohn keine offene HANDLUNG ist.
+           U-78 sagt das Gegenteil und nur das Gegenteil: es markiert nie
+           etwas als offen, sondern nur, dass der erwartete Zufluss da ist —
+           und genau das ist bei Einkommen die Frage, die man sich stellt.
+         — GESPIEGELTE ZEILEN machen mit. istZeile() liefert fuer sie sehr
+           wohl ein Ist: fuer die Gruppenzeilen ueber istGruppe() die
+           tatsaechlich gebuchten Raten, fuer die Rechnungszeile ueber
+           istRechnungen() die bezahlten Rechnungen. Beide Male ist
+           «Ist >= Soll» wortgleich «alles bezahlt, was in diesem Monat
+           faellig war» — dieselbe Aussage, die die Verbindlichkeitenkarte
+           schon gruen faerbt. Die rote Marke `hatoffen` laesst sie aus,
+           weil sie anderswo gepflegt werden; angezeigt werden darf ihr
+           Ergebnis trotzdem.
+         — «ALLE JAHRE» macht NICHT mit. Dort ist eine Spalte ein Jahrgang,
+           und ein Jahr wird nicht gebucht — zwoelf Monate werden es. Die
+           Marke koennte nur alles oder nichts sagen: das laufende Jahr bliebe
+           bis Dezember dunkel, obwohl elf Monate erledigt sind. Eine Marke,
+           die im einzigen interessanten Jahrgang nie angeht, sagt nichts.
+           Nebenbei erspart das zwoelf istZeile()-Laeufe je Zelle. */
+      const ist = (!alle && w > 0.005) ? istZeile(z, j, x.key) : 0;
+      const gb = (!alle && w > 0.005 && rd(ist - w) > -0.005) ? ' gebucht' : '';
+      /* Unveraendert: `ist` ist hier genau dann 0, wenn w <= 0.005 — und dann
+         war rd(w - ist) > 0.005 auch vorher nie wahr. */
+      const offenHier = jetzt && !gesp && !alle && rd(w - ist) > 0.005;
+      const kl = `c ${jetzt?'jetzt':''} ${offenHier?'hatoffen':''}${gb}`;
       if (fest) return `<div class="${kl}">${zahl0(w)}</div>`;
       const mark = S.markiert.includes(z.id + ':' + x.key) ? ' markiert' : '';
       return `<div class="${kl} bearbeitbar${mark}" data-z="${z.id}" data-m="${x.key}"><input
@@ -6058,10 +6540,15 @@ function verbindKarteAuf(gid, liste) {
   };
   /* U-58: negativ heisst rot. Eine Stelle, damit es nicht sechsmal dasteht. */
   const neg = x => (x < -0.005 ? ' minus' : '');
-  /* U-61 R2: In «Alle Jahre» ganze Franken, ausnahmslos. 53'007.50 neben
-     13'484 laesst die Kolonne springen, und das Auge findet die Kommastelle
-     nicht mehr. Rappen in einer Vierjahresuebersicht sind Rauschen, nicht
-     Genauigkeit — gerundet wird ANGEZEIGT, nie gespeichert (wie U-32).
+  /* U-61 R2: In «Alle Jahre» ganze Franken, ausnahmslos. Steht ein Wert mit
+     Rappen neben einem ohne, springt die Kolonne, und das Auge findet die
+     Kommastelle nicht mehr. Rappen in einer Vierjahresuebersicht sind
+     Rauschen, nicht Genauigkeit — gerundet wird ANGEZEIGT, nie gespeichert
+     (wie U-32).
+     U-79: An dieser Stelle standen zwei Betraege aus dem Bestand als Beispiel.
+     Sie sind raus, die Regel bleibt. Die Datei liegt in einem oeffentlichen
+     Repo und ist nach A-78 eine leere Huelle — wer eine Regel im Kommentar
+     erklaert, erklaert sie OHNE die Daten, an denen sie aufgefallen ist.
      R1: Und «nichts» hat eine Schreibweise, nicht zwei. Heute mischen sich
      in derselben Zeile die 0 aus fmtG und die Leerzelle aus fmtG0. */
   const zahl = x => alle ? fmt(x, 0) : fmtG(x);
@@ -6293,31 +6780,57 @@ function rechnungImZeitraum(r) {
   const f = ymOf(r.faelligkeit);
   return S.zeitraum === 'jahr' ? f.j === S.jahr : (f.j === S.jahr && f.m === S.monat);
 }
-/* U-53: offen, faellig vor heute — und nicht schon im Bild. */
+/* U-53: offen, faellig vor heute — und nicht schon im Bild.
+   U-69: «offen» heisst jetzt `erfasst`, und ueberfaellig gilt NUR dafuer.
+   Eine erwartete Rechnung kann nicht ueberfaellig sein: was noch nicht da
+   ist, laesst sich nicht zu spaet bezahlen. Ein rotes Etikett dafuer waere
+   ein Vorwurf fuer etwas, das Albrecht gar nicht tun kann. */
 function rechnungUeberfaellig(r) {
-  return r.status === 'offen' && r.faelligkeit < heuteISO() && !rechnungImZeitraum(r);
+  return r.status === 'erfasst' && r.faelligkeit < heuteISO() && !rechnungImZeitraum(r);
 }
 function rechnungTag(d) { return d.slice(8,10) + '.' + d.slice(5,7) + '.'; }
 
-function rechnungKachel(r, erledigt) {
+/* U-69: Die Kachel liest den Zustand jetzt selbst statt ihn uebergeben zu
+   bekommen. Der zweite Parameter sagte «steht im bezahlten Block», und das
+   war dasselbe wie `status === 'bezahlt'` — eine zweite Wahrheit ueber
+   dieselbe Sache, und bei drei Zustaenden eine, die nicht mehr aufgeht.
+   Er ist deshalb weg.
+   Keine dritte Kachelgestalt fuer «erwartet» (G-2, siehe U-54): dieselbe
+   Kachel, um einen Rang leiser (`ruhig`, Formensprache H), und der
+   Unterschied steht im Label und im Knopf. */
+function rechnungKachel(r) {
   const st = steller(r.stellerId), z = zeile(r.zeileId), k = konto(r.kontoId);
   const beleg = r.belegDatei ? 'Beleg abgelegt'
               : (r.belegOffen ? 'Beleg liegt bereit' : 'kein Beleg');
-  const spaet = r.status === 'offen' && r.faelligkeit < heuteISO();
+  const spaet = rechnungSpaet(r);
+  const klasse = r.status === 'erledigt' ? 'erledigt'
+               : r.status === 'erwartet' ? 'ruhig'
+               : (spaet ? 'spaet' : '');
   return kachelHtml({
     art:'rechnung', id:r.id,
-    klasse: erledigt ? 'erledigt' : (spaet ? 'spaet' : ''),
+    klasse,
     kennung: (k ? k.nr + ' ' + k.name : 'ohne Konto') + (r.gedeckt ? ' · Rückstellung' : ''),
     name: st ? st.name : '?',
     rolle: (z ? z.bezeichnung : '') + (r.notiz ? ' · ' + r.notiz : ''),
-    label: r.status !== 'offen' ? 'Bezahlt'
+    label: r.status === 'erledigt' ? 'Erledigt'
+         : r.status === 'erwartet' ? 'Erwartet zum ' + rechnungTag(r.faelligkeit)
          : (spaet ? 'Überfällig seit ' + rechnungTag(r.faelligkeit)
                   : 'Offen, fällig ' + rechnungTag(r.faelligkeit)),
     wert: r.betrag,
-    knopf: r.status === 'offen' ? 'Bezahlt' : 'Öffnen',
-    tat: r.status === 'offen' ? 'rstatus:' + r.id : 'rechnung:' + r.id,
+    /* Der Knopf am erwarteten Posten heisst «Erfasst» und nicht
+       «Erledigt»: aus «sie kommt» wird «sie ist da», nicht «sie ist
+       bezahlt». Wer sie in einem Zug freigeben will, tut das im Blatt. */
+    knopf: r.status === 'erfasst' ? 'Freigeben'
+         : r.status === 'erwartet' ? 'Erfasst' : 'Öffnen',
+    tat: r.status === 'erfasst' ? 'rstatus:' + r.id
+       : r.status === 'erwartet' ? 'rerfasst:' + r.id : 'rechnung:' + r.id,
     meta: beleg });
 }
+/* Zu spaet ist eine Tatsache am Datum und gilt nur fuer Eingetroffenes —
+   dieselbe Regel wie in rechnungUeberfaellig(), nur ohne die Frage nach dem
+   Zeitraum. Sie steht hier an einer Stelle, damit Kachel und Gruppenkopf
+   nicht eines Tages verschieden rechnen. */
+function rechnungSpaet(r) { return r.status === 'erfasst' && r.faelligkeit < heuteISO(); }
 /* U-55: Ein Gruppierer fuer beide Faelle. Zwei Schleifen, die sich nur im
    Schluessel unterscheiden, waeren zwei Orte fuer dieselbe Sache (G-4). */
 function rechnungGruppen(liste, nachSteller) {
@@ -6351,7 +6864,9 @@ function rechnungBlock(gruppen, erledigt) {
     const kopf = ohneKopf ? '' : `<h3 class="untertitel rkopf">${g.titel}
         <span class="num">${fmt(g.summe)}</span>
         <span>${g.liste.length} ${g.liste.length===1?'Rechnung':'Rechnungen'}</span></h3>`;
-    return kopf + `<div class="raster">${g.liste.map(r => rechnungKachel(r, erledigt)).join('')}</div>`;
+    /* U-69: Die Kachel liest ihren Zustand selbst — der Block sagt ihr
+       nicht mehr, wie sie auszusehen hat. */
+    return kopf + `<div class="raster">${g.liste.map(r => rechnungKachel(r)).join('')}</div>`;
   }).join('');
 }
 
@@ -6362,21 +6877,40 @@ function rechnungTabelle() {
 
   const imZeit  = alle.filter(rechnungImZeitraum);
   const spaet   = alle.filter(rechnungUeberfaellig);
-  const offen   = imZeit.filter(r => r.status === 'offen');
-  const bezahlt = imZeit.filter(r => r.status !== 'offen');
+  /* U-69: Drei Zustaende, drei Toepfe. `erwartet` ist bewusst KEIN Sonderfall
+     von offen: die beiden beantworten verschiedene Fragen — «was muss ich
+     ueberweisen» und «was kommt noch auf mich zu». */
+  const erwartet = imZeit.filter(r => r.status === 'erwartet');
+  const offen    = imZeit.filter(r => r.status === 'erfasst');
+  const bezahlt  = imZeit.filter(r => r.status === 'erledigt');
+
+  /* U-69: Erwartetes steht ZUOBERST und RUHIG. Zuoberst, weil es der
+     zeitlich erste Zustand ist und der Blick von oben nach unten dem Weg
+     einer Rechnung folgt. Ruhig (--muted), weil hier nichts zu tun ist —
+     Rot ist in dieser Tafel fuer «ueberfaellig» vergeben, und zwei rote
+     Koepfe untereinander machen beide bedeutungslos.
+     Nicht gruppiert, aus demselben Grund wie bei «Überfällig». */
+  const gErw = erwartet.length ? `<h3 class="untertitel rkopf erwartetkopf">Erwartet
+        <span class="num">${fmt(summe(erwartet))}</span>
+        <span>${erwartet.length} ${erwartet.length===1?'Rechnung':'Rechnungen'} angekündigt, noch nicht eingetroffen</span></h3>
+      <div class="raster">${erwartet.map(r => rechnungKachel(r)).join('')}</div>` : '';
 
   /* U-53: nicht gruppiert — die Gruppe IST die Aussage, und ein zweiter
      Monatskopf darin waere ein Kopf ueber einem Kopf. */
   const gSpaet = spaet.length ? `<h3 class="untertitel rkopf spaetkopf">Überfällig
         <span class="num">${fmt(summe(spaet))}</span>
         <span>${spaet.length} ${spaet.length===1?'Rechnung':'Rechnungen'} aus einem anderen Zeitraum, noch offen</span></h3>
-      <div class="raster">${spaet.map(r => rechnungKachel(r, false)).join('')}</div>` : '';
+      <div class="raster">${spaet.map(r => rechnungKachel(r)).join('')}</div>` : '';
 
   const gOffen = offen.length ? rechnungBlock(rechnungGruppen(offen, nachSteller), false) : '';
 
   const auf = !!S.rBezAuf;
+  /* U-69: Der Klappkopf heisst «Erledigt» — dasselbe Wort wie der Zustand.
+     «Bezahlt» war es bis hierher, und solange es zwei Zustaende gab, war
+     das dasselbe. Jetzt nicht mehr: erledigt heisst «im E-Banking
+     freigegeben, fuer mich durch», und genau so hat Albrecht es gesagt. */
   const gBez = bezahlt.length ? `<button class="untertitel klapp" type="button" data-rbez
-        aria-expanded="${auf}"><span class="chev">${auf ? '▾' : '▸'}</span>Bezahlt
+        aria-expanded="${auf}"><span class="chev">${auf ? '▾' : '▸'}</span>Erledigt
         <span class="num">${fmt(summe(bezahlt))}</span>
         <span>${bezahlt.length} ${bezahlt.length===1?'Rechnung':'Rechnungen'}</span></button>
       ${auf ? rechnungBlock(rechnungGruppen(bezahlt, nachSteller), true) : ''}` : '';
@@ -6398,12 +6932,14 @@ function rechnungTabelle() {
 
   return `<div class="tafel-kopf"><span class="titel">Rechnungen</span>${tafelKennzahlen()}
       <span class="nr">${imZeit.length} ${imZeit.length===1?'Rechnung':'Rechnungen'} · ${
-        fmt(summe(offen))} offen${spaet.length ? ' · ' + fmt(summe(spaet)) + ' überfällig' : ''}</span>
+        fmt(summe(offen))} offen${
+        erwartet.length ? ' · ' + fmt(summe(erwartet)) + ' erwartet' : ''}${
+        spaet.length ? ' · ' + fmt(summe(spaet)) + ' überfällig' : ''}</span>
       ${schalter}
       <button class="knopf klein" id="btnRechNeu">Rechnung erfassen</button>
       ${vollbildKnopf()}</div>
     <div class="rollflaeche" style="padding:0 var(--pad) var(--pad)">
-      ${gSpaet}${gOffen}${gBez}${(gSpaet || gOffen || gBez) ? '' : leer}</div>`;
+      ${gErw}${gSpaet}${gOffen}${gBez}${(gErw || gSpaet || gOffen || gBez) ? '' : leer}</div>`;
 }
 
 /* ---- Der Zeichner --------------------------------------------------- */
@@ -6489,6 +7025,7 @@ function blattZeichnen() {
     handbuch: blattHandbuch, rechnung: blattRechnung, serie: blattSerie,
     rechnungzeigen: blattRechnungZeigen, glaeubiger: blattGlaeubiger,
     offen: blattOffen,                                 /* U-45 */
+    widerspruch: blattWiderspruch,                     /* U-70 */
     getilgt: blattGetilgt,                             /* U-66 */
     umbuch: blattUmbuch                                /* U-48 */
   }[_blatt.art];
@@ -6564,11 +7101,37 @@ function blattKonto(id) {
   };
 }
 /* ---- Buchungsmaske (A-43 bis A-45, A-52, E-7) ----------------------- */
+/* ===================================================================
+   U-76 — Die Richtung einer Umbuchung
+   -------------------------------------------------------------------
+   Wer ein Konto oeffnet und «Umbuchung» waehlt, meinte bisher immer:
+   Geld geht AB diesem Konto. wirkung() gab fuer die Quellseite
+   -betrag, und der Saldo des gerade geoeffneten Topfes ging ins Minus.
+   Gemeint ist meistens das Gegenteil — der Topf wird gefuellt.
+
+   Der Schalter ist Form 2 der Formensprache und keine neue Bedienform:
+   dieselbe Klasse `schalter` mit aria-pressed wie bei Art und Richtung
+   einer Korrektur. Vorgabe ist «auf dieses Konto», weil der Nutzer den
+   Topf oeffnet, den er fuellen will.
+
+   Er dreht NICHT das Vorzeichen, sondern entscheidet, auf welcher Seite
+   der Buchung das geoeffnete Konto steht (buchungSpeichern). Damit
+   bleibt jede Umbuchung in den Daten gleich gebaut — Quelle in
+   kontoId, Ziel in gegenkontoId —, und wirkung(), journal() und die
+   Saldenrechnung brauchen kein Wort davon zu wissen.
+
+   Die Beschriftung des zweiten Feldes dreht mit. «Gegenkonto» hiesse
+   sonst einmal Quelle und einmal Ziel, und das ist genau der Fehler,
+   der oben behoben wird.
+   =================================================================== */
 function maskeBuchung(k, vorgabe) {
   const e = _entwurf && _entwurf.kontoId === k.id ? _entwurf
           : (_entwurf = Object.assign({ kontoId:k.id, art:'ausgabe', datum:heuteISO(),
               ganzerMonat:false, betrag:'', zeileId:'', gegenkontoId:'', text:'',
-              verbId:'', sparzielId:'' }, vorgabe || {}));
+              verbId:'', sparzielId:'', urichtung:'auf' }, vorgabe || {}));
+  /* Ein Entwurf, der anderswo entstanden ist, kennt das Feld nicht — dann
+     gilt die Vorgabe. Deshalb ueberall `!== 'ab'` und nie `=== 'auf'`. */
+  const uAb = e.urichtung === 'ab';
   const arten = [['ausgabe','Ausgabe'],['einnahme','Einnahme'],['umbuchung','Umbuchung'],['korrektur','Korrektur']];
   return `<div class="maske" id="maskeBuchung">
     <div class="feld voll"><label>Art</label>
@@ -6580,7 +7143,11 @@ function maskeBuchung(k, vorgabe) {
       <input class="num" id="bBetrag" type="text" inputmode="decimal" value="${e.betrag}" placeholder="0.00"></div>
     <div class="feld haken voll"><input type="checkbox" id="bMonat" ${e.ganzerMonat?'checked':''}>
       <label for="bMonat">Auf den ganzen Monat buchen, nicht auf einen Tag</label></div>
-    ${e.art === 'umbuchung' ? `<div class="feld voll"><label>Gegenkonto</label>
+    ${e.art === 'umbuchung' ? `<div class="feld voll"><label>Richtung</label>
+      <span class="schalter" role="group">
+        <button data-urich="ab"  aria-pressed="${uAb}">ab diesem Konto</button>
+        <button data-urich="auf" aria-pressed="${!uAb}">auf dieses Konto</button></span></div>
+    <div class="feld voll"><label>${uAb ? 'Zielkonto' : 'Quellkonto'}</label>
       <select id="bGegen">${kontoOptionen(e.gegenkontoId, k.id)}</select></div>` : ''}
     ${e.art === 'korrektur' ? `<div class="feld voll"><label>Richtung</label>
       <span class="schalter" role="group">
@@ -6669,14 +7236,22 @@ function buchungSpeichern() {
     hint.textContent = 'Eine Korrektur ohne Notiz lässt sich nicht speichern.'; return; }
   if (e.art === 'umbuchung') {
     e.gegenkontoId = $('#bGegen').value;
-    if (!e.gegenkontoId) { hint.textContent = 'Eine Umbuchung braucht ein Gegenkonto.'; return; }
+    if (!e.gegenkontoId) { hint.textContent = e.urichtung === 'ab'      /* U-76 */
+      ? 'Eine Umbuchung braucht ein Zielkonto.' : 'Eine Umbuchung braucht ein Quellkonto.'; return; }
   }
   if ($('#bZeile')) e.zeileId = $('#bZeile').value;
   if ($('#bVerb'))  e.verbId  = $('#bVerb').value;
   if (e.ganzerMonat) { const d = ymOf(e.datum); e.datum = iso(d.j, d.m, tageImMonat(d.j, d.m)); }
+  /* U-76: Die einzige Stelle, an der der Richtungsschalter wirkt. Bei «auf
+     dieses Konto» ist das geoeffnete Konto der EMPFAENGER — es gehoert ins
+     gegenkontoId, und die gewaehlte Quelle nach kontoId. Bei jeder anderen
+     Art bleibt alles, wie es war. */
+  const rein = e.art === 'umbuchung' && e.urichtung !== 'ab';
   const b = {
-    id: neueId('b'), datum: e.datum, ganzerMonat: e.ganzerMonat, kontoId: e.kontoId,
-    art: e.art, betrag: rd(betrag), gegenkontoId: e.gegenkontoId || null,
+    id: neueId('b'), datum: e.datum, ganzerMonat: e.ganzerMonat,
+    kontoId: rein ? e.gegenkontoId : e.kontoId,
+    art: e.art, betrag: rd(betrag),
+    gegenkontoId: rein ? e.kontoId : (e.gegenkontoId || null),
     zeileId: e.zeileId || null, text: e.text, serieId: e.serieId || null,
     rechnungId: e.rechnungId || null, verbId: e.verbId || null,
     sparzielId: e.sparzielId || null, belegDatei: null, belegOffen: false
@@ -6718,9 +7293,39 @@ function journal(k) {
   const zeilen = eigene.map(b => {
     const w = wirkung(b, k.id); lauf = rd(lauf + w);
     const z = b.zeileId ? zeile(b.zeileId) : null;
+    /* U-73: Die Spalte «Position» zeigt, WER — nicht bloss, in welche
+       Budgetzeile es faellt. Vorher gewann die Zeilenbezeichnung, sobald eine
+       zeileId dranstand, und b.text kam nie zum Zug: elf Rechnungszahlungen
+       auf dem Kreditorenkonto hiessen elfmal gleich, weil sie alle dieselbe
+       gespiegelte Sammelzeile tragen. Jetzt steht der Name laut vorn und die
+       Zeile leise dahinter — dieselbe Anordnung wie auf der Rechnungskachel
+       (rechnungKachel: `name` laut, `rolle` leise darunter).
+       Drei Faelle, drei Ergebnisse:
+         kein text        -> Zeilenbezeichnung allein, kein Zusatz ins Nichts
+         text = Zeile     -> einmal; zweimal dasselbe Wort ist schlimmer als eins
+         text + Zeile     -> laut + leise
+       G-8 («Was fuer viele Zeilen gilt, steht einmal») entscheidet den vierten
+       Fall: Bei einer GESPIEGELTEN Zeile faellt der leise Zusatz weg. Eine
+       gespiegelte Zeile ist keine Position, die jemand fuer diese Buchung
+       gewaehlt hat — sie haengt bauartbedingt an JEDER Buchung ihrer Art und
+       ist damit fuer die ganze Liste konstant. Genau das verbietet G-8. Eine
+       gewoehnliche Zeile dagegen wurde fuer diese eine Buchung gewaehlt und
+       wechselt von Zeile zu Zeile; die bleibt stehen.
+       Die Regel haengt an der Art der Zeile, nicht am Inhalt der Liste — sonst
+       erschienen und verschwaenden die leisen Zusaetze, sobald eine Buchung
+       dazukommt. */
+    const laut  = b.text || (z ? z.bezeichnung : artName(b.art));
+    const leise = (b.text && z && !gespiegelt(z) && z.bezeichnung !== b.text)
+                ? z.bezeichnung : '';
+    /* Die leise Gestalt der Tabelle steht in `.journal .marke-um`; eine Regel
+       `.journal .weg` gibt es nicht, obwohl die Klasse in Journaltabellen
+       schon benutzt wird (Gesamttilgung, Offenband) — dort bleibt sie ohne
+       Wirkung. Bis die Regel dort steht, traegt der Zusatz die Werte inline;
+       die Klasse steht trotzdem dran, damit der Ort spaeter stimmt. */
     return `<tr data-jz="${b.id}">
       <td class="tag">${b.ganzerMonat ? MON[ymOf(b.datum).m] : kurzdatum(b.datum)}</td>
-      <td>${z ? z.bezeichnung : (b.text || artName(b.art))}${
+      <td>${laut}${leise ? `<span class="weg"
+        style="font-size:11px;color:var(--muted);margin-left:6px">${leise}</span>` : ''}${
         b.art === 'umbuchung' ? `<span class="marke-um">${b.kontoId===k.id?'→ '+konto(b.gegenkontoId).name:'← '+konto(b.kontoId).name}</span>` : ''}</td>
       <td class="r num ${w<0?'neg':''}">${fmt(w)}</td>
       <td class="r num">${fmt(lauf)}</td>
@@ -7006,9 +7611,19 @@ function dokWegweiser(art, id) {
   const beleg = art === 'rechnung'
     ? `<span class="dokbelegmarke">${o.belegDatei ? 'Beleg abgelegt'
         : o.belegOffen ? 'Beleg liegt bereit' : 'kein Beleg'}</span>` : '';
+  /* U-72: Der Zaehler am Reiter und der Text hier widersprachen sich. Oben
+     stand «Dokumente 1», unten «noch keine hinterlegt · Beleg abgelegt» —
+     weil dokAnzahl() den Beleg mitrechnet und dieser Text nur die Verweise
+     ansah. Wer beides gleichzeitig liest, glaubt keinem von beiden mehr.
+     Jetzt fragt der Text dieselbe Funktion wie der Zaehler: «noch keine
+     hinterlegt» sagt er nur, wenn wirklich nichts da ist — auch kein
+     Beleg. Liegt ein Beleg und sonst nichts, sagt die Belegmarke daneben
+     bereits alles, und eine zusaetzliche Leermeldung waere die
+     Verneinung dessen, was einen Zentimeter weiter rechts steht. */
+  const nichts = dokAnzahl(art, o) === 0;
   return `<div class="dokzeile" id="${art === 'rechnung' ? 'rechDok' : 'schuldDok'}">
     <span class="dokmarke">Dokumente</span>
-    ${links || '<span class="meldung">noch keine hinterlegt</span>'}
+    ${links}${nichts ? '<span class="meldung">noch keine hinterlegt</span>' : ''}
     ${beleg}
     <button class="knopf klein" type="button" data-blattreiter="dokumente"
       >Im Reiter «Dokumente»${_ro ? ' ansehen' : ' pflegen'}</button>
@@ -8161,43 +8776,238 @@ function blattRechnungZeigen(id) {
   const feld = (k2, v2) => `<span class="wert"><span class="k">${k2}</span><span class="v" style="font-size:15px">${v2}</span></span>`;
   const reiter = _blatt.reiter === 'dokumente' ? 'dokumente' : 'uebersicht';
   _blatt.reiter = reiter;
+  /* ---- U-72: das Blatt sagt jede Sache einmal ----------------------
+     Gemessen sagte dieses Blatt vier Dinge doppelt. Weg sind:
+     — Der BETRAG im Titel. Er bleibt als Kennzahl. Begruendung: Das
+       Kennzahlenband ist der Ort, an dem Zahlen als Zahlen stehen
+       (rechtsbuendig, in der Zahlenschrift, neben Faellig und Konto zum
+       Vergleichen). Der Titel benennt die Sache, und die Sache ist der
+       Rechnungssteller — «Steller · 111.60» las sich wie ein Betreff,
+       in dem die Zahl nur mitfaehrt.
+     — Die Kennzahl STATUS. Der Schalter in der Fusszeile zeigt den
+       Zustand genauso deutlich und kann zusaetzlich etwas: ihn aendern.
+       Von zwei Anzeigen derselben Sache faellt die, die nichts kann.
+     — Die zweite DECKUNGSZEILE. «Rückstellung: nein» und «Mindert Frei
+       per Monatsende: nein — wird nicht von einem freien Konto bezahlt»
+       beantworteten dieselbe Frage zweimal, die zweite ausfuehrlicher.
+       Geblieben ist die ausfuehrliche, unter einem Namen, der die Frage
+       stellt statt eines Feldes: «Deckung».
+     — Die FAELLIGKEIT in der Zahlungszeile. Sie steht als Kennzahl. Die
+       Zahlungszeile nennt, was nur sie weiss: wann tatsaechlich
+       ausgefuehrt wurde und ab welchem Konto. Den Betrag nennt sie nur,
+       wenn er vom Rechnungsbetrag ABWEICHT — dann ist er eine Auskunft
+       und keine Wiederholung (Altbestaende vor U-71). */
+  const f = ymOf(r.faelligkeit);
+  /* ---- U-81: der Satz nennt den Grund, den es wirklich gibt --------
+     Hier stand «wird von einem freien Konto bezahlt» beziehungsweise
+     «wird nicht von einem freien Konto bezahlt». Das war die Regel aus
+     A-82. Mit E-2 ist sie ersatzlos entfallen — mindertFreies() fragt
+     ueberhaupt nicht mehr nach dem Konto. Der Satz nannte also
+     ausgerechnet den Grund, dessen Abschaffung der Kern des Umbaus war,
+     und die erledigte oder naechstmonatige Rechnung bekam obendrein
+     eine Begruendung, die auf sie nie zutraf.
+     NACHGEZOGEN MIT U-87: Die Regel aus A-82 ist NICHT entfallen — E-2
+     ist am selben Tag zurueckgenommen worden, weil bei der Umschlag-
+     methode der Abzug schon durch das Verteilen passiert. Die Bedingung
+     «laeuft ueber ein Konto mit Haken frei» steht also wieder in
+     mindertFreies() und darum auch wieder in dieser Kaskade — an ihrer
+     alten Stelle, hinter dem Monat. Der Absatz darueber bleibt als
+     Herkunft stehen; er sagt richtig, was einen halben Tag lang galt.
+     GENAU DESHALB ist dieser Text hergeleitet und nicht abgeschrieben:
+     Die Regel hat sich binnen Stunden zweimal geaendert, und der Satz
+     ist beide Male mitgewandert, ohne dass ihn jemand anfassen musste.
+     In dieser App ist derselbe Fehler zweimal passiert: eine Regel im
+     Code geaendert, den Text daneben stehengelassen. Deshalb wird der
+     Text hier nicht ABGESCHRIEBEN, sondern aus DENSELBEN Bedingungen
+     gebaut, gegen die mindertFreies() prueft — in derselben Reihenfolge
+     (erledigt · Rueckstellung · Glaeubigerrate · Monat) und gegen
+     denselben Monat, fuer den es «Frei per Monatsende» ueberhaupt gibt:
+     den laufenden (istLaufenderMonat). Und damit die beiden nicht doch
+     wieder auseinanderlaufen koennen, steht am Ende die Gegenprobe: das
+     Ja/Nein der hergeleiteten Zeile wird gegen mindertFreies() selbst
+     gehalten. Stimmen sie nicht ueberein, sagt das Blatt genau das,
+     statt einen Grund zu erfinden. */
+  const hM = ymOf(heuteISO());
+  const gruende = [
+    [r.status === 'erledigt', false,
+     'sie ist erledigt, das Geld ist durch'],
+    [!!r.gedeckt, false,
+     'sie ist als Rückstellung gedeckt und wird aus dem Topf bezahlt, nicht aus dem freien Geld'],
+    [!!r.verbId, false,
+     'sie ist die Rate eines Gläubigers; die Rate steht schon als eigener Posten im Budget und ginge sonst zweimal ab'],
+    [!(f.j === hM.j && f.m === hM.m), false,
+     'sie gehört in einen anderen Monat; «Frei per Monatsende» rechnet nur den laufenden'],
+    [!(!k || !!k.frei), false,
+     'sie wird nicht von einem frei verfügbaren Konto bezahlt — auf «' + ((k || {}).name || '—')
+     + '» liegt das Geld dafür schon bereit und war nie Teil des freien Betrags'],
+    [true, true,
+     'sie ist offen und in diesem Monat fällig']
+  ];
+  const grund = gruende.find(x => x[0]);
+  const deckung = grund[1] === mindertFreies(r, hM.j, hM.m)
+    ? `Mindert «Frei per Monatsende»${grund[1] ? '' : ' nicht'} — ${grund[2]}.`
+    : `Mindert «Frei per Monatsende»${mindertFreies(r, hM.j, hM.m) ? '' : ' nicht'} — `
+      + 'der Grund dazu steht nicht mehr in diesem Blatt: die Regel dahinter wurde geändert, '
+      + 'dieser Text nicht.';
   const uebersicht = `<div class="kennzahlen">
         ${feld('Betrag', fmt(r.betrag))}
         ${feld('Fällig', r.faelligkeit.split('-').reverse().join('.'))}
-        ${feld('Status', r.status === 'offen' ? '<span class="off">offen</span>' : 'bezahlt')}
         ${feld('Konto', k ? k.nr + ' ' + k.name : '—')}
       </div>
       <table class="journal"><tbody>
         ${r.verbId ? `<tr><td>Gläubiger</td><td class="r">${
           (verbind(r.verbId) || {}).bezeichnung || '—'} — die Rate steht schon im Budget,
-          deshalb zählt diese Rechnung dort nicht noch einmal. Beim Abhaken sinkt der
+          deshalb zählt diese Rechnung dort nicht noch einmal. Beim Freigeben sinkt der
           Schuldenstand.</td></tr>` : ''}
         <tr><td>Position</td><td class="r">${r.verbId
           ? '— nicht nötig, die Rechnung hängt am Gläubiger'
           : (z ? kategorie(z.kategorieId).name + ' | ' + z.bezeichnung : '—')}</td></tr>
-        <tr><td>Rückstellung</td><td class="r">${r.gedeckt
-          ? 'ja — wird aus dem Rückstellungstopf bezahlt und mindert weder das freie Geld noch die Budgetzeile'
-          : 'nein'}</td></tr>
-        <tr><td>Mindert «Frei per Monatsende»</td><td class="r">${
-          mindertFreies(r, ymOf(r.faelligkeit).j, ymOf(r.faelligkeit).m)
-            ? 'ja' : 'nein — ' + (r.verbId ? 'Rate eines Gläubigers, steht schon im Budget'
-                                : r.gedeckt ? 'Rückstellung' : 'wird nicht von einem freien Konto bezahlt')}</td></tr>
+        <tr><td>Deckung</td><td class="r">${deckung}</td></tr>
         ${r.notiz ? `<tr><td>Notiz</td><td class="r">${r.notiz}</td></tr>` : ''}
-        ${buch.length ? buch.map(b => `<tr><td>Zahlung</td><td class="r">${
-          b.datum.split('-').reverse().join('.')} · ${fmt(b.betrag)} ab ${konto(b.kontoId).name}</td></tr>`).join('') : ''}
+        ${buch.map(b => `<tr><td>Zahlung</td><td class="r">ausgeführt ${
+          b.datum.split('-').reverse().join('.')} ab ${(konto(b.kontoId) || {}).name || 'unbekanntem Konto'}${
+          Math.abs(rd(b.betrag) - rd(r.betrag)) > 0.005 ? ' · gebucht ' + fmt(b.betrag)
+            + ' und damit nicht der Rechnungsbetrag' : ''}</td></tr>`).join('')}
+        ${r.status === 'erwartet' ? `<tr><td>Zustand</td><td class="r">Angekündigt und noch nicht
+          eingetroffen. Sie zählt trotzdem im Budget-Soll dieses Monats — damit hier steht,
+          wie der Monat aussieht, wenn sie da ist.</td></tr>` : ''}
       </tbody></table>
       ${dokWegweiser('rechnung', r.id)}`;
   return {
     kennung: 'Rechnung · ' + (gr ? gr.name : 'ohne Gruppe'),
-    titel: (st ? st.name : '?') + ' · ' + fmt(r.betrag),
+    titel: st ? st.name : '?',
     reiter: [['uebersicht','Übersicht'], ['dokumente', dokReiterName('rechnung', r)]],
     koerper: reiter === 'dokumente' ? dokReiterHtml('rechnung', r.id) : uebersicht,
-    fuss: `<span class="schalter" role="group" style="margin-right:auto">
-        <button data-rst="${r.id}:offen"   aria-pressed="${r.status==='offen'}">offen</button>
-        <button data-rst="${r.id}:bezahlt" aria-pressed="${r.status==='bezahlt'}">bezahlt</button></span>
+    /* U-69: Drei Segmente. Die Formensprache erlaubt Form 2 fuer zwei bis
+       vier Zustaende — das ist kein neues Bedienelement, sondern dasselbe
+       mit einem Feld mehr. Die Reihenfolge ist die des Ablaufs, damit der
+       Weg einer Rechnung von links nach rechts laeuft. */
+    fuss: `<span class="schalter" role="group" style="margin-right:auto">${
+        R_STATUS.map(x => `<button data-rst="${r.id}:${x}" aria-pressed="${r.status===x}"
+          >${R_STATUS_WORT[x]}</button>`).join('')}</span>
       <button class="knopf klein" data-rweg="${r.id}">Löschen</button>
       <button class="knopf klein" data-rechauf="${r.id}">Ändern</button>
       <button class="knopf" data-zu>Schliessen</button>` };
+}
+
+/* ---- U-70: die Aufstellung der Widersprueche -------------------------
+   Was die Migration bewusst NICHT still geraderueckt hat, steht hier — je
+   Fall eine Zeile mit dem, was man zum Entscheiden braucht: wer die
+   Rechnung gestellt hat, was sie kostet, und welche Buchung an ihr haengt
+   (Betrag, Datum, Konto). Und je Zeile die beiden Wege, die es gibt.
+   KEIN «alle erledigen»-Knopf. Elf Zeilen einmal anzuklicken ist die
+   Arbeit von einer Minute; ein Sammelknopf waere genau die stille
+   Umstellung, die Albrecht ausdruecklich nicht wollte — nur mit einer
+   Bestaetigung davor.
+   Die Reihenfolge folgt dem Buchungsdatum: wer eine Liste durchgeht, geht
+   sie der Zeit nach durch, nicht der Kennung nach. */
+function blattWiderspruch() {
+  const faelle = widersprueche(D);
+  if (!faelle.length) return { titel:'Nichts mehr offen', koerper:
+    `<p class="meldung">Alle Widersprüche sind entschieden.</p>` };
+  const zeilen = faelle.map(({ r, art }) => {
+    const st = steller(r.stellerId);
+    const buch = D.buchungen.filter(b => b.rechnungId === r.id)
+      .sort((a,b) => a.datum < b.datum ? -1 : 1);
+    return { r, art, st, buch, sortier: (buch[0] || {}).datum || r.faelligkeit };
+  }).sort((a,b) => a.sortier < b.sortier ? -1 : 1);
+  /* U-82: Die Erklaerung unten steht je Richtung und nur dann, wenn diese
+     Richtung ueberhaupt vorkommt. Ein Absatz ueber Knoepfe, die nirgends
+     stehen, ist eine Anleitung fuer ein anderes Blatt. */
+  const gibtA = zeilen.some(x => x.art === 'zahlungOhneStatus');
+  const gibtB = zeilen.some(x => x.art === 'statusOhneZahlung');
+  return {
+    titel: 'Rechnung und Zahlung widersprechen sich',
+    kennung: faelle.length + (faelle.length === 1 ? ' Fall' : ' Fälle'),
+    koerper: `
+      <p class="meldung">Hier steht die Rechnung anders da als das Geld. GÄPP stellt nichts
+        von selbst um: jede Auflösung ändert Zahlen, und welche richtig ist, weisst nur du.</p>
+      <table class="journal"><tbody>${zeilen.map(({ r, art, st, buch }) => `
+        <tr><td>
+            <b>${htmlText(st ? st.name : '?')}</b><br>
+            <span class="meldung">Rechnung ${fmt(r.betrag)} · fällig ${
+              r.faelligkeit.split('-').reverse().join('.')} · Zustand «${
+              R_STATUS_WORT[r.status] || r.status}»<br>
+              ${art === 'statusOhneZahlung' ? 'keine Zahlungsbuchung — die Rechnung gilt als '
+                + 'bezahlt, und auf keinem Konto steht der Betrag'
+                : buch.map(b => 'Buchung ' + fmt(b.betrag) + ' am ' +
+                  b.datum.split('-').reverse().join('.') + ' ab ' +
+                  ((konto(b.kontoId) || {}).name || 'unbekanntem Konto')).join('<br>')}</span>
+          </td>
+          <td class="r"><button class="knopf klein" data-wsp="${r.id}:zeigen">ansehen</button>${
+            _ro ? ' <span class="meldung">schreibgeschützt</span>'
+            : art === 'statusOhneZahlung' ? `
+            <button class="knopf klein" data-wsp="${r.id}:nachtragen">Zahlung nachtragen</button>
+            <button class="knopf klein gefahr" data-wsp="${r.id}:offen">wieder offen führen</button>`
+            : `
+            <button class="knopf klein" data-wsp="${r.id}:erledigt">als erledigt führen</button>
+            <button class="knopf klein gefahr" data-wsp="${r.id}:weg">Buchung entfernen</button>`}
+          </td></tr>`).join('')}
+      </tbody></table>
+      ${gibtA ? `<p class="meldung" style="margin-top:12px"><b>Nicht erledigt, aber gebucht.</b>
+        Das Geld ist vom Konto ab, die Rechnung steht offen. <b>Als erledigt führen</b> nimmt die
+        Buchung als richtig und setzt die Rechnung auf erledigt — der Normalfall, wenn die Zahlung
+        wirklich raus ist. <b>Buchung entfernen</b> nimmt die Zahlung als Irrtum und lässt die
+        Rechnung offen. Weicht der Buchungsbetrag vom Rechnungsbetrag ab, gleicht das erste
+        beides an — die Buchung gewinnt, denn sie ist der Betrag, der wirklich am Konto steht.
+        Willst du es andersherum, geh vorher auf <b>ansehen</b> und ändere die Rechnung.</p>` : ''}
+      ${gibtB ? `<p class="meldung" style="margin-top:12px"><b>Erledigt, aber nicht gebucht.</b>
+        Die Rechnung gilt als bezahlt, und keine Buchung belegt es — der Saldo ist um diesen
+        Betrag zu hoch. <b>Zahlung nachtragen</b> fragt nach dem Ausführungstag und bucht sie,
+        wie es die Freigabe täte. <b>Wieder offen führen</b> nimmt den Zustand als Irrtum
+        zurück; die Rechnung steht dann wieder unter den offenen.</p>` : ''}`,
+    fuss: `<button class="knopf" data-zu>Später</button>` };
+}
+/* Gezeigt wird die Aufstellung einmal je Sitzung. Wer sie wegklickt, ohne
+   zu entscheiden, bekommt sie beim naechsten Start wieder — nicht als
+   Nachdruck, sondern weil der Widerspruch dann noch da ist. */
+let _wspGezeigt = false;
+function widerspruchMelden() {
+  if (_ro || _wspGezeigt || !D) return;
+  if (!widersprueche(D).length) return;
+  _wspGezeigt = true;
+  blattAuf('widerspruch', null);
+}
+function widerspruchLoesen(arg) {
+  const [id, wie] = arg.split(':');
+  const r = D.rechnungen.find(x => x.id === id);
+  if (!r) return;
+  const st = steller(r.stellerId);
+  const name = st ? st.name : 'Rechnung';
+  /* Das Blatt geht UEBER die Aufstellung auf (blattAuf(..., ueber)), damit
+     man nach dem Nachsehen wieder in der Liste steht — dieselbe Bauart wie
+     bei den offenen Posten (U-45). */
+  if (wie === 'zeigen') return blattAuf('rechnungzeigen', r.id, null, true);
+  if (_ro) return;
+  /* U-82: die beiden Wege der Gegenrichtung («erledigt ohne Buchung»).
+     «Nachtragen» erfindet kein Datum, sondern nimmt denselben Dialog wie
+     die Freigabe — der fragt nach dem Ausfuehrungstag, und genau der
+     fehlt hier ja. Deshalb ein Ruecksprung und kein stiller Eintrag. */
+  if (wie === 'nachtragen') return rechnungFreigeben(r);
+  if (wie === 'offen') {
+    merkeStand(name + ' wieder offen — es gab keine Zahlung');
+    r.status = 'erfasst';
+  } else if (wie === 'weg') {
+    merkeStand('Zahlung entfernt — ' + name + ' bleibt offen');
+    D.buchungen = D.buchungen.filter(b => b.rechnungId !== r.id);
+  } else {
+    /* Der Buchungsbetrag gewinnt: er ist der, der tatsaechlich am Konto
+       steht. Die Rechnung zieht nach, damit nicht der naechste Bericht
+       zwei Summen zeigt (U-71). Wer es andersherum will, aendert vorher
+       die Rechnung — der Satz darunter im Blatt sagt das. */
+    const b = D.buchungen.filter(x => x.rechnungId === r.id)
+      .sort((a,c) => a.datum < c.datum ? -1 : 1)[0];
+    const angleich = !!b && Math.abs(rd(b.betrag) - rd(r.betrag)) > 0.005;
+    merkeStand(name + ' als erledigt geführt' +
+      (angleich ? ' — Betrag auf ' + fmt(b.betrag) + ' angeglichen' : ''));
+    if (angleich) r.betrag = rd(b.betrag);
+    r.status = 'erledigt';
+  }
+  persist();
+  /* Ist der letzte Fall entschieden, geht das Blatt zu — eine leere Liste
+     stehenzulassen hiesse, auf etwas zu zeigen, das es nicht mehr gibt. */
+  if (!widersprueche(D).length) return blattZu();
+  return blattZeichnen();
 }
 
 /* ---- Rechnung erfassen (A-55 bis A-60, A-83) ------------------------- */
@@ -8206,7 +9016,7 @@ function blattRechnung(id) {
   const g = (!r && _gelesen && !_gelesen.laeuft) ? _gelesen : null;
   const e = r || { stellerId: (g && g.stellerId) || '', betrag: (g && g.betrag) || '',
                    faelligkeit: (g && g.faelligkeit) || heuteISO(), zeileId:'rech_betrag',
-                   gedeckt:false, status:'offen', kontoId:'kred', verbId:'',
+                   gedeckt:false, status:'erfasst', kontoId:'kred', verbId:'',
                    notiz: g ? [g.nummer ? 'Rechnung ' + g.nummer : '',
                                g.referenz ? 'Referenz ' + g.referenz : ''].filter(Boolean).join(' · ') : '' };
   let belegZeile;
@@ -8234,6 +9044,29 @@ function blattRechnung(id) {
         <input class="num" id="rBetrag" type="text" inputmode="decimal" value="${e.betrag?fmt(e.betrag):''}"></div>
       <div class="feld"><label>Fällig am</label>
         <input type="date" id="rFaellig" value="${e.faelligkeit}"></div>
+      <!-- U-69: Der Zustand ist waehlbar, weil «erwartet» sonst nur ueber einen
+           Umweg entstuende: erfassen, speichern, im Blatt zuruecksetzen. Vorgabe
+           bleibt «erfasst» — der Normalfall ist, dass die Rechnung vor Albrecht
+           auf dem Tisch liegt, waehrend er sie eintippt. «erledigt» steht hier
+           NICHT zur Wahl: dieser Uebergang erzeugt die Zahlungsbuchung und
+           fragt nach dem Ausfuehrungsdatum. Ihn stillschweigend aus einer
+           Erfassungsmaske heraus zu machen, hiesse Geld buchen, ohne es zu
+           sagen. Er geht ueber den Schalter im Blatt. -->
+      ${e.status === 'erledigt' ? `
+      <div class="feld voll"><label>Zustand</label>
+        <span class="meldung" style="padding-top:7px">Erledigt — freigegeben, mit Zahlungsbuchung.
+        Zurückgenommen wird das im Blatt der Rechnung, weil dabei die Buchung mitgeht.</span></div>`
+      : `
+      <div class="feld voll"><label>Zustand</label>
+        <span class="schalter" role="group">
+          <button type="button" data-rzust="erwartet" aria-pressed="${e.status==='erwartet'}"
+            >erwartet</button>
+          <button type="button" data-rzust="erfasst" aria-pressed="${e.status!=='erwartet'}"
+            >erfasst</button></span></div>
+      <div class="feld voll"><span class="meldung"><b>Erwartet</b> heisst: sie kommt, sie ist
+        aber noch nicht da. Sie zählt trotzdem im Budget-Soll dieses Monats — so siehst du,
+        wie der Monat aussieht, wenn sie eintrifft. <b>Erfasst</b> heisst: sie liegt vor und
+        ist noch nicht im E-Banking. Freigegeben wird im Blatt der Rechnung.</span></div>`}
       <div class="feld"><label>Zahlungskonto</label>
         <select id="rKonto">${kontoOptionen(e.kontoId)}</select></div>
       <div class="feld voll"><label>Gehört zu Gläubiger</label>
@@ -9751,10 +10584,13 @@ function blattHandbuch() {
 
     <div class="regel"><h3>1. Eine offene Rechnung mindert den Kontostand nicht</h3>
     <p>Der Kontostand bildet ab, was die Bank sagt. Solange du eine Rechnung nicht bezahlt hast,
-       ist das Geld noch da — die Bank weiss nichts von ihr. Was sie sehr wohl mindert, ist
-       <b>«Verfügbar heute»</b> — <b>aber nur, wenn sie auch von einem freien Konto bezahlt
-       wird</b>. Läuft sie über Kreditoren, Rückstellungen oder Fixkosten, liegt das Geld dort
-       schon bereit und war nie Teil deines freien Betrags.</p></div>
+       ist das Geld noch da — die Bank weiss nichts von ihr. Was sie mindert, ist
+       <b>«Verfügbar heute»</b> — <b>aber nur, wenn sie auch von einem Konto mit Häkchen
+       «frei verfügbar» bezahlt wird</b>. Läuft sie über Kreditoren, Rückstellungen oder
+       Fixkosten, liegt das Geld dort schon bereit und war nie Teil des freien Betrags.</p>
+    <p>Zwei weitere zählen nicht dagegen: eine mit Häkchen <b>Rückstellung</b> (Regel 2) und
+       eine, die an einem <b>Gläubiger</b> hängt — deren Rate steht schon im Budget und ginge
+       sonst zweimal ab.</p></div>
 
     <div class="regel"><h3>2. Mit Häkchen «Rückstellung» mindert sie gar nichts</h3>
     <p>Für manche Rechnungen legst du jeden Monat etwas zurück — Zahnarzt, Franchise,
@@ -9764,11 +10600,21 @@ function blattHandbuch() {
        <b>Du entscheidest das je Rechnung</b>, nicht die Position.</p></div>
 
     <div class="regel"><h3>3. Die Zahl im Dashboard und die in der Kopfzeile sind dieselbe</h3>
-    <p>Beide rechnen nach derselben Regel: Bestand auf HHK minus die offenen, ungedeckten
-       Rechnungen dieses Monats, die von dort bezahlt werden. Die Kopfzeile nennt sie
-       <b>«Verfügbar heute»</b> und bricht sie zusätzlich auf die Tage bis zum nächsten Lohn
-       herunter. <b>Nur der laufende Monat trägt einen Wert</b> — vergangene und künftige
-       zeigen «–».</p>
+    <p>Beide rechnen nach derselben Regel, und sie hat <b>zwei Zeilen</b>:</p>
+    <p><b>Bestand</b> auf allen Konten mit Häkchen «frei verfügbar»<br>
+       <b>minus</b> die Rechnungen dieses Monats, die noch nicht erledigt sind
+       <b>und über eines dieser Konten laufen</b><br>
+       <b>= «Verfügbar heute»</b> — was du noch ausgeben kannst.</p>
+    <p><b>Warum nicht mehr abgezogen wird:</b> Weil du nach dem Lohneingang verteilst. Was auf
+       dem freien Konto liegt, ist bereits der Rest nach allen Verpflichtungen — das Geld für
+       Fixkosten, Abonnements und Rechnungen liegt schon in seinen Töpfen. Zöge GÄPP diese
+       Beträge noch einmal ab, wären sie zweimal weg: einmal, weil du sie verschoben hast, und
+       einmal in der Rechnung.</p>
+    <p>Die Kopfzeile bricht die Zahl zusätzlich auf die Tage bis zum nächsten Lohn herunter.
+       <b>Nur der laufende Monat trägt einen Wert</b> — vergangene und künftige zeigen «–».</p>
+    <p>Was du ausnehmen willst, nimmst du an genau zwei Stellen aus: mit dem Häkchen
+       <b>frei verfügbar</b> beim Konto und mit dem Häkchen <b>Rückstellung</b> bei der
+       einzelnen Rechnung. Beides entscheidest du selbst.</p>
     <p>Steht daneben <b>«Noch offen im Monat»</b> in Rot, ist die Zahl anklickbar. Dahinter
        liegt die Liste dessen, was budgetiert und noch nicht gebucht ist, mit einem Knopf je
        Posten. Nach dem Buchen bleibt der Saldo, wie er ist — die Zahl war schon drin, sie
@@ -9994,7 +10840,11 @@ function dialogAuf(titel, koerper, knopf, tun, gefahr) {
    Merker fallen zusammen weg — ein liegengebliebenes _loesch waere die
    Aufstellung von vorhin auf einem Datenstand von jetzt. */
 function dialogZu() {
+  /* U-69/U-70: _frei und _rueck gehoeren in dieselbe Zeile. Ein
+     liegengebliebenes _rueck naehme beim naechsten Dialog die Buchungen
+     einer Rechnung mit, die gar nicht gemeint war. */
   _ueber = null; _loesch = null; _jahrLeer = null; _dlgTun = null;
+  _frei = null; _rueck = null;
   $('#dialogHg').hidden = true;
 }
 function uebertragen(art, id, m) {
@@ -10523,8 +11373,11 @@ function suchVorrat() {
     weg:'Rechnungen · ' + sgName(s.gruppeId), modus:'tabellen', reiter:'rechnung' }));
   D.rechnungen.forEach(r => v.push({ art:'Rechnung',
     name:(steller(r.stellerId) || {}).name || 'Rechnung', neben:r.notiz || '',
+    /* U-69: Der Weg nennt den Zustand beim Namen, den der Schalter traegt —
+       ein Treffer, der «bezahlt» sagt, waehrend das Blatt «erledigt»
+       zeigt, laesst nach dem Unterschied suchen, den es nicht gibt. */
     weg:'Rechnungen · fällig ' + kurzdatum(r.faelligkeit) + ' · ' +
-        (r.status === 'offen' ? 'offen' : 'bezahlt'),
+        (R_STATUS_WORT[r.status] || r.status),
     modus:'tabellen', reiter:'rechnung', blatt:['rechnungzeigen', r.id, null] }));
   return v;
 }
@@ -10611,7 +11464,10 @@ function suchTasteSetzen() {
   const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
   el.textContent = mac ? '⌘K' : 'Strg K';
 }
-document.addEventListener('input', ev => { if (ev.target.id === 'suchfeld') sucheZeichnen(); });
+document.addEventListener('input', ev => {
+  if (ev.target.id === 'suchfeld') return sucheZeichnen();
+  if (ev.target.dataset && ev.target.dataset.umbf !== undefined) umbKnopfZeigen(ev.target);  /* U-75 */
+});
 
 /* ---- Klicks --------------------------------------------------------- */
 document.addEventListener('click', async ev => {
@@ -10658,12 +11514,18 @@ document.addEventListener('click', async ev => {
     S.zeitraum = stufe.dataset.z; $('#kalender').hidden = true; return zeichne();
   }
   const t = ev.target.closest('[data-oeffne],[data-tat],[data-klapp],[data-filter],[data-reiter],[data-bereich],[data-faltauf],[data-vwseite],[data-vwklapp],[data-dokneu],[data-dokumb],[data-dokloesch],' +
-    '[data-blattreiter],[data-art],[data-krich],[data-takt],[data-sart],[data-zu],[data-weg],[data-add],' +
+    '[data-blattreiter],[data-art],[data-krich],[data-takt],[data-sart],[data-rzust],[data-zu],[data-weg],[data-add],' +
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-vtset],[data-vtdel],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
     '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-sklapp],[data-tklapp],[data-buchen],[data-csv],[data-offen],[data-getilgt],' +
-    '[data-umbuch],[data-umb],[data-umball],[data-rgrp],[data-rbez],#ablage,button');
+    /* U-86: `[data-urich]` fehlte hier. Der Schalter der Umbuchungsmaske
+       wirkte trotzdem — aber nur, weil die Aufzaehlung auf `button`
+       endet und die Beschriftung zufaellig auf einem <button> sitzt.
+       Legt sie jemand auf ein <span>, ist der Schalter still tot: kein
+       Fehler, keine Meldung, nur ein Knopf ohne Wirkung. Jedes andere
+       Attribut steht in dieser Liste; dieses gehoert dazu. */
+    '[data-urich],[data-umbuch],[data-umb],[data-umball],[data-rgrp],[data-rbez],[data-wsp],#ablage,button');
   if (!t) return;
 
   /* --- Kachel oeffnet ihr Blatt --- */
@@ -10671,8 +11533,24 @@ document.addEventListener('click', async ev => {
   if (tat) { ev.stopPropagation();
     const [art, id] = tat.split(':');
     if (art === 'rechnungneu') { _belegDatei = null; _gelesen = null; return blattAuf('rechnung', null); }
+    /* U-69: Der Knopf der Kachel fuehrt den Zustand einen Schritt weiter —
+       erwartet wird erfasst, erfasst wird freigegeben. Zwei Taten, zwei
+       Namen: ein einziges «weiter» liesse die Kachel nicht sagen, was
+       gleich geschieht, und das Freigeben bucht Geld. */
+    /* U-80: Der leere `return` am Ende war die zweite Haelfte des
+       toten Knopfes in blattOffen() — wer hier mit etwas anderem als
+       `erfasst` ankam, bekam gar nichts. Die Quellen geben rstatus
+       jetzt nur noch fuer `erfasst` aus; damit ein spaeterer Aufrufer
+       nicht wieder ins Leere laeuft, fuehrt der Rest sichtbar ins
+       Rechnungsblatt statt nirgendwohin. */
     if (art === 'rstatus') { const r = D.rechnungen.find(x => x.id === id);
-      if (r && r.status === 'offen') return rechnungBezahlen(r); return; }
+      if (!r) return;
+      if (r.status === 'erfasst') return rechnungFreigeben(r);
+      return blattAuf('rechnungzeigen', r.id); }
+    if (art === 'rerfasst') { const r = D.rechnungen.find(x => x.id === id);
+      if (r && r.status === 'erwartet') { merkeStand('Rechnung ist eingetroffen');
+        r.status = 'erfasst'; persist(); zeichne(); }
+      return; }
     if (art === 'rechnung') return blattAuf('rechnungzeigen', id);
     blattAuf(art, id, art === 'konto' ? 'buchen' : art === 'schuld' ? 'zahlung' : null); return; }
   const oef = t.closest('[data-oeffne]');
@@ -10717,13 +11595,12 @@ document.addEventListener('click', async ev => {
   if (t.id === 'btnHandbuch' || t.dataset.hb !== undefined) {
     entwurfSichern(); return blattAuf('handbuch', null, null, true); }
 
-  /* U-40: Der Buchen-Knopf aus dem Offen-Band. Die Maske liest _entwurf nur,
-     wenn `_entwurf.kontoId === k.id` — ohne kontoId legt maskeBuchung() sofort
-     einen leeren Entwurf darueber, und der Knopf haelt sein Versprechen nicht.
-     Der Bauplan liess das Feld weg. buchungSpeichern() braucht es ausserdem
-     ein zweites Mal: es schreibt `kontoId: e.kontoId` in die Buchung.
-     Die uebrigen Felder stehen mit, damit der Entwurf dieselbe Gestalt hat
-     wie der, den maskeBuchung() sonst selbst anlegt. */
+  /* U-74: Hier stand die Begruendung, warum der Entwurf des Buchen-Knopfes
+     eine kontoId tragen muss. Der Knopf legt keinen Entwurf mehr an — er
+     bucht (siehe weiter unten bei data-buchen). Die Regel selbst gilt
+     unveraendert fuer jeden ANDEREN Vorbeleger: maskeBuchung() liest einen
+     fremden Entwurf nur, wenn `_entwurf.kontoId === k.id`, sonst legt sie
+     sofort einen leeren darueber. Der Ausbuchen-Knopf haelt sich daran. */
   if (t.dataset.csv) return csvExport(t.dataset.csv);
   /* U-55: Die Gruppierung der Rechnungstafel. zeichne() persistiert den
      Anzeigezustand selbst — hier ist deshalb nichts nachzutragen. */
@@ -10733,7 +11610,11 @@ document.addEventListener('click', async ev => {
   if (t.dataset.offen !== undefined) return blattAuf('offen', null);   /* U-45 */
   if (t.dataset.getilgt !== undefined) return blattAuf('getilgt', null); /* U-66 */
   /* --- U-48: monatliche Umbuchungen --- */
-  if (t.closest('[data-umbuch]')) { _umbF = {}; return blattAuf('umbuch', null); }
+  /* U-74: Aus der Liste «Noch offen» fuehrt eine Zeile hierher. Sie stapelt
+     wie jeder andere Griff seit U-45 — nach dem Verteilen steht man wieder in
+     der Liste. Von der Kachel aus liegt kein Blatt darunter, dort aendert
+     `ueber` nichts. */
+  if (t.closest('[data-umbuch]')) { _umbF = {}; return blattAuf('umbuch', null, null, !!_blatt); }
   if (t.dataset.umb) {
     /* Erst sichern, dann buchen: das Neuzeichnen danach darf die uebrigen
        Felder nicht verlieren. */
@@ -10750,7 +11631,7 @@ document.addEventListener('click', async ev => {
   }
   if (t.dataset.umball !== undefined) {
     umbFelderSichern();
-    const j = S.jahr, m = S.zeitraum === 'monat' ? S.monat : ymOf(heuteISO()).m;
+    const { j, m } = umbZeit();                                      /* U-75 */
     const tun = umbZeilen(j, m).map(z => {
       const geb = umbGebucht(z.k.id);
       const w = _umbF[z.k.id] !== undefined ? _umbF[z.k.id] : (geb || z.offen || 0);
@@ -10764,14 +11645,12 @@ document.addEventListener('click', async ev => {
     tun.forEach(x => umbBuchen(x.id, x.w, true));
     return;
   }
+  /* U-74: Hier ging bis jetzt die vorbelegte Buchungsmaske UEBER der Liste
+     auf. Sie ist weg — ein Klick bucht (G-3). Der Entwurf, den die Maske
+     brauchte, entfaellt damit ebenfalls. */
   if (t.dataset.buchen) {
     const [zeileId, kontoId, betrag] = t.dataset.buchen.split(':');
-    _entwurf = { kontoId, art:'ausgabe', datum:heuteISO(), ganzerMonat:false,
-                 betrag, zeileId, gegenkontoId:'', text:'', verbId:'', sparzielId:'' };
-    /* U-45: Steht schon ein Blatt offen — die Liste der offenen Posten —, geht
-       die Maske DARUEBER auf. Nach dem Schliessen steht man wieder in der
-       Liste und nimmt den naechsten Posten. */
-    return blattAuf('konto', kontoId, 'buchen', !!_blatt);
+    return offenSofortBuchen(zeileId, kontoId, zahl(betrag));
   }
 
   /* --- U-40/U-41: die eine offene Karte ---
@@ -10878,7 +11757,14 @@ document.addEventListener('click', async ev => {
   if (t.dataset.blattreiter) { entwurfSichern(); _blatt.reiter = t.dataset.blattreiter; return blattZeichnen(); }
   if (t.dataset.art)   { entwurfSichern(); _entwurf.art = t.dataset.art; return blattZeichnen(); }
   if (t.dataset.krich) { entwurfSichern(); _entwurf.richtung = t.dataset.krich; return blattZeichnen(); }
-  if (t.dataset.takt || t.dataset.sart) {
+  /* U-76: derselbe Griff wie bei der Korrekturrichtung — der Schalter steht
+     im Entwurf und nicht im DOM, sonst ueberlebt er das Neuzeichnen nicht. */
+  if (t.dataset.urich) { entwurfSichern(); _entwurf.urichtung = t.dataset.urich; return blattZeichnen(); }
+  /* U-69: `rzust` ist der Zustandsschalter der Erfassungsmaske. Er wird
+     gelesen, wenn gespeichert wird, und nicht vorher — genau wie takt und
+     sart. Ein Neuzeichnen des Blattes naehme sonst den halb getippten
+     Betrag mit. */
+  if (t.dataset.takt || t.dataset.sart || t.dataset.rzust) {
     t.parentElement.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === t));
     return;
   }
@@ -10950,6 +11836,33 @@ document.addEventListener('click', async ev => {
   if (t.dataset.vbuch) return vorschlagBuchen(t.dataset.vbuch);
   if (t.dataset.vskip) return vorschlagSkip(t.dataset.vskip);
   if (t.dataset.jdel) {
+    /* ---- U-82: dieselbe Weiche wie beim Zweig `jedit` daneben ----
+       U-71 hat den Weg von der Buchung zur Rechnung bei `jedit`
+       eingebaut und bei `jdel` vergessen. Gemessen: erledigte Rechnung,
+       ihre Zahlung im Kontojournal geloescht, generische Rueckfrage
+       bestaetigt — Buchung weg, Rechnung weiter «erledigt». Genau die
+       Waise, die der Aenderungsweg einen Knopf weiter verhindert, und
+       die Widerspruchsliste sah sie nicht (sie suchte nur die
+       Gegenrichtung; das ist mit U-82 auch behoben).
+       Gewaehlt ist NICHT die Sackgasse («geht hier nicht»), sondern der
+       Weg, den die App fuer dieselbe Frage schon hat:
+       rechnungRueckschritt() entfernt die Zahlung und setzt den Zustand
+       im selben Zug zurueck. Die Begruendung steht woertlich in seinem
+       Dialog — «Ohne das Entfernen stuende das Geld weiter als
+       ausgegeben da, waehrend die Rechnung wieder als offen gilt». Ein
+       zweiter Weg fuer dieselbe Sache waere ein zweiter Ort fuer
+       dieselbe Regel (G-4); ausserdem nennt jene Rueckfrage Betrag,
+       Datum und Konto, waehrend die bisherige, allgemeine Rueckfrage
+       nichts davon nannte.
+       Das Ziel ist der Zustand VOR der Zahlung: von «erledigt» zurueck
+       auf «erfasst», sonst der Zustand, auf dem die Rechnung ohnehin
+       steht — dann faellt nur die Buchung weg, und der Widerspruch aus
+       der anderen Richtung ist ebenfalls aufgeloest. */
+    const bd = D.buchungen.find(b => b.id === t.dataset.jdel);
+    if (bd && bd.rechnungId) {
+      const r = D.rechnungen.find(x => x.id === bd.rechnungId);
+      if (r) return rechnungRueckschritt(r, r.status === 'erledigt' ? 'erfasst' : r.status);
+    }
     /* Der Satz «das Netz ist die Git-Historie» stimmte, war aber die
        Beschreibung eines fehlenden Bauteils. Jetzt gibt es das Netz (U-20). */
     if (!frage('Diese Buchung löschen?')) return;
@@ -10957,7 +11870,21 @@ document.addEventListener('click', async ev => {
     D.buchungen = D.buchungen.filter(b => b.id !== t.dataset.jdel);
     persist(); return blattZeichnen();
   }
-  if (t.dataset.jedit) return journalBearbeiten(t.dataset.jedit);
+  /* ---- U-71: die Gegenrichtung -------------------------------------
+     Eine Buchung mit `rechnungId` ist die Zahlung genau einer Rechnung.
+     Wer sie hier im Betrag verbiegt, erzeugt dieselbe Abweichung, die
+     U-71 an der anderen Seite schliesst — nur von hinten. Deshalb geht
+     es hier nicht mehr, und statt einer Sperre steht ein Weg dorthin,
+     wo es geht. Ein «geht nicht» ohne Ziel ist eine Sackgasse.
+     Geaendert ist nur diese Weiche, nicht die Zeichnung des Journals. */
+  if (t.dataset.jedit) {
+    const b = D.buchungen.find(x => x.id === t.dataset.jedit);
+    if (b && b.rechnungId) {
+      const r = D.rechnungen.find(x => x.id === b.rechnungId);
+      if (r) return journalAnRechnung(r);
+    }
+    return journalBearbeiten(t.dataset.jedit);
+  }
 
   /* --- Rechnungen --- */
   if (t.id === 'btnRechNeu')       { _belegDatei = null; _gelesen = null; return blattAuf('rechnung', null); }
@@ -10976,15 +11903,28 @@ document.addEventListener('click', async ev => {
     if (_blatt && (_blatt.art === 'rechnungzeigen' || _blatt.art === 'rechnung')) { _stapel = []; return blattZu(); }
     return zeichne();
   }
+  /* ---- U-70: hier stand der Fehler -------------------------------
+     Bis hierher lautete der Rueckschritt schlicht
+       r.status = 'offen'; persist();
+     — die Zahlungsbuchung blieb stehen. Das ist I-11 und in Albrechts
+     Daten belegt. Drei Wege statt eines:
+     — vorwaerts auf `erledigt`: das ist die Freigabe, mit Datumsfrage.
+     — rueckwaerts von `erledigt`: das nimmt die Buchung mit, nach
+       Rueckfrage, die nennt, was verschwindet.
+     — zwischen `erwartet` und `erfasst`: da haengt nichts dran, das
+       geht ohne Frage. Der Rueckgaengig-Streifen faengt den Fehlgriff. */
   if (t.dataset.rst) {
     const [id, st] = t.dataset.rst.split(':');
     const r = D.rechnungen.find(x => x.id === id);
-    if (r.status === st) return;
-    if (st === 'bezahlt') return rechnungBezahlen(r);
-    r.status = 'offen'; persist();
+    if (!r || r.status === st || R_STATUS.indexOf(st) < 0) return;
+    if (st === 'erledigt')       return rechnungFreigeben(r);
+    if (r.status === 'erledigt') return rechnungRueckschritt(r, st);
+    merkeStand('Rechnung ist jetzt «' + R_STATUS_WORT[st] + '»');
+    r.status = st; persist();
     if (_blatt && _blatt.art === 'rechnungzeigen') return blattZeichnen();
     return zeichne();
   }
+  if (t.dataset.wsp)     return widerspruchLoesen(t.dataset.wsp);   /* U-70 */
   if (t.dataset.beleg)   return belegOeffnen(t.dataset.beleg);
   if (t.dataset.rechauf) { _belegDatei = null; _gelesen = null;
     return blattAuf('rechnung', t.dataset.rechauf, null, _blatt && _blatt.art === 'rechnungzeigen'); }
@@ -11350,7 +12290,15 @@ document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape') {
     if ($('#kalender') && !$('#kalender').hidden) { $('#kalender').hidden = true; return; }
     if ($('.sprung')) { $('.sprung').remove(); return; }
-    if (!$('#blattHg').hidden) { blattZu(); return; }
+    /* U-69: `!ev.defaultPrevented` ist neu und noetig. Der Zuhoerer weiter
+       oben faengt Escape fuer den Dialog ab und ruft preventDefault() —
+       dieser hier laeuft am selben Knoten trotzdem weiter und schloss
+       danach auch noch das Blatt darunter. Aufgefallen ist es erst, als
+       der Freigabedialog AUS EINEM BLATT heraus aufgeht: ein Escape,
+       das nur die Datumsfrage wegnehmen sollte, nahm die Rechnung mit.
+       Die Begruendung dafuer steht schon im Absatz darunter, sie war nur
+       eine Zeile zu tief angewandt. */
+    if (!$('#blattHg').hidden && !ev.defaultPrevented) { blattZu(); return; }
     /* U-25: Das Vollbild steht ganz am Ende der Kette — nach Dialog,
        Suche, Kalender, Sprungliste und Blatt. Es ist der aeusserste
        Zustand, also der letzte, den Escape aufloest; sonst naehme ein
@@ -11481,9 +12429,60 @@ async function rechnungSpeichern() {
   /* U-27: `dokumente` entsteht mit der Rechnung, nicht erst beim ersten
      Verweis — normalisieren() traegt es zwar nach, aber eine frisch
      erfasste Rechnung laeuft bis zum naechsten Laden nicht durch. */
-  const r = vorhanden || { id: neueId('r'), status:'offen', belegDatei:null, belegOffen:false,
+  const r = vorhanden || { id: neueId('r'), status:'erfasst', belegDatei:null, belegOffen:false,
                            dokumente: [] };
-  r.stellerId = st; r.betrag = rd(betrag); r.faelligkeit = faellig;
+  /* U-69: Der Zustandsschalter der Maske kennt nur `erwartet` und
+     `erfasst`. Eine bereits erledigte Rechnung zeigt ihn gar nicht — sonst
+     staende dort ein Knopf auf «erfasst», und ein Klick auf «Ändern»
+     naehme ihr still die Freigabe weg, ohne die Buchung anzufassen. Genau
+     dieser Widerspruch ist I-11. */
+  const zs = $('[data-rzust][aria-pressed="true"]');
+  const zustand = (r.status !== 'erledigt' && zs) ? zs.dataset.rzust : r.status;
+
+  /* ---- U-71: Rechnung und Buchung laufen nicht auseinander ----------
+     Belegt in Albrechts Daten: eine Rechnung traegt einen Betrag, ihre
+     Buchung einen anderen. Ursache stand genau hier — r.betrag wurde
+     gesetzt, die verknuepfte Buchung nie angefasst. Elf Rechnungen und
+     elf Buchungen ergaben zwei verschiedene Summen.
+     Mitgezogen wird nur bei einer ERLEDIGTEN Rechnung: nur die hat eine
+     Buchung, und nur dort ist die Buchung die Zahlung genau dieser
+     Rechnung.
+     Das DATUM folgt der Faelligkeit nur dann, wenn die Buchung auf dem
+     alten Faelligkeitstag lag — dann stammt es aus der Vorbelegung beim
+     Freigeben und ist mitgemeint. Steht dort ein anderer Tag, hat
+     Albrecht ein Ausfuehrungsdatum von Hand gesetzt; das ist eine
+     Tatsache ueber die Bank und keine Ableitung aus der Rechnung. Wer es
+     ueberschriebe, verschoebe eine erfolgte Zahlung in einen anderen
+     Monat. */
+  const verbNeu  = ($('#rVerb') && $('#rVerb').value) || null;
+  const kontoNeu = verbNeu ? ((verbind(verbNeu) || {}).kontoId || 'schuld')
+                           : ($('#rKonto') ? $('#rKonto').value : r.kontoId);
+  const altF = r.faelligkeit;
+  const mit  = r.status === 'erledigt' ? D.buchungen.filter(b => b.rechnungId === r.id) : [];
+  /* Was nachgezogen WIRD, steht fest, bevor irgendetwas geschrieben ist —
+     danach liesse es sich nicht mehr feststellen, und die Meldung muesste
+     raten. */
+  const gezogen = [];
+  mit.forEach(b => {
+    if (Math.abs(rd(b.betrag) - rd(betrag)) > 0.005)      gezogen.push('Betrag');
+    if (b.kontoId !== kontoNeu)                            gezogen.push('Zahlungskonto');
+    if (b.datum === altF && altF !== faellig)              gezogen.push('Ausführungsdatum');
+    /* Der Glaeubiger gehoert dazu, obwohl er im Auftrag nicht steht: eine
+       Buchung, die auf den alten Glaeubiger zeigt, senkt nach der
+       Aenderung den falschen Schuldenstand — dieselbe Art Waise wie ein
+       falscher Betrag, nur schwerer zu sehen. */
+    if ((b.verbId || null) !== verbNeu)                    gezogen.push('Gläubiger');
+  });
+  const einmal = gezogen.filter((x,i) => gezogen.indexOf(x) === i);
+  /* merkeStand() als erste Anweisung nach der Pruefung und VOR jeder
+     Mutation — dieselbe Regel wie bei umbBuchen(). Der Streifen ist
+     zugleich die kurze Meldung: er sagt, was geschehen ist, und nimmt es
+     auf Wunsch zurueck. Ein zweites Meldebauteil daneben waere eine
+     zweite Form fuer dieselbe Bedeutung. */
+  merkeStand(!vorhanden ? 'Rechnung erfasst'
+    : 'Rechnung geändert' + (einmal.length
+        ? ' — die Zahlung ist mitgezogen: ' + einmal.join(', ') : ''));
+  r.stellerId = st; r.betrag = rd(betrag); r.faelligkeit = faellig; r.status = zustand;
   r.gedeckt = $('#rGedeckt').checked; r.notiz = $('#rNotiz').value.trim();
   /* F-01: Haengt die Rechnung an einem Glaeubiger, braucht sie keine
      Budgetposition — die Rate steht schon im Budget —, und ihr Zahlungskonto
@@ -11499,6 +12498,19 @@ async function rechnungSpeichern() {
     r.kontoId = $('#rKonto').value;
   }
   if (!vorhanden) D.rechnungen.push(r);
+  /* U-71: Jetzt stehen Betrag, Konto und Faelligkeit neu — die Buchung zieht
+     nach. Was tatsaechlich nachgezogen wurde, sagt die Meldung; eine, die
+     immer erschiene, saehe nach einem Schritt aus, den GAEPP jedes Mal tut. */
+  mit.forEach(b => {
+    b.betrag  = r.betrag;
+    b.kontoId = r.kontoId;
+    b.verbId  = r.verbId || null;
+    /* Dieselbe Regel wie beim Freigeben: haengt die Rechnung an einem
+       Glaeubiger, traegt die Buchung KEINE Budgetposition — die Rate steht
+       schon im Budget. Sonst zaehlte derselbe Franken zweimal (F-01). */
+    b.zeileId = r.verbId ? null : r.zeileId;
+    if (b.datum === altF && altF !== r.faelligkeit) b.datum = r.faelligkeit;
+  });
   /* Ein Beleg geht nie verloren: erst in den Ordner, sonst in den Zwischenspeicher (E-12). */
   if (_belegDatei) {
     const name = belegName(_belegDatei, steller(st).name, r.betrag, faellig);
@@ -11514,27 +12526,160 @@ async function rechnungSpeichern() {
    F-01 Die Buchung traegt die Verbindlichkeit mit. Sie stand hier fest auf
         null — deshalb blieb der Schuldenstand nach dem Abhaken stehen,
         obwohl das Geld geflossen war.
-   A1   Der Beleg wandert in den Unterordner «Bezahlt». */
-async function rechnungBezahlen(r) {
-  const eingabe = prompt('Wann wurde sie bezahlt?', heuteISO());
-  if (eingabe === null) return;              /* abgebrochen */
-  const datum = /^\d{4}-\d{2}-\d{2}$/.test(eingabe) ? eingabe : heuteISO();
+   A1   Der Beleg wandert in den Unterordner «Bezahlt».
+
+   ---- U-69: aus «bezahlen» wird «freigeben» --------------------------
+   Albrecht, woertlich: «ich zahle zuverlaessig und fuer mich ist es dann
+   durch. Weniger Arbeit.» Der Uebergang, der die Buchung erzeugt, ist
+   deshalb nicht «das Geld ist angekommen», sondern «ich habe es im
+   E-Banking freigegeben».
+   Gefragt wird nach dem AUSFUEHRUNGSDATUM und nicht nach dem Tag der
+   Freigabe. Wer am 28.08. fuer den 02.09. freigibt, hat im September
+   gezahlt: die Buchung muss in den September fallen, sonst steht der
+   Betrag im falschen Monatsist und beide Monate sind falsch.
+   Vorbelegt ist deshalb die FAELLIGKEIT und nicht heute — das ist der
+   Tag, auf den ein Zahlungsauftrag im Normalfall gesetzt wird.
+   Das prompt() ist weg. Es konnte kein Datumsfeld anbieten, keinen
+   Vorschlag begruenden und keinen Rueckweg zeigen; ausserdem ist es das
+   Fenster des Browsers und nicht das von GAEPP. Gefragt wird jetzt in
+   der Dialogform der App (U-17). */
+let _frei = null;                      /* Rechnung, deren Freigabe im Dialog steht */
+function rechnungFreigeben(r) {
+  if (!r || _ro) return;
+  _frei = r.id;
+  const st = steller(r.stellerId);
+  dialogAuf('Zahlung freigeben', `
+    <p class="dlg-lead"><b class="num">${fmt(r.betrag)}</b> an «${htmlText(st ? st.name : '?')}»</p>
+    <div class="dlg-zeile"><label>Ausführung am
+      <input type="date" id="freiDatum" value="${r.faelligkeit}"></label></div>
+    <p class="meldung">Gefragt ist der Tag, an dem die Bank <b>ausführt</b> — nicht der Tag,
+      an dem du freigibst. Gibst du am 28. für den 2. des nächsten Monats frei, gehört die
+      Zahlung in den nächsten Monat.</p>
+    ${r.belegDatei ? `<p class="meldung">Der Beleg wandert dabei in den Unterordner
+      «Bezahlt». Rückgängig stellt die Zahlen wieder her, nicht die Ablage.</p>` : ''}`,
+    'Freigeben', rechnungFreigebenTun);
+  const f = $('#freiDatum'); if (f) f.focus();
+}
+async function rechnungFreigebenTun() {
+  const r = D.rechnungen.find(x => x.id === _frei);
+  const feld = $('#freiDatum');
+  const eingabe = feld ? feld.value : '';
+  dialogZu();
+  /* U-82: Der Riegel fragt jetzt, ob die Zahlung schon GEBUCHT ist, und
+     nicht bloss, ob der Zustand «erledigt» heisst. Verhindern soll er
+     eine zweite Buchung derselben Rechnung — genau das trifft er so.
+     Vorher sperrte er zusaetzlich den Fall «erledigt, aber ohne
+     Buchung»: die Waise aus der Gegenrichtung, die die
+     Widerspruchsliste seit U-82 meldet und ueber «Zahlung nachtragen»
+     hierher schickt. Ohne diese Zeile stuende dort ein Knopf, der einen
+     Dialog oeffnet und danach nichts tut — derselbe Fehler wie U-80. */
+  if (!r) return;
+  if (r.status === 'erledigt' && D.buchungen.some(b => b.rechnungId === r.id)) return;
+  /* Ein leeres oder verstuemmeltes Feld faellt auf die Faelligkeit zurueck —
+     dieselbe Vorbelegung, die im Feld stand. Vorher fiel es auf HEUTE
+     zurueck, und das war ein anderer Wert als der angezeigte. */
+  const datum = /^\d{4}-\d{2}-\d{2}$/.test(eingabe) ? eingabe : r.faelligkeit;
   /* Ehrliche Grenze: Rueckgaengig stellt die Zahlen wieder her, nicht die
      Ablage — der Beleg unten ist dann schon verschoben. Also sagt es der
      Text, statt Dateisystemoperationen rueckwaerts zu versuchen. */
-  merkeStand('Rechnung als bezahlt markiert' + (r.belegDatei ? ' — der Beleg bleibt unter Bezahlt' : ''));
+  merkeStand('Zahlung freigegeben' + (r.belegDatei ? ' — der Beleg bleibt unter Bezahlt' : ''));
   D.buchungen.push({ id:neueId('b'), datum, ganzerMonat:false, kontoId:r.kontoId, art:'ausgabe',
     betrag:r.betrag, gegenkontoId:null, zeileId:r.verbId ? null : r.zeileId,
+    /* U-86: `steller(...).name` stand hier ungesichert und warf, sobald
+       die Rechnung auf einen geloeschten Steller zeigte — mitten im
+       Buchen, nach merkeStand(). Die Zeile daneben in
+       rechnungFreigeben() prueft laengst `st ? st.name : '?'`; hier
+       dieselbe Sicherung, damit die Zahlung nicht an einem fehlenden
+       Namen scheitert. */
     text: r.verbId ? ('Rate ' + ((verbind(r.verbId) || {}).bezeichnung || '')).trim()
-                   : steller(r.stellerId).name,
+                   : ((steller(r.stellerId) || {}).name || '?'),
     serieId:null, rechnungId:r.id, verbId:r.verbId || null, sparzielId:null,
     belegDatei:r.belegDatei, belegOffen:false });
-  r.status = 'bezahlt';
+  r.status = 'erledigt';
   persist();
-  if (_blatt && _blatt.art === 'rechnungzeigen') blattZeichnen(); else zeichne();
+  /* U-82: wie beim Rueckschritt — die Freigabe kommt seit U-82 auch aus
+     der Widerspruchsliste, und die stand danach unveraendert da. Also
+     das offene Blatt UND die Ansicht darunter. */
+  if (_blatt) blattZeichnen();
+  zeichne();
   /* Der Beleg wandert erst danach — eine misslungene Ablage darf die
      Zahlung nicht aufhalten (E-12). */
   if (await belegNachBezahlt(r)) { /* liegt jetzt unter «Bezahlt» */ }
+}
+
+/* ---- U-70: ein Zustandswechsel laesst keine Waise zurueck -----------
+   Der Rueckschritt von `erledigt` schrieb bis hierher nur den Status um
+   und liess die Zahlungsbuchung stehen: das Geld war vom Konto ab, die
+   Rechnung galt wieder als offen, und beide Zahlen widersprachen sich,
+   ohne dass irgendwo etwas rot wurde. In Albrechts Daten ist genau das
+   passiert (I-11, offen seit dem 17.08.2026).
+   Die Rueckfrage NENNT, was verschwindet — Betrag, Datum, Konto. «Die
+   Buchung wird entfernt» waere keine Auskunft, sondern eine Ankuendigung
+   ohne Gegenstand: welche denn, ueber wie viel, von welchem Konto.
+   Was der Rueckschritt NICHT kann, steht daneben: der Beleg liegt dann
+   schon im Unterordner «Bezahlt» und bleibt dort. Dieselbe Ehrlichkeit
+   wie beim Freigeben. */
+let _rueck = null;                     /* {id, ziel} — Rueckschritt im Dialog */
+function rechnungRueckschritt(r, ziel) {
+  if (!r || _ro) return;
+  const buch = D.buchungen.filter(b => b.rechnungId === r.id);
+  if (!buch.length) {                  /* nichts zu verlieren — kein Dialog */
+    merkeStand('Rechnung wieder «' + R_STATUS_WORT[ziel] + '»');
+    r.status = ziel; persist();
+    if (_blatt && _blatt.art === 'rechnungzeigen') return blattZeichnen();
+    return zeichne();
+  }
+  _rueck = { id: r.id, ziel };
+  dialogAuf('Freigabe zurücknehmen', `
+    <p class="dlg-lead">Die Rechnung geht zurück auf
+      <b>${R_STATUS_WORT[ziel]}</b>. Das entfernt ${buch.length === 1
+        ? 'diese Zahlung' : 'diese ' + buch.length + ' Zahlungen'}:</p>
+    <ul class="dlg-liste">${buch.map(b => `<li>${fmt(b.betrag)} am ${
+      b.datum.split('-').reverse().join('.')} ab ${
+      (konto(b.kontoId) || {}).name || 'unbekanntem Konto'}</li>`).join('')}</ul>
+    <p class="meldung">Ohne das Entfernen stünde das Geld weiter als ausgegeben da,
+      während die Rechnung wieder als offen gilt — zwei Wahrheiten über denselben Franken.</p>
+    ${r.belegDatei ? `<p class="dlg-warnung">Der Beleg liegt bereits im Unterordner
+      <b>«Bezahlt»</b> und bleibt dort. GÄPP stellt Zahlen wieder her, nicht die Ablage.</p>` : ''}`,
+    'Zurücknehmen', rechnungRueckschrittTun, true);
+}
+/* U-71: Die Meldung fuer den Weg von der Buchung zur Rechnung. Sie steht
+   hier bei den Rechnungsfunktionen und nicht beim Journal, weil sie von
+   der Rechnung handelt — und weil journal() einem anderen Bauschritt
+   gehoert. */
+function journalAnRechnung(r) {
+  const st = steller(r.stellerId);
+  dialogAuf('Betrag gehört zur Rechnung', `
+    <p class="dlg-lead">Diese Buchung ist die Zahlung der Rechnung von
+      «${htmlText(st ? st.name : '?')}» über <b class="num">${fmt(r.betrag)}</b>.</p>
+    <p class="meldung">Der Betrag wird an der <b>Rechnung</b> gepflegt, nicht hier: eine
+      Buchung, die man einzeln verbiegt, sagt danach etwas anderes als die Rechnung, zu der
+      sie gehört — und keine der beiden Zahlen ist dann noch nachvollziehbar. Ändere die
+      Rechnung; die Zahlung zieht mit.</p>`,
+    'Rechnung öffnen', () => { dialogZu(); blattAuf('rechnungzeigen', r.id, null, !!_blatt); });
+}
+function rechnungRueckschrittTun() {
+  const auftrag = _rueck;
+  dialogZu();
+  if (!auftrag) return;
+  const r = D.rechnungen.find(x => x.id === auftrag.id);
+  if (!r) return;
+  /* merkeStand VOR der ersten Mutation, nicht zwischen den beiden — sonst
+     naehme der Streifen nur die Haelfte zurueck und liesse die andere
+     stehen. Dieselbe Falle wie bei umbBuchen() und uebertragenTun(). */
+  merkeStand('Freigabe zurückgenommen — Zahlung entfernt');
+  D.buchungen = D.buchungen.filter(b => b.rechnungId !== r.id);
+  r.status = auftrag.ziel;
+  persist();
+  /* U-82: Der Rueckschritt kommt seit U-82 auch aus einem Kontojournal
+     (der Loeschknopf an einer Zahlungsbuchung) und aus der
+     Widerspruchsliste.
+     Dort steht ein anderes Blatt offen als «rechnungzeigen», und das
+     zeigte danach die geloeschte Buchung unveraendert weiter. Deshalb
+     beides: das offene Blatt UND die Ansicht darunter. blattZeichnen()
+     faengt den Fall «kein Blatt» selbst ab. */
+  if (_blatt) blattZeichnen();
+  zeichne();
 }
 function vwUmbenennen(arg) {
   const [art, id] = arg.split(':');
@@ -11978,6 +13123,12 @@ async function start() {
   /* Ein Blatt, das beim Neuladen offen war, geht nicht wieder auf — die Ansicht
      soll beim Start ruhig sein. Der Zeitraum und die Klappzustaende bleiben. */
   S.blatt = null;
+  /* U-70: … mit genau einer Ausnahme, und die ist keine Ansichtssache.
+     Steht in den Daten eine Rechnung offen, die trotzdem bezahlt wurde,
+     rechnet GAEPP ab dem ersten Blick falsch. Das gehoert nach vorn und
+     nicht in eine Ecke, in die man erst klicken muesste. Zuletzt, damit
+     es ueber der fertig gezeichneten Ansicht steht. */
+  widerspruchMelden();
 }
 /* Der eingefrorene Export traegt denselben Quelltext wie die App. Er wird aus
    dem eigenen Script-Element gelesen — so steht er genau einmal in der Datei. */
