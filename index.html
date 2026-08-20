@@ -1795,6 +1795,25 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .jn-vor .f{font-size:11.5px;color:var(--muted);line-height:1.5}
 
 /* Vortragsmarke in der Verbindlichkeitentabelle und im Blatt */
+/* U-66 — das Blatt hinter «Schulden getilgt» */
+.gt-bezug{border:1px solid var(--line);border-radius:11px;padding:13px 15px 12px;margin-bottom:10px}
+.gt-bezug.gewaehlt{border-color:var(--accent);background:var(--soft)}
+.gt-kopf{display:flex;align-items:baseline;gap:10px}
+.gt-nr{font:500 11px/1 'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:.14em}
+.gt-name{font:500 14px/1.2 'Space Grotesk',sans-serif;color:var(--ink)}
+.gt-marke{margin-left:auto;font:400 10px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--onaccent);background:var(--accent);
+  border-radius:4px;padding:4px 7px}
+.gt-was{margin:5px 0 9px;font-size:12.5px;color:var(--muted)}
+.gt-zahlen{display:flex;gap:26px;margin-bottom:8px}
+.gt-zahlen .k{display:block;font:400 10px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;
+  text-transform:uppercase;color:#757f8c;margin-bottom:4px}
+.gt-zahlen .num{font:500 15px/1 'IBM Plex Mono',monospace;color:var(--ink)}
+.gt-zahlen .num.ok{color:var(--ok)}
+.gt-h{margin:16px 0 7px;font:400 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;
+  text-transform:uppercase;color:#757f8c}
+.gt-tab .weg-zeile td{color:#5f6874}
+.gt-tab td.leer{color:#5f6874}
 .vtr{color:var(--accent);font-size:10px;margin-left:4px;cursor:help}
 .vtr.ab{color:var(--open)}
 /* U-57: Die Abweichungsmarke. Der Plan bleibt im Feld — dort wird er
@@ -1845,6 +1864,9 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .kjahr.sig i.pos>span{bottom:50%}
 .kjahr.sig i.jetzt>span{background:var(--accent)}
 .kjahr.sig i.neg.jetzt>span{background:var(--err)}
+/* U-64: ein Jahrgang ohne Budget hat keinen Balken, sondern eine Luecke —
+   eine graue Andeutung auf der Nulllinie, damit die Achse nicht springt. */
+.kjahr.sig i.fehlt>span{bottom:50%;background:#2a3542}
 /* ===================================================================
    U-61 — Ruhe in «Alle Jahre»
    -------------------------------------------------------------------
@@ -2123,11 +2145,13 @@ let _sig, _sha = null, _pushT = null, _ro = false;
    =================================================================== */
 function nutzdaten() { return D; }
 
+function _obLeeren() { for (const k in _obCache) delete _obCache[k]; _hstCache = null; }
 function persist() {
   if (!D) return;
   const sig = JSON.stringify(D);
   try {
-    localStorage.setItem(SCHLUESSEL_DATEN, JSON.stringify({ d: D, s: S }));
+    _obLeeren();                                    /* U-64 */
+  localStorage.setItem(SCHLUESSEL_DATEN, JSON.stringify({ d: D, s: S }));
   } catch (err) { /* Speicher voll oder gesperrt — der Push traegt trotzdem */ }
   if (_sig === undefined) { _sig = sig; return; }
   if (sig !== _sig) { _sig = sig; schedulePush(); }
@@ -2732,16 +2756,126 @@ function umbBedient(j, m) {
 /* Getilgt statt geschuldet: was seit dem Anfangsstand weg ist.
    Waechst eine Schuld durch Erhoehungen ueber ihren Anfangsstand hinaus,
    wird `getilgt` negativ — das wird angezeigt und nicht weggerechnet. */
+/* ===================================================================
+   U-65 — Die Kachel «Schulden getilgt» rechnet ueber die richtige Menge
+   -------------------------------------------------------------------
+   Behebt F-19, gefunden von Albrecht am 19.08.2026 beim Durchsehen der
+   nachgetragenen Schuldenhistorie. Hier stand:
+
+       const v = verbHeute();                          // Auswahl von HEUTE
+       const anfang = v.reduce(… x.anfangsstand …);     // Werte von DAMALS
+
+   Vollstaendig getilgte und ueber `ausAb` ausgeblendete Glaeubiger fielen
+   damit aus ZAEHLER UND NENNER. Gemessen am 19.08.2026 zeigte die Kachel
+   33'715.35 / 45.2 % von 74'639.35; richtig sind 57'710.66 / 58.5 % von
+   98'634.66. **Jede fertig bezahlte Schuld machte die Zahl kleiner statt
+   groesser** — eine Nebenwirkung von U-49.
+
+   Drei Bezugsgroessen sind moeglich und alle drei ehrlich; sie
+   unterscheiden sich darin, WORAN der Erfolg gemessen wird. Albrechts
+   Entscheid vom 20.08.2026: Die Kachel zeigt **A**, das Blatt dahinter
+   nennt alle drei (U-66).
+
+   A — der Hoechststand des Schuldenbergs. Als MAXIMUM ueber alle Monate
+       und nicht als Stand im ersten Monat: Sonst zeigte die Kachel einen
+       Anteil ueber 100 %, sobald spaeter eine grosse Schuld dazukommt.
+       Bei Albrechts Stand faellt beides zusammen, weil der Berg seit 2024
+       nur schrumpft — der Name soll aber auch dann noch stimmen, wenn das
+       nicht mehr gilt.
+   B — alles, was je geschuldet war: Anfangsstaende plus Erhoehungen.
+   C — B ohne das, was erlassen oder abgeloest wurde (die Minderungen) —
+       also das, was tatsaechlich selbst bezahlt wurde.
+   =================================================================== */
+let _hstCache = null;
+function hoechststand() {
+  if (_hstCache !== null) return _hstCache;
+  const jahre = budgetJahre();
+  let max = 0;
+  for (const j of jahre) for (let m = 0; m < 12; m++) {
+    const s = schuldenPrognose(j, m);
+    if (s > max) max = s;
+  }
+  return (_hstCache = rd(max));
+}
+/* Alles, was je geschuldet war, und was davon erlassen oder abgeloest
+   wurde. Beides aus dem vorhandenen Bestand — kein neues Feld. */
+function jeGeschuldet() {
+  let anf = 0, erh = 0, min = 0;
+  D.verbindlichkeiten.forEach(v => {
+    anf += v.anfangsstand || 0;
+    (v.erhoehungen || []).forEach(e => {
+      if (e.art === 'minderung') min += e.betrag; else erh += e.betrag;
+    });
+  });
+  return { brutto: rd(anf + erh), erlassen: rd(min), netto: rd(anf + erh - min) };
+}
 function getilgtStand() {
-  const v = verbHeute();                                             /* U-49 */
-  const anfang = rd(v.reduce((s, x) => s + (x.anfangsstand || 0), 0));
+  /* U-65: ALLE je erfassten Glaeubiger — nicht die Auswahl von heute.
+     Ein bezahlter Glaeubiger ist der Erfolg und nicht sein Verschwinden. */
+  const v = D.verbindlichkeiten;
   const heute  = rd(v.reduce((s, x) => s + verbindStandHeute(x), 0));
+  const anfang = hoechststand();
   const getilgt = rd(anfang - heute);
+  const jg = jeGeschuldet();
   return { anfang, heute, getilgt,
-           anteil: anfang > 0 ? Math.max(0, Math.min(1, getilgt / anfang)) : 0 };
+           anteil: anfang > 0 ? Math.max(0, Math.min(1, getilgt / anfang)) : 0,
+           /* die beiden anderen Bezuege, fuer das Blatt (U-66) */
+           bezugB: jg.brutto, getilgtB: rd(jg.brutto - heute),
+           bezugC: jg.netto,  getilgtC: rd(jg.netto - heute),
+           erlassen: jg.erlassen };
 }
 
 /* ---- Saldo budgetiert: Einnahmen minus Ausgaben ---------------------- */
+/* ===================================================================
+   U-64 — Ein Jahrgang, in dem nichts budgetiert ist, hat keinen Saldo
+   -------------------------------------------------------------------
+   Gemeldet von Albrecht am 20.08.2026, mit Bildschirmfoto: Die Sektion
+   «Saldo budgetiert» zeigte fuer 2024 −29'595.21 und fuer 2025 −23'920,
+   und die kumulierte Reihe trug das bis 2027 mit. Sein Satz dazu: «Es
+   sieht so aus, als haette ich Minus gemacht. Habe ich nicht.»
+
+   Woher die Zahl kam: Die drei Schuldenzeilen des Budgets sind
+   GESPIEGELT (gespiegeltAus: verbindlichkeiten:*). Sie holen ihre Werte
+   aus den Ratenplaenen der Glaeubiger — automatisch, fuer jeden Jahrgang,
+   den es gibt. Als die Historie 2024/2025 nachgetragen wurde, entstanden
+   damit Ausgaben in voller Hoehe in zwei Jahrgaengen, fuer die nie ein
+   Budget erfasst wurde. Die Gegenseite fehlte, weil es sie nie gab.
+   Am Datenstand vom 20.08.2026 gemessen: In 2024 und 2025 traegt KEINE
+   einzige Budgetzeile einen Wert; in 2026 und 2027 sind es je 28.
+
+   Die Zahl war also nicht falsch gerechnet — sie war richtig gerechnet
+   ueber unvollstaendige Daten. Das ist die unangenehmere Sorte: Sie sieht
+   aus wie ein Befund ueber sein Leben und ist einer ueber den Bestand.
+
+   Warum die Erkennung so und nicht ueber «hat der Jahrgang Einnahmen»:
+   Ein Jahr ganz ohne Einnahmen ist denkbar (kein Erwerb, nur Reserven) —
+   das waere dann ein echter Saldo und keine Luecke. Gefragt wird deshalb,
+   ob ueberhaupt etwas EINGETRAGEN wurde. Gespiegelte Zeilen zaehlen dabei
+   nicht: Sie sind genau das, was hier faelschlich fuer ein Budget gehalten
+   wurde. Kein neues Feld, keine Einstellung — traegt Albrecht 2024 spaeter
+   nach, kippt die Erkennung von selbst.
+
+   NICHT betroffen sind die Kategoriekarten: Dass 2024 Schulden getilgt
+   wurden, ist wahr und gehoert angezeigt. Sinnlos ist allein der SALDO.
+   =================================================================== */
+const _obCache = {};
+function ohneBudget(j) {
+  if (_obCache[j] !== undefined) return _obCache[j];
+  const b = D.budget[String(j)];
+  let leer = true;
+  if (b) leer = !Object.keys(b).some(zid => {
+    const z = D.zeilen.find(x => x.id === zid);
+    if (!z || gespiegelt(z)) return false;
+    return ((b[zid] || {}).m || []).some(x => Math.abs(x) > 0.005);
+  });
+  return (_obCache[j] = leer);
+}
+/* Der erste Jahrgang, in dem etwas budgetiert ist — dort beginnt die
+   kumulierte Reihe. Alles davor traegt sie nicht mit. */
+function ersterBudgetjahrgang() {
+  const j = budgetJahre().filter(x => !ohneBudget(x));
+  return j.length ? j[0] : null;
+}
 function saldoBudgetiert(j, m) {
   let ein = 0, aus = 0;
   D.kategorien.filter(k => katSicht(k, j)).forEach(k => {
@@ -3425,7 +3559,7 @@ function zeichneDashboard() {
          steht bewusst als GETILGT und nicht als Schuldenstand da — was
          schon weg ist, traegt weiter als was noch bleibt. Der Rest steht
          klein darunter und wird nicht verschwiegen. -->
-    <article class="karte kpi hero" data-bereich="verbind">
+    <article class="karte kpi hero" data-getilgt>
       <span class="kennung">Schulden getilgt</span>
       <div class="hero-zahl">
         <span class="v riesig ${gt.getilgt < 0 ? 'neg' : ''}">${fmt(gt.getilgt)}</span>
@@ -4487,7 +4621,16 @@ function saldoRoh(s, alle) {
 function kumRoh(s, alle) {
   if (!alle) return saldoKumuliert(S.jahr, s.key);
   const jahre = Object.keys(D.budget).map(Number).sort();
-  let x = 0; for (const j of jahre) { if (j > s.key) break; for (let m = 0; m < 12; m++) x += saldoBudgetiert(j, m); }
+  /* U-64: Die Reihe beginnt beim ersten Jahrgang, in dem etwas budgetiert
+     ist. Sonst schleppt ein Jahr, das nur Schuldentilgung kennt, sein
+     scheinbares Minus bis in die Zukunft — im gemeldeten Fall standen zwei
+     gute Jahre hinter einem Kumuliert von −52'487.79. */
+  let x = 0;
+  for (const j of jahre) {
+    if (j > s.key) break;
+    if (ohneBudget(j)) continue;
+    for (let m = 0; m < 12; m++) x += saldoBudgetiert(j, m);
+  }
   return rd(x);
 }
 function vergangen(s) {
@@ -4884,6 +5027,84 @@ function offenPosten(j, m) {
    Glaeubigerblatt, rechnungBezahlen(), vorbelegte Buchungsmaske. Sie gehen
    UEBER dieses Blatt auf (blattAuf(..., ueber)), damit man nach dem Buchen
    wieder in der Liste steht und den naechsten Posten nehmen kann. */
+/* ===================================================================
+   U-66 — Das Blatt hinter der Kachel «Schulden getilgt»
+   -------------------------------------------------------------------
+   Die Kachel zeigt EINE Zahl (Bezug A), das Blatt nennt alle drei. Das
+   ist die Aufteilung aus Formensprache C — «die Kachel zeigt, das Blatt
+   arbeitet» — und keine neue Form: Ein Blatt hinter einer Kennzahl gibt
+   es seit U-45 (blattOffen hinter «Noch offen im Monat»).
+
+   Warum alle drei und nicht nur die gewaehlte: Es sind keine drei
+   Versuche derselben Zahl, sondern drei verschiedene Fragen. Wer nur
+   eine zeigt, versteckt die Wahl, statt sie zu treffen.
+
+   Die Liste unten ist der Beleg. Ohne sie ist die Tilgungszahl eine
+   Behauptung; mit ihr steht daneben, WORAUS sie entsteht — und genau
+   die Glaeubiger, die vor U-65 aus der Rechnung fielen, stehen jetzt
+   namentlich da. */
+function blattGetilgt() {
+  const g = getilgtStand();
+  const h = ymOf(heuteISO()).j;
+  const liste = D.verbindlichkeiten.map(v => ({
+    v, stand: rd(verbindStandHeute(v)),
+    weg: (v.ausAb !== null && v.ausAb !== undefined && v.ausAb <= h)
+  })).sort((a,b) => b.stand - a.stand || (a.v.bezeichnung > b.v.bezeichnung ? 1 : -1));
+  const fertig = liste.filter(x => Math.abs(x.stand) < 0.005);
+  const offen  = liste.filter(x => Math.abs(x.stand) >= 0.005);
+  const grp = id => (GRUPPEN.find(x => x.id === id) || {}).name || 'Ohne Gruppe';
+
+  const bezug = (nr, name, was, gesamt, getilgt, gewaehlt) => {
+    const pz = gesamt > 0 ? Math.round(getilgt / gesamt * 100) : 0;
+    return `<div class="gt-bezug${gewaehlt ? ' gewaehlt' : ''}">
+      <div class="gt-kopf"><span class="gt-nr">${nr}</span>
+        <span class="gt-name">${name}</span>
+        ${gewaehlt ? '<span class="gt-marke">steht auf der Kachel</span>' : ''}</div>
+      <p class="gt-was">${was}</p>
+      <div class="gt-zahlen">
+        <span><span class="k">Bezug</span><span class="num">${fmt(gesamt)}</span></span>
+        <span><span class="k">getilgt</span><span class="num ok">${fmt(getilgt)}</span></span>
+        <span><span class="k">Anteil</span><span class="num">${pz} %</span></span>
+      </div>
+      <div class="balken"><div style="width:${Math.max(0, Math.min(100, pz))}%"></div></div>
+    </div>`;
+  };
+
+  const zeile = x => `<tr${x.weg ? ' class="weg-zeile"' : ''}>
+    <td>${x.v.bezeichnung}<span class="weg" style="margin-left:9px">${grp(x.v.gruppe)}${
+      x.weg ? ' · ab ' + x.v.ausAb + ' ausgeblendet' : ''}</span></td>
+    <td class="r num">${fmt(x.v.anfangsstand || 0)}</td>
+    <td class="r num${x.stand > 0.005 ? '' : ' leer'}">${
+      Math.abs(x.stand) < 0.005 ? '<span class="weg">getilgt</span>' : fmt(x.stand)}</td>
+    <td class="r"><button class="knopf klein" type="button" data-schuld="${x.v.id}">öffnen</button></td></tr>`;
+
+  const tabelle = (titel, rows) => !rows.length ? '' : `<h4 class="gt-h">${titel} · ${rows.length}</h4>
+    <table class="journal gt-tab"><thead><tr><th>Gläubiger</th>
+      <th class="r">Anfangsstand</th><th class="r">offen heute</th><th></th></tr></thead>
+    <tbody>${rows.map(zeile).join('')}</tbody></table>`;
+
+  return {
+    weit: true, kennung: 'Verbindlichkeiten · Stand ' + kurzdatum(heuteISO()),
+    titel: 'Schulden getilgt: ' + fmt(g.getilgt),
+    koerper: `<p class="notiz">Drei ehrliche Bezugsgrössen — sie führen alle auf denselben
+      offenen Rest von <b>${fmt(g.heute)}</b> und unterscheiden sich allein darin,
+      <b>woran der Erfolg gemessen wird</b>.</p>
+      ${bezug('A', 'Höchststand des Schuldenbergs',
+        'Der höchste Stand, den der Berg je hatte — gemessen über alle Jahrgänge, Monat für Monat.',
+        g.anfang, g.getilgt, true)}
+      ${bezug('B', 'Alles, was je geschuldet war',
+        'Alle Anfangsstände plus jede Erhöhung. Der Berg war nie so hoch, weil laufend getilgt wurde.',
+        g.bezugB, g.getilgtB, false)}
+      ${bezug('C', 'Selbst bezahlt',
+        'Wie B, ohne die ' + fmt(g.erlassen) + ', die erlassen oder abgelöst wurden — also das, was wirklich aus deiner Tasche kam.',
+        g.bezugC, g.getilgtC, false)}
+      ${tabelle('Getilgt', fertig)}
+      ${tabelle('Offen', offen)}`,
+    fuss: `<span class="hint">${fertig.length} von ${liste.length} getilgt</span>
+      <button class="knopf" data-bereich="verbind">Zu den Verbindlichkeiten</button>
+      <button class="knopf" data-zu>Schliessen</button>`
+  };
+}
 function blattOffen() {
   const j = S.jahr, m = S.monat;
   const p = offenPosten(j, m);
@@ -5275,40 +5496,67 @@ function katKarten() {
      denselben Weg: data-kklapp, S.kOffen. Keine neue Form.
      Die Fusszeile, die dieselben drei Zahlen ein zweites Mal trug, ist mit
      diesem Schritt entfallen — zwei Orte fuer eine Zahl waeren G-4. */
+  const jahrWAlle = e => e.length ? rd(e.reduce((a,x) => a + x, 0)) : null;
   const saldoKarte = () => {
     const auf = !S.sZu.includes('saldo');
-    const w   = sp.map(x => saldoRoh(x, alle));
-    const kum = sp.map(x => kumRoh(x, alle));
-    const jahrW = alle ? saldo : rd([...Array(12).keys()].reduce((a,i)=>a+saldoBudgetiert(j,i),0));
-    const max = Math.max(...w.map(Math.abs), 1);
+    /* U-64: Welche Spalten ueberhaupt einen Saldo haben. In «Alle Jahre»
+       ist das eine Frage je Jahrgang, sonst gilt sie fuer die ganze Karte. */
+    const ohne = x => alle ? ohneBudget(x.key) : ohneBudget(j);
+    const w   = sp.map(x => ohne(x) ? null : saldoRoh(x, alle));
+    const kum = sp.map(x => ohne(x) ? null : kumRoh(x, alle));
+    const echt = w.filter(x => x !== null);
+    const jahrW = alle
+      ? rd(echt.reduce((a,x) => a + x, 0))
+      : (ohneBudget(j) ? null : rd([...Array(12).keys()].reduce((a,i)=>a+saldoBudgetiert(j,i),0)));
+    const max = Math.max(...echt.map(Math.abs), 1);
+    const luecken = sp.filter(ohne).map(x => x.label);
+    /* Die grosse Zahl oben: im Monat der Monatssaldo, sonst die Summe der
+       Jahrgaenge, die ueberhaupt einen haben. */
+    const haupt = alle ? jahrWAlle(echt)
+      : (ohneBudget(j) ? null : saldo);
     const jetztI = alle ? sp.findIndex(x => x.key === h.j)
                         : (j === h.j ? (S.zeitraum === 'monat' ? m : h.m) : -1);
     /* Der tiefste Punkt der kumulierten Reihe. Er beantwortet die Frage,
        die hinter «kumuliert» steht: wann wird es am engsten. */
-    const tief = Math.min(...kum);
+    const kumEcht = kum.filter(x => x !== null);
+    const tief = kumEcht.length ? Math.min(...kumEcht) : 0;
     const tiefI = kum.indexOf(tief);
-    const zusatz = tief < -0.005
-      ? 'tiefster Punkt ' + sp[tiefI].label.slice(0, alle ? 4 : 3) + ' ' + fmtG(tief)
-      : 'durchgehend im Plus';
-    const vz = x => (x > 0.005 ? '+' : '') + fmtG(x);
-    const kl = x => x < -0.005 ? 'minus' : (x > 0.005 ? 'plus' : '');
+    /* U-64: Der Zusatz sagt zuerst, was FEHLT. Ein tiefster Punkt, der
+       ueber Luecken hinwegrechnet, waere die naechste Zahl, die stimmt
+       und nichts bedeutet. */
+    const zusatz = !echt.length
+      ? (alle ? 'kein Jahrgang budgetiert' : 'nicht budgetiert')
+      : luecken.length
+        ? (luecken.length === 1 ? luecken[0]
+            : luecken[0] + '–' + luecken[luecken.length-1]) + ' nicht budgetiert'
+        : tief < -0.005
+          ? 'tiefster Punkt ' + sp[tiefI].label.slice(0, alle ? 4 : 3) + ' ' + fmtG(tief)
+          : 'durchgehend im Plus';
+    const vz = x => x === null ? '<span class="null">–</span>'
+      : (x > 0.005 ? '+' : '') + fmtG(x);
+    const kl = x => x === null ? '' : (x < -0.005 ? 'minus' : (x > 0.005 ? 'plus' : ''));
+    /* Der letzte Wert der kumulierten Reihe, der ueberhaupt einer ist. */
+    const kumEnde = kumEcht.length ? kumEcht[kumEcht.length-1] : null;
     const zeile = (name, hinweis, reihe, extra) => `<div class="r ${extra||''}">
       <div class="p"><span class="t">${name}</span><span class="z">${hinweis}</span></div>
-      ${reihe.map((x,i) => `<div class="c ${kl(x)} ${i === jetztI ? 'jetzt':''}">${vz(x)}</div>`).join('')}
-      <div class="j ${kl(reihe === kum ? kum[kum.length-1] : jahrW)}">${
-        vz(reihe === kum ? kum[kum.length-1] : jahrW)}</div></div>`;
+      ${reihe.map((x,i) => `<div class="c ${kl(x)} ${i === jetztI ? 'jetzt':''}"${
+        x === null ? ` title="${sp[i].label} ist nicht budgetiert — hier steht nur die Schuldentilgung, und die allein ergibt keinen Saldo"` : ''
+        }>${vz(x)}</div>`).join('')}
+      <div class="j ${kl(reihe === kum ? kumEnde : jahrW)}">${
+        vz(reihe === kum ? kumEnde : jahrW)}</div></div>`;
     return `<article class="streifen summenkarte ${auf?'offen':''}">
       <div class="reihe" data-sklapp="saldo">
         <div class="nam"><span class="chev">${auf?'▾':'▸'}</span>
           <span class="t">Saldo budgetiert</span>
           <span class="z">je ${alle ? 'Jahr' : 'Monat'} · kumuliert</span></div>
-        <div class="n gross ${kl(saldo)}">${vz(saldo)}</div>
+        <div class="n gross ${kl(haupt)}">${vz(haupt)}</div>
         <div class="n leer">–</div><div class="n leer">–</div>
         <div class="kbalken"><span class="p">${zusatz}</span></div>
         <div class="n ${kl(jahrW)}">${vz(jahrW)}</div>
-        <div class="kjahr sig">${w.map((x,i) => `<i class="${x<0?'neg':'pos'}${
-          i === jetztI ? ' jetzt':''}"><span style="height:${
-          Math.max(2, Math.round(Math.abs(x)/max*48))}%"></span></i>`).join('')}</div>
+        <div class="kjahr sig">${w.map((x,i) => x === null
+          ? '<i class="fehlt"><span style="height:2%"></span></i>'
+          : `<i class="${x<0?'neg':'pos'}${i === jetztI ? ' jetzt':''}"><span style="height:${
+            Math.max(2, Math.round(Math.abs(x)/max*48))}%"></span></i>`).join('')}</div>
         <div class="pfeil">›</div></div>
       ${auf ? `<div class="kauf"><div class="praster${alle ? ' ruhig' : ''}"
         style="--pgrid:280px repeat(${sp.length},minmax(0,1fr)) 100px${
@@ -6194,6 +6442,7 @@ function blattZeichnen() {
     handbuch: blattHandbuch, rechnung: blattRechnung, serie: blattSerie,
     rechnungzeigen: blattRechnungZeigen, glaeubiger: blattGlaeubiger,
     offen: blattOffen,                                 /* U-45 */
+    getilgt: blattGetilgt,                             /* U-66 */
     umbuch: blattUmbuch                                /* U-48 */
   }[_blatt.art];
   if (!f) { console.warn('Kein Blatt für', _blatt.art); return; }
@@ -10366,7 +10615,7 @@ document.addEventListener('click', async ev => {
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
     '[data-vtset],[data-vtdel],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
-    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-sklapp],[data-tklapp],[data-buchen],[data-csv],[data-offen],' +
+    '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-sklapp],[data-tklapp],[data-buchen],[data-csv],[data-offen],[data-getilgt],' +
     '[data-umbuch],[data-umb],[data-umball],[data-rgrp],[data-rbez],#ablage,button');
   if (!t) return;
 
@@ -10435,6 +10684,7 @@ document.addEventListener('click', async ev => {
   /* U-54: die Klappe ueber dem Bezahlten. */
   if (t.dataset.rbez !== undefined) { S.rBezAuf = !S.rBezAuf; return zeichne(); }
   if (t.dataset.offen !== undefined) return blattAuf('offen', null);   /* U-45 */
+  if (t.dataset.getilgt !== undefined) return blattAuf('getilgt', null); /* U-66 */
   /* --- U-48: monatliche Umbuchungen --- */
   if (t.closest('[data-umbuch]')) { _umbF = {}; return blattAuf('umbuch', null); }
   if (t.dataset.umb) {
