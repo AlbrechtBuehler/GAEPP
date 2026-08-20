@@ -1812,6 +1812,7 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
    damit die Regel auch gegen `.c.jetzt` und `.r.summe` traegt. */
 .praster .r .c.minus,.praster .r .j.minus{color:var(--err)}
 .praster .r.summe .j.ende{color:#fff}
+.praster .r.summe .j.ende .null{color:#5f6874}
 .praster .r.summe .j.ende.minus{color:var(--err)}
 .streifen .n.gross.minus{color:var(--err)}
 /* U-59: Die Saldo-Sektion. Kein neues Bauteil — ein Streifen wie jeder
@@ -1865,7 +1866,10 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 /* R 4 — Bestand und Bewegung trennen. «Anfang» und «Ende» sind Zeitpunkte,
    die Jahresspalten sind Zeitraeume; zwei Haarlinien machen daraus eine
    Klammer, ohne ein Gitter zu bauen. */
-.praster.ruhig .c.erst,.praster.ruhig .c.bez{border-left:1px solid var(--rule)}
+/* Anfang | was sich im Zeitraum bewegt hat | Ende — die zweite Linie sitzt
+   deshalb vor der ERGEBNISSPALTE und nicht vor «Bezahlt»: «Bezahlt» ist
+   selbst eine Bewegung und gehoert zum Mittelteil. */
+.praster.ruhig .c.erst,.praster.ruhig .j{border-left:1px solid var(--rule)}
 /* R 6 — Getilgtes faellt einen Rang. Dieselbe Regel wie bei der bezahlten
    Rechnung (U-54) und bei der gespiegelten Zeile (Formensprache H). */
 .praster.ruhig .r.still,.praster.ruhig .r.still .p .t,
@@ -2965,21 +2969,36 @@ function verbindLauf(v, bisJ, bisM, mitPlan, sammler) {   /* U-56: sammler optio
        Der STAND (mitPlan=false) bleibt unberuehrt: er kennt nach wie vor
        ausschliesslich gebuchte Zahlungen. Ist und Plan bleiben getrennt —
        die Trennung sitzt jetzt dort, wo sie hingehoert, im Aufrufer. */
-    /* Der Schnitt bei null steht HIER und nur hier, und er gilt nur fuer die
-       geplante Rate. Begruendung, in dieser Reihenfolge geprueft:
-       — Eine gebuchte Ueberzahlung bleibt sichtbar. Sie ist eine Tatsache: der
-         Glaeubiger schuldet dann Geld zurueck. Wer sie abschneidet, luegt ueber
-         gebuchtes Geld. Deshalb kein Schnitt am Ende von verbindLauf und keiner
-         bei den Anzeigern — beide traefen auch das Ist.
-       — Eine geplante Rate, die ueber die Restschuld hinausschiesst, ist keine
-         Tatsache, sondern ein Rechenfehler der Fortschreibung: sie zahlt weiter,
-         wo nichts mehr offen ist. Bezahlt wird hoechstens, was noch aussteht.
-       — Eine Kennzeichnung statt eines Schnitts waere die Antwort, wenn die
-         Ueberzahlung Information traegt. Sie traegt hier keine: der Ratenplan
-         bleibt Monat fuer Monat sichtbar, und wann eine Schuld getilgt ist,
-         sagt schuldenfrei(). Eine negative Schuld im Uebertrag sagt gar nichts.
-       Vorher lief die Prognose ins Minus; schuldenfrei() fing das mit
-       Math.max(0, …) ab, Tabelle und Uebertragsspalte nicht. */
+    /* U-62 — Der Schnitt bei null ist entfallen. Von Albrecht am 20.08.2026
+       ausdruecklich so entschieden: «Es soll ins Minus gehen und rot werden.»
+       Hier stand bis dahin `Math.min(plan, Math.max(0, roh))` mit der
+       Begruendung, eine geplante Rate ueber der Restschuld sei ein
+       Rechenfehler der Fortschreibung und «bezahlt wird hoechstens, was noch
+       aussteht».
+       Warum das falsch war: Der Schnitt hat einen FEHLER IM RATENPLAN
+       stillschweigend ausgeglichen. Wer im Oktober 1'250 eingetragen hat,
+       obwohl nur noch 250 offen waren, sieht danach eine Zeile, die aufgeht —
+       und korrigiert nie. Ein Plan, der nicht aufgeht, ist ein Befund und
+       keine Aufgabe fuer den Taschenrechner. Ein negativer Stand sagt sehr
+       wohl etwas: dass hier zu viel eingeplant ist.
+       Zins und Gebuehr fallen auf einem negativen Stand weiterhin nicht an
+       (die Zeile darueber, U-24) — eine Forderung gegen den Glaeubiger wird
+       nicht verzinst.
+       OFFEN UND HIER NICHT ENTSCHIEDEN — am 20.08.2026 gemessen, nicht
+       behauptet: Die Anzeiger klemmen NICHT alle gleich.
+         geklemmt  (Math.max(0, …)):  schuldkachelHtml(), verfuegbarPer(),
+                                      der Gruppenverlauf, getilgtAnteil(),
+                                      schuldenfrei()
+         NICHT geklemmt:              schuldenSumme(), schuldenPrognose()
+       Damit senkt ein ueberzahlter Glaeubiger den Schuldenberg in Dashboard
+       und Kopfzeile: am Pruefstand gemessen 18'169.39 statt 23'069.39 —
+       4'900 Guthaben gegen fremde Schulden verrechnet. Fachlich ist das
+       fraglich: Ein Guthaben bei einem Glaeubiger laesst sich nicht bei
+       einem anderen einsetzen. Die Frage gehoert Albrecht und wird nicht
+       nebenbei entschieden; sie steht in
+       claude/GAEPP-Umbauprotokoll-20-08-2026.md unter Offen.
+       Sichtbar ist das Minus in jedem Fall dort, wo es hingehoert: in der
+       Zeile, in der Summenzeile und im Kopf seiner Gruppe. */
     /* Auf einer getilgten Schuld faellt nichts mehr an (U-24). Zins und Gebuehr
        liefen bisher bedingungslos weiter — eine Verbindlichkeit, deren Stand
        null war, wuchs Monat fuer Monat um die Gebuehr wieder an. Sichtbar wurde
@@ -2996,7 +3015,7 @@ function verbindLauf(v, bisJ, bisM, mitPlan, sammler) {   /* U-56: sammler optio
     /* U-56: Der Plan bekommt einen Namen, weil ausser der Rechnung jetzt auch
        die Anzeige ihn braucht — und zwar NEBEN dem, was daraus geworden ist. */
     const plan = rate(v, j, m);
-    const ab = gebucht || (mitPlan ? Math.min(plan, Math.max(0, roh)) : 0);
+    const ab = gebucht || (mitPlan ? plan : 0);
     /* U-56: Der Sammler. Er aendert an der Rechnung keinen Rappen und ist der
        einzige Weg, an den verrechneten Abgang heranzukommen, ohne die Schleife
        ein zweites Mal zu schreiben. Genau das war der Fehler, den dieser Umbau
@@ -5338,9 +5357,19 @@ function katKarteAuf(k) {
     ? rd(zeilenVon(k.id, x.key).reduce((a,z) => a + zeilenJahr(z, x.key) * (z.gegenrichtung?-1:1), 0))
     : katSumme(k, j, x.key);
   const jetztSp = x => alle ? x.key === h.j : (x.key === h.m && j === h.j);
+  /* U-63: Dieselben Regeln wie im Raster der Verbindlichkeiten (U-61) —
+     ganze Franken und EIN Zeichen fuer «nichts», sobald eine Spalte ein
+     Jahrgang ist. Der Umbau vom 20.08.2026 hatte diese Stelle uebersehen:
+     die Regeln standen im Raster der Schulden und nicht in dem des Budgets,
+     obwohl beide dasselbe Bauteil sind und nebeneinander stehen. Gemeldet
+     von Albrecht am selben Tag.
+     Im einzelnen Jahrgang bleibt alles, wie es war — dort wird eingetragen. */
+  const zahl  = x => alle ? fmt(x, 0) : fmtG(x);
+  const zahl0 = x => (!x || Math.abs(x) < 0.005)
+    ? (alle ? '<span class="null">–</span>' : '') : zahl(x);
   const kopf = `<div class="r kopf" data-rkat="${k.id}"><div class="p">Position</div>
     ${alle ? '' : '<div class="c">Soll</div>'}${
-    sp.map(x => `<div class="c ${jetztSp(x)?'jetzt':''}${alle && x === sp[0] ? ' erst':''}"
+    sp.map(x => `<div class="c ${jetztSp(x)?'jetzt':''}"
       >${alle ? x.label : x.label.slice(0,3)}</div>`).join('')}<div class="j">${alle?'Total':'Jahr'}</div></div>`;
   const reihen = zeilen.map(z => {
     const gesp = gespiegelt(z), fest = gesp || _ro || alle;
@@ -5356,7 +5385,7 @@ function katKarteAuf(k) {
       if (alle && !zeileSicht(z, x.key)) return '<div class="c"></div>';
       const offenHier = jetzt && !gesp && !alle && rd(w - istZeile(z, j, x.key)) > 0.005;
       const kl = `c ${jetzt?'jetzt':''} ${offenHier?'hatoffen':''}`;
-      if (fest) return `<div class="${kl}">${fmtG0(w)}</div>`;
+      if (fest) return `<div class="${kl}">${zahl0(w)}</div>`;
       const mark = S.markiert.includes(z.id + ':' + x.key) ? ' markiert' : '';
       return `<div class="${kl} bearbeitbar${mark}" data-z="${z.id}" data-m="${x.key}"><input
         type="text" inputmode="decimal" value="${w ? fmtG(w) : ''}" placeholder="0"></div>`;
@@ -5367,13 +5396,13 @@ function katKarteAuf(k) {
         ${gesp || _ro || alle ? '' : `<span class="zwerk"><button type="button" data-weg="${z.id}"
           title="Diese Position ab ${j} nicht mehr zeigen">ab ${j} aus</button></span>`}</div>
       ${sollZ}${zellen}
-      <div class="j">${fmtG0(rd(sp.reduce((a,x)=>a+wert(z,x),0)))}</div></div>`;
+      <div class="j">${zahl0(rd(sp.reduce((a,x)=>a+wert(z,x),0)))}</div></div>`;
   }).join('');
   const summe = `<div class="r summe" data-rkat="${k.id}">
     <div class="p" style="color:var(--muted)">Summe ${k.name}</div>
     ${alle ? '' : `<div class="c">${fmtG0(rd(zeilen.reduce((a,z)=>a+(zeilenSoll(z,j)||0)*(z.gegenrichtung?-1:1),0)))}</div>`}${
-    sp.map(x => `<div class="c ${jetztSp(x)?'jetzt':''}">${fmtG0(katW(x))}</div>`).join('')}
-    <div class="j" style="color:#fff">${fmtG0(rd(sp.reduce((a,x)=>a+katW(x),0)))}</div></div>`;
+    sp.map(x => `<div class="c ${jetztSp(x)?'jetzt':''}">${zahl0(katW(x))}</div>`).join('')}
+    <div class="j ende">${zahl0(rd(sp.reduce((a,x)=>a+katW(x),0)))}</div></div>`;
   const rest = !alle && istLaufenderMonat(j, S.monat)
     ? rd(Math.max(0, katSumme(k, j, S.monat) - istKat(k, j, S.monat))) : 0;
   /* Die Spaltenzahl wechselt mit dem Zeitraum — das Raster erfaehrt sie als
@@ -5381,7 +5410,9 @@ function katKarteAuf(k) {
   const pgrid = alle
     ? `250px repeat(${sp.length},minmax(0,1fr)) 88px`
     : `250px 84px repeat(${sp.length},minmax(0,1fr)) 88px`;
-  return `<div class="kauf"><div class="praster" style="--pgrid:${pgrid}"
+  const pmax = 250 + sp.length * 160 + 88;
+  return `<div class="kauf"><div class="praster${alle ? ' ruhig' : ''}"
+    style="--pgrid:${pgrid}${alle ? ';--pmax:' + pmax + 'px' : ''}"
     >${kopf}${reihen}${summe}
     <div class="fuss"><span>${alle
       ? 'Ein Jahrgang je Spalte · eingetragen wird im einzelnen Jahr'
@@ -5814,14 +5845,12 @@ function verbindKarteAuf(gid, liste) {
       const w = wert(v, x), jetzt = jetztSp(x);
       /* U-56/U-57: der Plan (w) und das, was daraus wurde (ab). */
       const ab = istWert(v, x);
-      /* U-57: In «Alle Jahre» heben sich Abweichungen innerhalb eines Jahres
-         auf — wer im Juni 600 zu viel zahlt, zahlt im Dezember 600 weniger,
-         und die Jahressumme stimmt wieder. Die Marke fragt deshalb nicht die
-         Summe, sondern ob IRGENDEIN Monat des Jahrgangs abweicht. Sonst waere
-         genau der Fall unsichtbar, der diesen Umbau ausgeloest hat. */
-      const abw = alle
-        ? ((abgVon(v)[x.key] || []).some(e => e && Math.abs(e.ab - e.plan) > 0.005))
-        : Math.abs(ab - w) > 0.005;
+      /* U-62: Die Marke ≠ aus U-57 ist entfallen — von Albrecht am 20.08.2026
+         verworfen: «Das orange Ungleich ist nicht hilfreich.» Sie war die
+         Antwort auf die Kappung; ohne Kappung entsteht der Fall, den sie
+         meldete, gar nicht mehr. Wo eine Buchung vom Plan abweicht, sagt es
+         weiterhin die gruene Faerbung und der Text an der Zelle (U-50). */
+      const abw = false;
       /* U-50: Gruen heisst «dafuer gibt es eine Buchung». In dieser Tabelle
          steht kein einziger positiver Betrag, deshalb begegnet sich die
          Farbe hier nie ihrer sonstigen Bedeutung (Plus). Die Ausnahme ist
