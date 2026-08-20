@@ -569,12 +569,15 @@ table.klein.liste tr:hover td{background:var(--soft)}
    ist die Rangfolge ohne Nachdenken da: gross ist der Stand, klein die
    Vorschau. Sie traegt ihr eigenes Label, weil eine nackte zweite Zahl auf
    einer Kachel eine Zumutung ist. */
-.kachel .mitte .vorschau{
-  display:flex;align-items:baseline;gap:7px;margin-top:7px;
-  font-size:12.5px;color:var(--muted);
-}
-.kachel .mitte .vorschau .num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px}
+.kachel .mitte .vorschau{margin-top:8px;font-size:12.5px;color:var(--muted)}
+/* Zwei Zeilen, nicht eine mit Umbruch. Eine Zeile, die irgendwo umbricht,
+   reisst den Zusatz mitten im Wort an den rechten Rand und laesst die Kachel
+   zerfranst aussehen; zwei Zeilen mit fester Rolle stehen ruhig — oben die
+   Zahl mit ihrem Label, darunter, woraus sie entsteht. */
+.kachel .mitte .vorschau .z1{display:flex;align-items:baseline;gap:7px}
+.kachel .mitte .vorschau .num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:14px;color:var(--ink)}
 .kachel .mitte .vorschau .num.neg{color:var(--err)}
+.kachel .mitte .vorschau .z2{font-size:11.5px;margin-top:2px;line-height:1.35}
 .kachel .fuss{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   border-top:1px solid var(--line);padding-top:10px;
@@ -3700,9 +3703,11 @@ function kachelHtml(o) {
   /* U-88: Rein additiv — ohne das Feld verhaelt sich die Funktion wie vorher.
      Dieselbe Bauart wie `klasse` aus U-54. */
   const vorschau = o.vorschau === undefined ? '' :
-    `<div class="vorschau"><span class="k">${o.vorschauWort || 'Vorschau'}</span>
-      <span class="num ${o.vorschau < 0 ? 'neg' : ''}">${fmt(o.vorschau)}</span>
-      <span>${o.vorschauZusatz || ''}</span></div>`;
+    `<div class="vorschau">
+      <div class="z1"><span class="k">${o.vorschauWort || 'Vorschau'}</span>
+        <span class="num ${o.vorschau < 0 ? 'neg' : ''}">${fmt(o.vorschau)}</span></div>
+      ${o.vorschauZusatz ? `<div class="z2">${o.vorschauZusatz}</div>` : ''}
+    </div>`;
   return `<article class="karte kachel${o.klasse ? ' ' + o.klasse : ''}" data-oeffne="${o.art}:${o.id}">
     <div>
       <span class="kennung">${o.kennung}</span>
@@ -3985,7 +3990,7 @@ function zeichneKacheln() {
          schon da; ihn auszuschreiben waere die dritte Zahl fuer dieselbe
          Auskunft (G-8). */
       const rZahl = off.anzahl + (off.anzahl === 1 ? ' Rechnung' : ' Rechnungen');
-      const zusatz = '· nach ' + (off.rech > 0.005 && off.budget > 0.005
+      const zusatz = 'nach ' + (off.rech > 0.005 && off.budget > 0.005
         ? rZahl + ' und ' + fmt(off.budget) + ' Budget'
         : off.rech > 0.005
           ? (off.anzahl === 1 ? '1 offenen Rechnung' : off.anzahl + ' offenen Rechnungen')
@@ -3995,8 +4000,12 @@ function zeichneKacheln() {
         vorschau: off.summe > 0.005 ? rd(s - off.summe) : undefined,
         vorschauZusatz: zusatz,
         knopf: rech ? 'Rechnung' : 'Buchen', tat: rech ? 'rechnungneu:' + k.id : null,
+        /* «zuletzt» ist weg: Die Fusszeile teilt sich die Zeile mit dem
+           Knopf, und das Wort kostete genau den Platz, an dem danach das
+           Datum abgeschnitten wurde («zuletzt 25. …»). Das Datum ist die
+           Auskunft, das Wort war die Verpackung. */
         meta: n + (n === 1 ? ' Buchung' : ' Buchungen')
-              + (letzte ? ' · zuletzt ' + kurzdatum(letzte) : '') });
+              + (letzte ? ' · ' + kurzdatum(letzte) : '') });
     }).join('');
 
   /* U-40: Hier stand der Kachelteppich der Schulden. Dieselben Glaeubiger
