@@ -3074,6 +3074,30 @@ function verbindLauf(v, bisJ, bisM, mitPlan, sammler) {   /* U-56: sammler optio
      Schuld im Dezember verschwinden.
      Gefunden von Albrecht am 19.08.2026 beim Uebernehmen des Budgets 2027. */
   if (bisJ < a.j || (bisJ === a.j && bisM < a.m)) return 0;
+  /* U-67: Und das Spiegelbild dazu. «Ausgebucht ist ausgebucht. Gilt fuer
+     mich als getilgt» — Albrecht am 20.08.2026, nachdem das Blatt aus U-66
+     Cedric mit 2'500 unter «Offen» zeigte, obwohl er Ende 2025 bezahlt war.
+
+     Warum das hier steht und nicht in einer Auswahlfunktion:
+     U-49 hat die Regel aufgestellt, `ausAb` sei eine SICHTBARKEITSfrage und
+     gehoere deshalb nie in verbindLauf() — «der Stand einer Schuld ist eine
+     Tatsache und aendert sich nicht dadurch, dass man sie nicht mehr sehen
+     will». Das war richtig, solange `ausAb` «nicht mehr anzeigen» hiess.
+     Mit Albrechts Entscheid heisst es etwas anderes: **erledigt**. Damit ist
+     es keine Frage der Anzeige mehr, sondern dieselbe Art Tatsache wie das
+     `anfangsdatum` eine Zeile darueber — die Schuld existiert in diesem
+     Zeitraum nicht. Gleiche Bedeutung, gleiche Stelle, gleiche Bauart.
+
+     Die Jahre DAVOR bleiben unberuehrt: Ein Glaeubiger mit ausAb 2026 traegt
+     seinen vollen Verlauf 2024 und 2025 weiter, und der Hoechststand des
+     Bergs (U-65) rechnet ihn dort mit. Ausgebucht wird ab dem Stichjahr,
+     nicht rueckwirkend.
+
+     Was das NICHT tut: eine fehlende Zahlung erfinden. Es bucht nichts und
+     schreibt keinen Betrag; es beendet die Fortschreibung an dem Datum, das
+     Albrecht selbst gesetzt hat. Ohne diese Zeile stand in jeder Summe ein
+     Rest, den es nach seiner Buchhaltung nicht gibt (F-22). */
+  if (v.ausAb !== null && v.ausAb !== undefined && bisJ >= v.ausAb) return 0;
   let s = v.anfangsstand, j = a.j, m = a.m;
   const z = v.zinssatz || 0, g = v.gebuehr || 0;
   if (a.t >= tageImMonat(a.j, a.m)) { m++; if (m === 12) { m = 0; j++; } }
@@ -3352,7 +3376,9 @@ function kopfbandZeichnen() {
      demselben Bild. */
   if (!D || S.modus === 'dashboard') { b.innerHTML = ''; return; }
   const h = ymOf(heuteISO()), tage = tageBisLohn();
-  const w = (k, v, kl, leise) => `<div class="${leise ? 'leise' : ''}"><div class="lab">${k}</div>
+  /* U-68: fuenftes Argument — ein Titel, der sagt, WAS die Zahl ist. */
+  const w = (k, v, kl, leise, titel) => `<div class="${leise ? 'leise' : ''}"${
+    titel ? ` title="${htmlAttr(titel)}"` : ''}><div class="lab">${k}</div>
     <div class="v ${kl || ''}">${v}</div></div>`;
   const vz = x => (x > 0.005 ? '+' : '') + fmtG(x);
   const rich = x => x < -0.005 ? 'err' : 'ok';
@@ -3380,10 +3406,21 @@ function kopfbandZeichnen() {
   }
   if (bereich === 'verbind') {
     const verb = verbHeute();                                        /* U-49 */
-    teile.push(w('Schulden', fmt(rd(verb.reduce((a,v) => a + verbindStandHeute(v), 0)))));
+    /* U-68: Die beiden Zahlen standen nebeneinander und sagten nicht, dass
+       die eine das IST und die andere eine PROGNOSE ist. Albrechts Frage
+       dazu, am 20.08.2026: «Jetzt rechnet er budgetiert = getilgt?»
+       Die Antwort ist nein — «Schulden heute» kennt ausschliesslich gebuchte
+       Zahlungen (verbindStandHeute, mitPlan = false). Erst «Schuldenfrei»
+       rechnet mit dem Ratenplan weiter (U-29). Beides ist richtig; nur die
+       Beschriftung hat es verschwiegen. Dasselbe Muster wie U-56, eine Etage
+       höher. */
+    teile.push(w('Schulden heute', fmt(rd(verb.reduce((a,v) => a + verbindStandHeute(v), 0))),
+      '', false, 'Nur gebuchte Zahlungen — kein Ratenplan'));
     const sf = schuldenfreiGecacht();
     teile.push(w('Schuldenfrei', sf.monate !== null
-      ? MON[sf.monat] + ' ' + sf.jahr : 'Rest ' + fmtG(sf.rest), sf.monate !== null ? 'ok' : 'err', true));
+      ? MON[sf.monat] + ' ' + sf.jahr : 'Rest ' + fmtG(sf.rest) + ' nach Plan',
+      sf.monate !== null ? 'ok' : 'err', true,
+      'Prognose: rechnet die geplanten Raten weiter'));
   }
   if (bereich === 'rechnung') {
     const off = D.rechnungen.filter(r => r.status === 'offen')
@@ -6140,6 +6177,14 @@ function verbindKarteAuf(gid, liste) {
            Faerbung waere sonst die einzige Auskunft. */
         (!w && ist > 0.005) ? fmtG(ist) : '0'}"></div>`;
     }).join('');
+    /* U-68: Ein ausgebuchter Glaeubiger endet auf null, ohne dass eine
+       Zahlung dafuer steht — «Anfang − bezahlt = Ende» geht in seiner Zeile
+       also nicht auf, und ohne Vermerk liest sich das wie ein Rechenfehler.
+       Gefunden hat es der eigene Pruefstand: «3000 − 0 = 3000, angezeigt 0».
+       Ein roter Test ist eine Frage — hier war die Erwartung richtig und die
+       ANZEIGE unvollstaendig. */
+    const ausgeb = v.ausAb !== null && v.ausAb !== undefined
+      && (alle ? v.ausAb <= jahre[jahre.length-1] : v.ausAb <= S.jahr);
     const tage = v.vereinbarungBis
       ? Math.round((Date.parse(v.vereinbarungBis + 'T00:00:00')
                   - Date.parse(heuteISO() + 'T00:00:00')) / 86400000) : null;
@@ -6148,7 +6193,9 @@ function verbindKarteAuf(gid, liste) {
           title="Zahlung, Tilgung, Verlauf und Belege">${v.bezeichnung}</span>
         ${tage !== null && tage <= 120
           ? `<span class="weg" style="color:var(--open)">Frist ${v.vereinbarungBis.slice(8,10)}.${
-              v.vereinbarungBis.slice(5,7)}.</span>` : ''}</div>
+              v.vereinbarungBis.slice(5,7)}.</span>` : ''}${
+        ausgeb ? `<span class="weg" style="color:var(--ok)"
+          title="Ab ${v.ausAb} ausgebucht — der Stand endet hier, ohne dass eine Zahlung dafür steht">ausgebucht ${v.ausAb}</span>` : ''}</div>
       ${/* U-61 R7: Rot traegt in GAEPP das negative Vorzeichen und zwei
            benannte Fehlerfaelle (Formensprache F). Eine Frist ist «noch
            nicht abgeschlossen» — dafuer gibt es --open, das Ocker. Eine
@@ -6190,8 +6237,8 @@ function verbindKarteAuf(gid, liste) {
   const pmax = 230 + 96 + sp.length * 160 + 104 + 108;
   return `<div class="kauf"><div class="praster${alle ? ' ruhig' : ''}" style="--pgrid:${pgrid}${alle ? ';--pmax:' + pmax + 'px' : ''}">${kopf}${reihen}${tklappe()}${summe}
     <div class="fuss"><span>${alle
-      ? 'Anfang + Zins und Gebühr − bezahlt = Ende · ein Jahrgang je Spalte'
-      : 'Anfang + Zins und Gebühr − bezahlt = Ende · ≠ heisst: gerechnet wurde mit etwas anderem als geplant'}</span>
+      ? 'Anfang + Zins und Gebühr − bezahlt = Ende · «ausgebucht» endet ohne Zahlung auf null'
+      : 'Anfang + Zins und Gebühr − bezahlt = Ende · «ausgebucht» endet ohne Zahlung auf null'}</span>
       <span style="flex:1"></span>
       ${_ro || alle || !gid ? '' : `<button class="knopf klein" type="button"
         data-vadd="${gid}">Gläubiger hinzufügen</button>`}
