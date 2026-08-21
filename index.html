@@ -1285,6 +1285,18 @@ tr.zeile-daten:hover .nz{color:var(--accent)}
 .hb p{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:7px}
 .hb p b{color:var(--ink);font-weight:600}
 .hb .regel{border-left:2px solid var(--accent);padding-left:12px;margin-bottom:14px}
+/* U-94: Das Verzeichnis. Achtzehn Regeln am Stueck sind kein Nachschlagewerk,
+   sondern ein Text — und wer etwas sucht, liest keinen Text. Kein neues Bauteil:
+   Knoepfe in Gruppen, wie die Sprungliste «Springe zu» in der Budgettafel. */
+.hb .hbnav{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:10px 18px;margin:14px 0 22px;padding:12px 14px;background:var(--sheet);
+  border:1px solid var(--line);border-radius:var(--radius)}
+.hb .hbnav>div{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.hb .hbnav .g{font:400 9.5px/1.6 'IBM Plex Mono',monospace;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.hb .hbnav button{background:none;border:0;padding:2px 0;cursor:pointer;text-align:left;
+  font:400 12px/1.35 'Space Grotesk',sans-serif;color:#9fb0c2}
+.hb .hbnav button:hover{color:var(--accent)}
 
 /* --- Erster Start: die App hat noch keine Daten --- */
 .leerstart{max-width:520px;margin:60px auto;text-align:center}
@@ -6108,8 +6120,14 @@ function katKarten() {
         : tief < -0.005
           ? 'tiefster Punkt ' + sp[tiefI].label.slice(0, alle ? 4 : 3) + ' ' + fmtG(tief)
           : 'durchgehend im Plus';
+    /* U-92: R 2 aus U-61 gilt auch hier — «in Alle Jahre ganze Franken,
+       ausnahmslos». Die Regel war bisher nur in den beiden RASTERN gebaut,
+       nicht in den Summenkarten darueber. Aufgefallen ist es erst, als mit
+       U-89 eine Budgetzahl in die Karte der Verbindlichkeiten kam: Tilgungen
+       sind runde Betraege und haben den Verstoss verdeckt, ein Saldo ist es
+       nie. Gerundet wird ANGEZEIGT, nie gespeichert (wie U-32). */
     const vz = x => x === null ? '<span class="null">–</span>'
-      : (x > 0.005 ? '+' : '') + fmtG(x);
+      : (x > 0.005 ? '+' : '') + (alle ? fmt(x, 0) : fmtG(x));
     const kl = x => x === null ? '' : (x < -0.005 ? 'minus' : (x > 0.005 ? 'plus' : ''));
     /* Der letzte Wert der kumulierten Reihe, der ueberhaupt einer ist. */
     const kumEnde = kumEcht.length ? kumEcht[kumEcht.length-1] : null;
@@ -6537,9 +6555,14 @@ function verbindKarten() {
       ? rd(budEcht.reduce((a,x) => a + x, 0))
       : (ohneBudget(S.jahr) ? null
           : rd([...Array(12).keys()].reduce((a,i) => a + saldoBudgetiert(S.jahr, i), 0)));
+    /* U-92: R 2 gilt auch hier, und zwar fuer alle drei Zeilen — siehe die
+       ausgeschriebene Begruendung bei der Budget-Karte. */
     const vz = x => x === null ? '<span class="null">–</span>'
-      : (x > 0.005 ? '+' : '') + fmtG(x);
+      : (x > 0.005 ? '+' : '') + (alle ? fmt(x, 0) : fmtG(x));
     const kl = x => x === null ? '' : (x < -0.005 ? 'minus' : (x > 0.005 ? 'plus' : ''));
+    /* U-92: dasselbe fuer die zwei Tilgungszeilen. fmtG0() bleibt darunter,
+       weil dort die leere Zelle die richtige Antwort auf 0 ist. */
+    const tg0 = x => (!x || Math.abs(x) < 0.005) ? '' : (alle ? fmt(x, 0) : fmtG(x));
     /* U-89: zeile() nimmt zusaetzlich einen Formatierer und einen eigenen
        Totalwert. Ohne beides verhaelt sie sich wie vorher — die zwei
        Tilgungszeilen sind Zeichen fuer Zeichen unveraendert. Noetig ist es,
@@ -6548,8 +6571,8 @@ function verbindKarten() {
     const zeile = (name, hinweis, reihe, extra, f, total) => `<div class="r ${extra||''}">
       <div class="p"><span class="t">${name}</span><span class="z">${hinweis}</span></div>
       ${reihe.map((x,i) => `<div class="c ${f ? kl(x) : ''} ${i === jetztI ? 'jetzt':''}">${
-        f ? f(x) : fmtG0(x)}</div>`).join('')}
-      <div class="j ${f ? kl(total) : ''}">${f ? f(total) : fmtG0(gesamt)}</div></div>`;
+        f ? f(x) : tg0(x)}</div>`).join('')}
+      <div class="j ${f ? kl(total) : ''}">${f ? f(total) : tg0(gesamt)}</div></div>`;
     return `<article class="streifen summenkarte ${auf?'offen':''}">
       <div class="reihe" data-sklapp="tilgung">
         <div class="nam"><span class="chev">${auf?'▾':'▸'}</span>
@@ -7921,7 +7944,9 @@ function vortragBlock(v) {
         <td class="r num">${fmt(vortrag(v, j))}</td>
         <td class="r"><span class="zwerk">${ab && !_ro ? `
           <button class="knopf klein" data-vtzieh="${v.id}:${j}"
-            title="Den Vortrag auf den durchgerechneten Wert setzen: ${fmt(vortragGerechnet(v, j))}">Nachziehen</button>` : ''}
+            title="${Math.abs(rd(vortragGerechnet(v, j))) < 0.005
+              ? 'Durchgerechnet ist die Schuld hier getilgt — der Anfangssaldo wird entfernt, damit sie durchrechnet'
+              : 'Den Vortrag auf den durchgerechneten Wert setzen: ' + fmt(vortragGerechnet(v, j))}">Nachziehen</button>` : ''}
           <button class="knopf klein" data-vtset="${v.id}:${j}">Ändern</button>
           <button class="knopf klein" data-vtdel="${v.id}:${j}">Löschen</button></span></td></tr>`;
     }).join('')}</tbody></table>`
@@ -10756,15 +10781,53 @@ function exportHtml() {
 }
 
 /* ===================================================================
-   Benutzerhandbuch (A-90) — die acht Regeln, die man nicht erraet.
+   Benutzerhandbuch (A-90) — die Regeln, die man nicht erraet.
    Von Hand gepflegt, an einer Stelle.
+   U-94: Hier stand «die acht Regeln». Es waren vierzehn, seit dieser Runde
+   achtzehn — die Zahl im Kommentar ist dreimal nicht mitgezogen worden.
+   Sie steht deshalb nicht mehr da: Eine Zahl, die bei jeder Ergaenzung
+   nachgefuehrt werden muss, veraltet zuverlaessig. Die Einleitung im Blatt
+   nennt sie, weil sie dort etwas leistet; hier leistete sie nichts.
    =================================================================== */
 function blattHandbuch() {
   return { weit:true, titel:'Wie GÄPP tickt', koerper:`<div class="hb">
-    <p>Vierzehn Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
+    <p>Achtzehn Regeln stecken in GÄPP, die man nicht errät — sie stammen aus Entscheidungen,
        nicht aus Gewohnheit. Der Rest bedient sich von selbst.</p>
+    <p><b>Du musst sie nicht am Stück lesen.</b> Das Verzeichnis führt dich zu der, die du
+       gerade brauchst. Die Nummern folgen der Reihenfolge, in der die Regeln entstanden
+       sind — das Verzeichnis ordnet sie danach, wonach man sucht.</p>
 
-    <div class="regel"><h3>1. Eine offene Rechnung mindert den Kontostand nicht</h3>
+    <nav class="hbnav">
+      <div><span class="g">Geld — was ist frei?</span>
+        <button data-hbnav="hb1">1 · Offene Rechnung und Kontostand</button>
+        <button data-hbnav="hb2">2 · Häkchen «Rückstellung»</button>
+        <button data-hbnav="hb3">3 · Wie «Verfügbar heute» rechnet</button>
+        <button data-hbnav="hb17">17 · Die Vorschau auf der Kontokachel</button></div>
+      <div><span class="g">Rechnungen</span>
+        <button data-hbnav="hb15">15 · Die drei Zustände</button>
+        <button data-hbnav="hb16">16 · Widersprüche beim Start</button>
+        <button data-hbnav="hbBelege">Belege</button></div>
+      <div><span class="g">Eintragen und bedienen</span>
+        <button data-hbnav="hb4">4 · Lesen und Eintragen</button>
+        <button data-hbnav="hb5">5 · Kachel und Karte</button>
+        <button data-hbnav="hb6">6 · Nie ein Minuszeichen</button>
+        <button data-hbnav="hb7">7 · Strg-Klick, Doppelklick</button>
+        <button data-hbnav="hb10">10 · Ziehen ordnet um</button>
+        <button data-hbnav="hb12">12 · Monatsverteilung</button></div>
+      <div><span class="g">Schulden und Jahre</span>
+        <button data-hbnav="hb11">11 · Ein neues Jahr anlegen</button>
+        <button data-hbnav="hb13">13 · Die Schuldenzeile lesen</button></div>
+      <div><span class="g">Summen, Farben, Berichte</span>
+        <button data-hbnav="hb14">14 · Die Summe über der Tafel</button>
+        <button data-hbnav="hb18">18 · Grün im Budgetraster</button>
+        <button data-hbnav="hbFarben">Was die Farben bedeuten</button>
+        <button data-hbnav="hbBerichte">Berichte</button></div>
+      <div><span class="g">Sichern, löschen, zurücknehmen</span>
+        <button data-hbnav="hb8">8 · Der Punkt neben dem Zahnrad</button>
+        <button data-hbnav="hb9">9 · Löschen und Ausblenden</button></div>
+    </nav>
+
+    <div class="regel" id="hb1"><h3>1. Eine offene Rechnung mindert den Kontostand nicht</h3>
     <p>Der Kontostand bildet ab, was die Bank sagt. Solange du eine Rechnung nicht bezahlt hast,
        ist das Geld noch da — die Bank weiss nichts von ihr. Was sie mindert, ist
        <b>«Verfügbar heute»</b> — <b>aber nur, wenn sie auch von einem Konto mit Häkchen
@@ -10774,14 +10837,14 @@ function blattHandbuch() {
        eine, die an einem <b>Gläubiger</b> hängt — deren Rate steht schon im Budget und ginge
        sonst zweimal ab.</p></div>
 
-    <div class="regel"><h3>2. Mit Häkchen «Rückstellung» mindert sie gar nichts</h3>
+    <div class="regel" id="hb2"><h3>2. Mit Häkchen «Rückstellung» mindert sie gar nichts</h3>
     <p>Für manche Rechnungen legst du jeden Monat etwas zurück — Zahnarzt, Franchise,
        Radio- und Fernsehabgabe.
        Setzt du beim Erfassen das Häkchen <b>Rückstellung</b>, zählt die Rechnung weder gegen
        dein freies Geld noch in die Budgetzeile «Rechnungen». Sonst stünde sie zweimal da.
        <b>Du entscheidest das je Rechnung</b>, nicht die Position.</p></div>
 
-    <div class="regel"><h3>3. Die Zahl im Dashboard und die in der Kopfzeile sind dieselbe</h3>
+    <div class="regel" id="hb3"><h3>3. Die Zahl im Dashboard und die in der Kopfzeile sind dieselbe</h3>
     <p>Beide rechnen nach derselben Regel, und sie hat <b>zwei Zeilen</b>:</p>
     <p><b>Bestand</b> auf allen Konten mit Häkchen «frei verfügbar»<br>
        <b>minus</b> die Rechnungen dieses Monats, die noch nicht erledigt sind
@@ -10798,11 +10861,18 @@ function blattHandbuch() {
        <b>frei verfügbar</b> beim Konto und mit dem Häkchen <b>Rückstellung</b> bei der
        einzelnen Rechnung. Beides entscheidest du selbst.</p>
     <p>Steht daneben <b>«Noch offen im Monat»</b> in Rot, ist die Zahl anklickbar. Dahinter
-       liegt die Liste dessen, was budgetiert und noch nicht gebucht ist, mit einem Knopf je
-       Posten. Nach dem Buchen bleibt der Saldo, wie er ist — die Zahl war schon drin, sie
-       war nur noch nicht belegt.</p></div>
+       liegt die Liste dessen, was budgetiert und noch nicht gebucht ist, in <b>drei
+       Abschnitten</b>: Zahlungen, Raten und «In den Topf». Nach dem Buchen bleibt der Saldo,
+       wie er ist — die Zahl war schon drin, sie war nur noch nicht belegt.</p>
+    <p><b>Nicht jeder Posten trägt einen Knopf</b>, und das ist Absicht: Wo sich etwas mit
+       einem Klick erledigen lässt, steht «Buchen», «Freigeben», «Öffnen» oder «Verteilen».
+       Wo nichts zu tun ist — bei einer Rechnung etwa, die noch gar nicht eingetroffen ist —
+       steht statt eines Knopfes die Auskunft, warum. Ein Knopf, der nichts kann, ist
+       schlimmer als keiner.</p>
+    <p>Gebucht wird auf <b>heute</b>. Siehst du gerade einen anderen Monat an, bucht GÄPP auf
+       dessen <b>letzten Tag</b> — sonst landete die Buchung im falschen Monat.</p></div>
 
-    <div class="regel"><h3>4. Lesen und Eintragen sind dieselbe Ansicht</h3>
+    <div class="regel" id="hb4"><h3>4. Lesen und Eintragen sind dieselbe Ansicht</h3>
     <p>Es gibt keinen Modus, zwischen dem du wechselst. Eine Karte zeigt und nimmt entgegen:
        klappst du eine Kategorie oder eine Gläubigergruppe auf, steht dort ihr Raster, und
        die Zellen darin sind die Felder, in die du tippst. Damit kannst du auch nicht
@@ -10811,7 +10881,7 @@ function blattHandbuch() {
        Jahrgang, und ein Jahreswert ist die Summe von zwölf Monaten — er steht nirgends,
        also lässt er sich auch nicht ändern. Eingetragen wird im einzelnen Jahr.</p></div>
 
-    <div class="regel"><h3>5. Kachel und Karte führen verschieden, beides ist kein Ansichtswechsel</h3>
+    <div class="regel" id="hb5"><h3>5. Kachel und Karte führen verschieden, beides ist kein Ansichtswechsel</h3>
     <p>Ein Klick auf eine <b>Kachel</b> legt ein Blatt darüber — Konten, Sparziele, Reserve
        arbeiten so. Die Ansicht bleibt darunter stehen, Escape bringt dich zurück, und du
        landest an derselben Stelle wie vorher. Eine <b>Karte</b> dagegen klappt auf, statt
@@ -10822,25 +10892,25 @@ function blattHandbuch() {
        Konten führt Konten, Sparziele und Reserve — sonst stünden dieselben Gläubiger
        zweimal auf zwei verschiedene Arten da.</p></div>
 
-    <div class="regel"><h3>6. Du tippst nie ein Minuszeichen</h3>
+    <div class="regel" id="hb6"><h3>6. Du tippst nie ein Minuszeichen</h3>
     <p>Die Richtung kommt aus der Kategorie: Was unter Fixkosten steht, ist eine Ausgabe.
        In der Maske steht der Betrag, in den Summen erscheint er mit dem richtigen Vorzeichen.
        Einzige Ausnahme ist <b>Lohnabzug | Darlehen</b> — die Zeile steht beim Einkommen,
        läuft aber dagegen.</p></div>
 
-    <div class="regel"><h3>7. Strg-Klick markiert, Doppelklick überträgt</h3>
+    <div class="regel" id="hb7"><h3>7. Strg-Klick markiert, Doppelklick überträgt</h3>
     <p>Im aufgeklappten Raster einer Kategorie setzt ein einfacher Klick den Schreibcursor.
        <b>Strg-Klick</b> markiert eine Zelle und hebt die Markierung wieder auf.
        <b>Doppelklick</b> überträgt den Wert auf die folgenden Monate, auf Wunsch auch
        auf die Folgejahre.</p></div>
 
-    <div class="regel"><h3>8. Der Punkt neben dem Zahnrad sagt, ob gesichert ist</h3>
+    <div class="regel" id="hb8"><h3>8. Der Punkt neben dem Zahnrad sagt, ob gesichert ist</h3>
     <p>Ocker heisst: es gibt eine Änderung, die noch nicht oben ist. GÄPP sichert von selbst,
        zweieinhalb Sekunden nachdem du aufgehört hast — zehn Handgriffe hintereinander
        ergeben <b>einen</b> Sicherungsvorgang, nicht zehn. Grün mit Uhrzeit heisst: alles oben.
        Rot heisst: es ging etwas schief, der Text daneben sagt was.</p></div>
 
-    <div class="regel"><h3>9. Löschen ist etwas anderes als Ausblenden</h3>
+    <div class="regel" id="hb9"><h3>9. Löschen ist etwas anderes als Ausblenden</h3>
     <p><b>Ausblenden</b> nimmt eine Kategorie, eine Position oder <b>einen Gläubiger</b>
        <b>ab einem Jahr</b> aus der Ansicht; die Jahre davor zeigen sie weiter mit ihren
        Zahlen, und du holst sie zurück — Kategorien und Positionen in der Verwaltung, einen
@@ -10848,12 +10918,19 @@ function blattHandbuch() {
        wirklich weg</b>, mit allem, was daran hängt — GÄPP zeigt vorher eine Aufstellung, was
        mitgeht. Nur eine Handvoll Kennungen ist gesperrt, weil GÄPP mit ihnen rechnet;
        dort sagt der Dialog, warum es nicht geht. Buchungen, Rechnungen und Erhöhungen werden
-       ohnehin immer wirklich gelöscht. Das Netz darunter ist dreifach: die Leiste unten nimmt
+       ohnehin immer wirklich gelöscht.</p>
+    <p><b>Bei einem Gläubiger heisst dasselbe Feld mehr als «nicht mehr zeigen».</b> Dort
+       heisst ausgeblendet ab einem Jahr: <b>ausgebucht</b>. Ab diesem Jahr steht seine Schuld
+       auf null — auch wenn keine Zahlung dafür gebucht ist —, und die Zeile sagt es selbst mit
+       «ausgebucht JJJJ». Die Jahre davor bleiben unberührt, mit allen Zahlen und in allen
+       Summen. Bei einer Kategorie oder einer Position ist Ausblenden reine Ansicht; bei einer
+       Schuld ist es eine Aussage über die Sache.</p>
+    <p>Das Netz darunter ist dreifach: die Leiste unten nimmt
        jeden Schritt zwölf Sekunden lang zurück, jede Sicherung ist ein Punkt in der
        Git-Historie deines Datenrepos, und beim ersten Öffnen am Tag legt GÄPP eine Kopie
        in <b>${ORD_SICHERUNG}</b>.</p></div>
 
-    <div class="regel"><h3>10. Ziehen ordnet um, tippen nicht</h3>
+    <div class="regel" id="hb10"><h3>10. Ziehen ordnet um, tippen nicht</h3>
     <p>Fährst du im aufgeklappten Raster über eine Position oder einen Gläubiger — oder in
        der Verwaltung über ein Konto —, erscheint links ein <b>Griff</b>. Zieh daran, und der Eintrag steht woanders —
        <b>Alt+Pfeil hoch/runter</b> tut dasselbe ohne Maus. Umgeordnet wird immer nur
@@ -10862,7 +10939,7 @@ function blattHandbuch() {
        ist eine Zuordnung und keine Position, und die änderst du in ihrer Maske. Die
        Reihenfolge der Konten gilt überall: Kacheln, Auswahllisten, Berichte.</p></div>
 
-    <div class="regel"><h3>11. Ein neues Jahr entsteht nach Regeln, nicht als Kopie</h3>
+    <div class="regel" id="hb11"><h3>11. Ein neues Jahr entsteht nach Regeln, nicht als Kopie</h3>
     <p><b>«Jahr anlegen»</b> fragt für jede Kategorie einzeln, ob ihr Budget mitkommt — und für
        jeden Gläubiger getrennt zweierlei: ob sein <b>Endsaldo als Anfangssaldo</b> ins neue Jahr
        geht, und ob sein <b>Ratenplan</b> fortgeschrieben wird. Voreingestellt ist der häufige
@@ -10880,9 +10957,16 @@ function blattHandbuch() {
        durch. Du findest ihn im Blatt eines Gläubigers unter <b>«Anfangssaldi je Jahr»</b> und
        kannst ihn dort ändern oder wegnehmen. Weicht er von dem ab, was GÄPP selbst gerechnet
        hätte, steht die Abweichung daneben und ein <b>!</b> in der Standspalte — verrechnet wird
-       sie nicht still.</p></div>
+       sie nicht still.</p>
+    <p><b>Und du musst sie nicht von Hand nachtragen.</b> Steht eine Abweichung da, steht
+       daneben der Knopf <b>«Nachziehen»</b>. Er setzt den Anfangssaldo auf das, was GÄPP
+       durchgerechnet hätte — und wenn das null ist, nimmt er ihn <b>ganz weg</b>, damit die
+       Schuld wieder über die Jahresgrenze durchrechnet statt auf einer gespeicherten Null
+       festzustehen. Er erscheint nur, wenn es etwas nachzuziehen gibt. Hast du mehrere
+       Abweichungen, zieh sie <b>von oben nach unten</b> nach: jede verändert, was darunter
+       durchgerechnet wird.</p></div>
 
-    <div class="regel"><h3>12. Die Monatsverteilung verschiebt Geld — sie erfüllt kein Budget</h3>
+    <div class="regel" id="hb12"><h3>12. Die Monatsverteilung verschiebt Geld — sie erfüllt kein Budget</h3>
     <p>Nach dem Lohneingang wandert das Geld vom Lohnkonto in die Töpfe. Die Kachel
        <b>«Monatsverteilung»</b> im Dashboard zeigt alle Konten nebeneinander: was dort liegt,
        was das Budget diesen Monat für dieses Konto vorsieht, was schon umgebucht ist — und den
@@ -10894,19 +10978,25 @@ function blattHandbuch() {
        Verschieben, einmal beim Bezahlen.</p>
     <p>Steht ein Betrag so gebucht da, heisst der Knopf <b>«Ändern»</b>. Er bucht nichts, er
        führt zurück ins Feld. Der geänderte Wert ersetzt die Buchung, statt eine zweite
-       anzulegen — und <b>0 nimmt sie ganz zurück</b>. Wo nichts zu tun ist, steht kein Knopf.</p></div>
+       anzulegen — und <b>0 nimmt sie ganz zurück</b>. Wo nichts zu tun ist, steht kein Knopf.</p>
+    <p><b>Die Verteilung folgt dem Monat, den du ansiehst</b>, nicht dem heutigen. Blätterst du
+       zurück, siehst du die Verteilung jenes Monats — und nicht die von heute in einem alten
+       Bild.</p>
+    <p>Buchst du eine Umbuchung von Hand, steht in der Maske ein <b>Richtungsschalter</b>:
+       «auf dieses Konto» oder «ab diesem Konto». Die Beschriftung des zweiten Feldes dreht
+       mit — aus «Zielkonto» wird «Quellkonto». So musst du nicht raten, welches der beiden
+       Konten GÄPP gerade meint.</p></div>
 
-    <div class="regel"><h3>13. Die Schuldenzeile liest sich von links nach rechts</h3>
+    <div class="regel" id="hb13"><h3>13. Die Schuldenzeile liest sich von links nach rechts</h3>
     <p>Ganz links steht der <b>Anfang</b> — der Stand am 1. Januar des Jahres, das du ansiehst —,
        daneben der Stand <b>heute</b>. Dann kommen die zwölf Monate mit deinen Zahlungen, und
        rechts <b>Bezahlt</b> und <b>Ende</b>. <b>Anfang plus Zins und Gebühr minus bezahlt ergibt
        Ende.</b> Geht das nicht auf, stimmt etwas in den Daten nicht — und dann ist das die
        Stelle, an der du es siehst.</p>
     <p><b>«Bezahlt» zeigt, womit gerechnet wurde, nicht was geplant war.</b> Zahlst du mehr
-       oder weniger als im Ratenplan, gilt die Buchung; und eine Rate, die über die Restschuld
-       hinausschiesst, wird auf das gekürzt, was noch offen war — bezahlt wird höchstens, was
-       aussteht. Wo sich beides unterscheidet, steht ein <b>≠</b> in der Zelle, und der Text
-       daran nennt beide Zahlen. Im Feld selbst bleibt dein Plan stehen: dort tippst du.</p>
+       oder weniger als im Ratenplan, gilt die Buchung. <b>Gekappt wird nichts</b> — zahlst du
+       mehr, als offen war, läuft der Stand ins Minus, statt still auf null stehen zu bleiben.
+       Im Feld selbst bleibt dein Plan stehen: dort tippst du.</p>
     <p><b>Ein Minus heisst überzahlt</b> und steht in Rot — dann schuldet der Gläubiger dir
        Geld zurück. Es wird nirgends weggerundet.</p>
     <p>In <b>«Alle Jahre»</b> ist die Zeile ruhiger gebaut: eine Spalte je Jahrgang, ganze
@@ -10923,14 +11013,14 @@ function blattHandbuch() {
        Versehen. Zeigt eine grüne Zelle eine andere Zahl, als du gebucht hast, sagt es der Text
        beim Darüberfahren: die Zelle trägt den Plan, nicht die Buchung.</p></div>
 
-    <h3>Berichte</h3>
+    <h3 id="hbBerichte">Berichte</h3>
     <p>In jedem Bericht lässt sich <b>jede Zeile anklicken</b>. Sie fällt zurück, und alles
        zieht mit: die Summen unten, die Anteilsbalken und die Kennzahlen im Kopf. So beantwortest
        du «was bliebe ohne diesen Posten» ohne zu rechnen. Ein zweiter Klick holt die Zeile
        zurück. Die gesicherte HTML-Datei kann dasselbe — auch auf einem fremden Rechner
        und ohne Netz.</p>
 
-    <div class="regel"><h3>14. Über jeder Tafel steht ihre Summe — und sie klappt weg</h3>
+    <div class="regel" id="hb14"><h3>14. Über jeder Tafel steht ihre Summe — und sie klappt weg</h3>
     <p>Im <b>Budget</b> steht oben der <b>Saldo budgetiert</b>: was in jedem Monat übrig bleibt,
        und darunter dieselbe Zahl auflaufend. Die zweite Zeile beantwortet die Frage, die hinter
        «kumuliert» steckt — <b>wann wird es am engsten</b>. Der Verlauf daneben hat eine
@@ -10938,22 +11028,82 @@ function blattHandbuch() {
     <p>Bei den <b>Verbindlichkeiten</b> steht an derselben Stelle die <b>Tilgung</b> — was
        tatsächlich abgegangen ist, je Monat und auflaufend. Sie rechnet mit denselben Zahlen
        wie die Spalte «Bezahlt» darunter.</p>
+    <p>Bei den Verbindlichkeiten steht seit kurzem eine <b>dritte Zeile</b> darunter:
+       <b>«Saldo budgetiert»</b> — dieselbe Zahl wie über dem Budget. Sie steht dort, weil eine
+       geänderte Rate sofort auf das Budget wirkt und man es sonst nur sähe, wenn man den
+       Bereich wechselt.</p>
+    <p>Über den <b>Rechnungen</b> steht dieselbe Karte ein drittes Mal: das Gesamttotal, dazu
+       Betrag und Anzahl je Zustand. <b>Überfällige zählt sie nicht ins Total</b> — die stammen
+       aus einem anderen Zeitraum als dem, den du ansiehst; ihr Betrag steht dafür im Hinweis
+       daneben, damit die Karte nicht weniger zeigt, als darunter steht.</p>
     <p><b>Ein Klick auf die Kopfzeile klappt sie weg</b>, und sie bleibt weg, bis du sie wieder
        aufmachst. Sie klappt unabhängig von den Kategorien darunter: der Überblick soll
        stehenbleiben, während du unten suchst.</p></div>
 
-    <h3>Belege</h3>
+    <div class="regel" id="hb15"><h3>15. Eine Rechnung hat drei Zustände, nicht zwei</h3>
+    <p><b>erwartet</b> — du weisst, dass sie kommt, sie ist noch nicht da. Sie steht zuoberst
+       in der Tafel, ruhig und nicht rot: hier ist nichts zu tun. <b>Überfällig kann sie nie
+       werden</b> — was nicht eingetroffen ist, kann nicht fällig sein.</p>
+    <p><b>erfasst</b> — sie liegt vor und ist nicht bezahlt. Das ist der Zustand, den die
+       Kopfzeile «offen» nennt.</p>
+    <p><b>erledigt</b> — im E-Banking freigegeben. <b>Dieser Schritt bewegt das Geld:</b> Er
+       erzeugt die Zahlungsbuchung, und erst dadurch ändert sich der Kontostand.</p>
+    <p>Der Knopf heisst deshalb <b>«Freigeben»</b> und nicht «Bezahlt». Er fragt nach dem
+       <b>Ausführungsdatum</b> — vorbelegt ist die <b>Fälligkeit</b>, nicht heute —, und die
+       Buchung entsteht mit genau diesem Datum. Nimmst du die Freigabe zurück, nimmt GÄPP
+       <b>die Buchung mit</b>, nach einer Rückfrage, die Betrag, Datum und Konto nennt.</p></div>
+
+    <div class="regel" id="hb16"><h3>16. Beim Start zeigt GÄPP, was nicht zusammenpasst</h3>
+    <p>Einmal je Sitzung, gleich nachdem alles gezeichnet ist, sieht GÄPP nach, ob Rechnungen
+       und Buchungen zueinander passen — <b>in beide Richtungen</b>: eine freigegebene Rechnung
+       ohne Zahlung, und eine Zahlung, deren Rechnung nicht mehr freigegeben ist.</p>
+    <p>Was nicht passt, <b>legt es dir vor und stellt nichts still um</b>. Das ist Absicht:
+       Welche der beiden Zahlen die richtige ist, weisst nur du.</p></div>
+
+    <div class="regel" id="hb17"><h3>17. Die zweite Zahl auf der Kontokachel ist eine Vorschau</h3>
+    <p>Oben steht der <b>Saldo</b> — was die Bank sagt. Darunter die <b>Vorschau</b>: was übrig
+       bliebe, wenn alles bezahlt wäre, was für dieses Konto ansteht. Abgezogen sind die
+       Rechnungen auf diesem Konto, die nicht erledigt sind, und die Budgetposten des Monats,
+       den du ansiehst, die noch nicht gebucht sind.</p>
+    <p><b>Erwartete Rechnungen zählen dabei mit</b>, obwohl sie noch nicht da sind — sie
+       betreffen deine Planung genauso. Deshalb kann diese Zahl von der in der Kopfzeile
+       abweichen: dort heisst «offen» nur <b>erfasst</b>.</p>
+    <p>Und es stecken <b>zwei Zeiträume</b> in einer Zahl: die Rechnungen ohne Fristgrenze, die
+       Budgetposten für den gewählten Monat. Das ist gewollt — es ist aber der Grund, warum die
+       Vorschau nicht die Kopfzeile im Kleinen ist.</p>
+    <p>Eine Rechnung, die an einem <b>Gläubiger</b> hängt, zählt hier nicht: sie steckt schon
+       in dessen Rate.</p></div>
+
+    <div class="regel" id="hb18"><h3>18. Grün im Budgetraster heisst «dieser Monat ist fertig»</h3>
+    <p>Eine Zelle im Budget wird grün, wenn für diesen Monat <b>mindestens so viel gebucht ist
+       wie budgetiert</b>. Teilweise gebucht ist nicht grün — sonst hiesse Grün «irgendetwas ist
+       passiert», und das beantwortet keine Frage. Wo kein Soll steht, bleibt die Zelle dunkel:
+       ohne Soll gibt es nichts zu erfüllen.</p>
+    <p><b>Achtung, dieselbe Farbe zweimal:</b> In der Schuldentabelle heisst Grün etwas anderes
+       — dort trägt es die einzelne Buchung (Regel 13). Im Budget heisst es: der Monat ist
+       fertig. Zwei Tabellen, zwei Bedeutungen, eine Farbe.</p></div>
+
+    <h3 id="hbBelege">Belege</h3>
     <p>Ein Beleg geht nie verloren. Ist der GÄPP-Ordner freigegeben, landet er sofort in
        <b>${ORD_BELEGE}</b>, nach Jahr getrennt und benannt nach Datum, Steller und Betrag. Ist er es nicht, wartet
        der Beleg im Browser und wird abgelegt, sobald du den Ordner freigibst — die Rechnung
        zeigt so lange <b>«liegt bereit, noch nicht abgelegt»</b>.</p>
+    <p>Gibst du die Rechnung frei, wandert der Beleg in den Unterordner <b>Bezahlt</b>
+       desselben Jahres. <b>Nimmst du die Freigabe zurück, bleibt er dort</b> — GÄPP holt ihn
+       nicht zurück. Das ist keine Nachlässigkeit, sondern Absicht: Eine Datei, die von selbst
+       hin und her wandert, findet man irgendwann nirgends mehr.</p>
 
-    <h3>Was die Farben bedeuten</h3>
+    <h3 id="hbFarben">Was die Farben bedeuten</h3>
     <p><b>Mintgrün</b> heisst «hier ist etwas aktiv oder auslösbar». <b>Rot</b> trägt das negative
        Vorzeichen und die zwei Fälle, in denen etwas nicht ging. <b>Grün</b> trägt das positive
        Vorzeichen — aber nie ein Guthaben für sich allein, sonst wäre der halbe Bildschirm grün.
-       <b>Ocker</b> heisst «offen»: eine ungesicherte Änderung, eine offene Rechnung,
+       <b>Ocker</b> heisst «offen»: eine ungesicherte Änderung, eine erfasste Rechnung,
        ein Serienvorschlag, ein Beleg, der noch nicht abgelegt werden konnte.</p>
+    <p><b>Ehrlich dazugesagt: Mintgrün und Grün sind derselbe Farbton.</b> GÄPP führt für
+       «aktiv» und für «positiv» einen einzigen Wert. Wo beides zusammenträfe, entscheidet der
+       Ort: in einer Zahlenspalte heisst er positiv, an einem Knopf heisst er auslösbar. Zwei
+       Bedeutungen an einer Farbe — es steht hier, damit du nicht danach suchst, was du nicht
+       unterscheiden kannst.</p>
   </div>` };
 }
 
@@ -11698,7 +11848,7 @@ document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-oeffne],[data-tat],[data-klapp],[data-filter],[data-reiter],[data-bereich],[data-faltauf],[data-vwseite],[data-vwklapp],[data-dokneu],[data-dokumb],[data-dokloesch],' +
     '[data-blattreiter],[data-art],[data-krich],[data-takt],[data-sart],[data-rzust],[data-zu],[data-weg],[data-add],' +
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
-    '[data-vtset],[data-vtdel],[data-vtzieh],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
+    '[data-vtset],[data-vtdel],[data-vtzieh],[data-hbnav],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
     '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-sklapp],[data-tklapp],[data-buchen],[data-csv],[data-offen],[data-getilgt],' +
     /* U-86: `[data-urich]` fehlte hier. Der Schalter der Umbuchungsmaske
@@ -11774,6 +11924,13 @@ document.addEventListener('click', async ev => {
 
   if (t.id === 'btnSync' || t.id === 'btnErstStart') return blattAuf('sync');
   if (t.id === 'btnBericht') { _ber = berStandard(); return blattAuf('bericht', 'wahl:'); }
+  /* U-94: Sprung im Handbuch. Kein href="#..." — das schriebe in die Adresszeile
+     und stoerte den Anzeigezustand; scrollIntoView tut dasselbe ohne Spur. */
+  if (t.dataset.hbnav) {
+    const ziel = document.getElementById(t.dataset.hbnav);
+    if (ziel) ziel.scrollIntoView({ block:'start', behavior:'smooth' });
+    return;
+  }
   if (t.id === 'btnHandbuch' || t.dataset.hb !== undefined) {
     entwurfSichern(); return blattAuf('handbuch', null, null, true); }
 
@@ -12024,8 +12181,19 @@ document.addEventListener('click', async ev => {
     const [vId, jj] = t.dataset.vtzieh.split(':');
     const v = verbind(vId), j = parseInt(jj, 10);
     if (!v || !v.staende || vortrag(v, j) === null) return;
-    merkeStand('Anfangssaldo ' + jj + ' nachgezogen');
-    v.staende[jj] = rd(vortragGerechnet(v, j));
+    /* U-93: Ist der durchgerechnete Wert null, wird der Eintrag GELOESCHT
+       und nicht auf 0 gesetzt. Regel 4 des Saldovortrags unterscheidet
+       beides ausdruecklich: «Kein Vortrag heisst kein Eintrag. Eine
+       gespeicherte Null waere etwas anderes — sie zwaenge die Schuld am
+       1.1. auf null, statt sie durchrechnen zu lassen.» Auf dem Bildschirm
+       ist das Ergebnis dasselbe; im Datenstand ist es der Unterschied
+       zwischen «rechnet mit» und «steht fest». Und einfrieren ist genau
+       das, was dieser Knopf aufloesen soll. */
+    const neu = rd(vortragGerechnet(v, j));
+    merkeStand(Math.abs(neu) < 0.005
+      ? 'Anfangssaldo ' + jj + ' entfernt, die Schuld rechnet durch'
+      : 'Anfangssaldo ' + jj + ' nachgezogen');
+    if (Math.abs(neu) < 0.005) delete v.staende[jj]; else v.staende[jj] = neu;
     persist(); blattZeichnen(); return zeichne();
   }
   if (t.dataset.edel) {
