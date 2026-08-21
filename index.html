@@ -1688,6 +1688,16 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .k-budget .kkopf,.k-budget .streifen>.reihe{
   grid-template-columns:360px 108px 108px 108px 170px 118px 1fr 34px}
 .k-budget .praster .r{grid-template-columns:280px repeat(12,1fr) 100px}
+/* U-90: Der Bereich Rechnungen bekommt dasselbe Bauteil und braucht dafuer
+   sein eigenes Spaltenraster — .streifen>.reihe holt es sich beim Behaelter,
+   und einen fuer die Rechnungen gab es nicht. Vier Spalten statt sieben:
+   die Rechnungstafel hat keine Kopfzeile, unter der etwas ausgerichtet
+   werden muesste. */
+.k-rechnung{padding-top:10px}
+.k-rechnung .streifen>.reihe{grid-template-columns:360px 150px 1fr 54px}
+.k-rechnung .praster .r{grid-template-columns:var(--pgrid)}
+/* Steht die Karte da, ist der erste Gruppenkopf nicht mehr :first-child. */
+.rollflaeche > .k-rechnung + .untertitel.rkopf{margin-top:4px}
 
 /* Halbbreit: die Spalten fallen weg, die Karte wird zweizeilig (Bild 6b).
    Kein eigener Bauplan — dieselben Bausteine, anders gestapelt. */
@@ -1894,6 +1904,12 @@ table.gross.t-budget tbody tr.zeile-daten:hover td.jetzt:nth-child(n+2){backgrou
 .streifen.summenkarte .praster .r.kum .c,.streifen.summenkarte .praster .r.kum .j{
   font-size:12px;color:#9fb0c2}
 .streifen.summenkarte .praster .r.kum .p .t{color:#9fb0c2}
+/* U-89: Die dritte Zeile ist eine andere Groesse als die zwei darueber —
+   nicht bezahlte Franken, sondern der Saldo, den das Bezahlen uebrig
+   laesst. Ein Strich darueber sagt das, ohne ein Wort zu kosten. Die
+   Farbregeln .c.plus/.minus gelten bereits und werden nicht wiederholt. */
+.streifen.summenkarte .praster .r.bud{height:32px;border-top:1px solid var(--rule)}
+.streifen.summenkarte .praster .r.bud .c,.streifen.summenkarte .praster .r.bud .j{font-size:12px}
 .streifen.summenkarte .praster .c.plus,.streifen.summenkarte .praster .j.plus{color:var(--ok)}
 .streifen.summenkarte .praster .c.minus,.streifen.summenkarte .praster .j.minus{color:var(--err)}
 .streifen.summenkarte .praster .p .z{font:400 10.5px/1 'IBM Plex Mono',monospace;color:#757f8c}
@@ -6502,10 +6518,38 @@ function verbindKarten() {
                         : (S.jahr === h.j ? (S.zeitraum === 'monat' ? S.monat : h.m) : -1);
     const max = Math.max(...w, 1);
     const jetztW = S.zeitraum === 'monat' ? (w[S.monat] || 0) : gesamt;
-    const zeile = (name, hinweis, reihe, extra) => `<div class="r ${extra||''}">
+    /* U-89 — Was die Tilgung im Budget anrichtet.
+       Dieselben zwei Rechenfunktionen wie in der Sektion «Saldo budgetiert»
+       ueber der Budgettafel (U-59): saldoRoh() und kumRoh(). Kein zweiter
+       Rechenweg und keine zweite Wahrheit — die Zahl steht hier nur ein
+       zweites Mal DA, und die beiden Sektionen sind nie gleichzeitig zu
+       sehen, weil sie in zwei Bereichen stehen. Das ist der Unterschied zu
+       der Fusszeile, die U-59 entfernt hat: die stand in derselben Tafel.
+       Der Anlass: Eine geaenderte Rate wirkt ueber die drei gespiegelten
+       Zeilen (A-91) sofort auf das Budget — und man sah es nur, wenn man
+       den Bereich wechselte. */
+    const ohneB   = x => alle ? ohneBudget(x.key) : ohneBudget(S.jahr);
+    const bud     = sp.map(x => ohneB(x) ? null : saldoRoh(x, alle));
+    const budEcht = bud.filter(x => x !== null);
+    /* Bewusst Zeichen fuer Zeichen wie jahrW in saldoKarte(): zwei Karten,
+       die dieselbe Zahl zeigen, muessen sie auch gleich bilden. */
+    const budJahr = alle
+      ? rd(budEcht.reduce((a,x) => a + x, 0))
+      : (ohneBudget(S.jahr) ? null
+          : rd([...Array(12).keys()].reduce((a,i) => a + saldoBudgetiert(S.jahr, i), 0)));
+    const vz = x => x === null ? '<span class="null">–</span>'
+      : (x > 0.005 ? '+' : '') + fmtG(x);
+    const kl = x => x === null ? '' : (x < -0.005 ? 'minus' : (x > 0.005 ? 'plus' : ''));
+    /* U-89: zeile() nimmt zusaetzlich einen Formatierer und einen eigenen
+       Totalwert. Ohne beides verhaelt sie sich wie vorher — die zwei
+       Tilgungszeilen sind Zeichen fuer Zeichen unveraendert. Noetig ist es,
+       weil fmtG0() bei 0 einen Leerstring liefert: bei einer Tilgung heisst
+       das «nichts bezahlt», beim Saldo waere es eine verschwiegene Null. */
+    const zeile = (name, hinweis, reihe, extra, f, total) => `<div class="r ${extra||''}">
       <div class="p"><span class="t">${name}</span><span class="z">${hinweis}</span></div>
-      ${reihe.map((x,i) => `<div class="c ${i === jetztI ? 'jetzt':''}">${fmtG0(x)}</div>`).join('')}
-      <div class="j">${fmtG0(gesamt)}</div></div>`;
+      ${reihe.map((x,i) => `<div class="c ${f ? kl(x) : ''} ${i === jetztI ? 'jetzt':''}">${
+        f ? f(x) : fmtG0(x)}</div>`).join('')}
+      <div class="j ${f ? kl(total) : ''}">${f ? f(total) : fmtG0(gesamt)}</div></div>`;
     return `<article class="streifen summenkarte ${auf?'offen':''}">
       <div class="reihe" data-sklapp="tilgung">
         <div class="nam"><span class="chev">${auf?'▾':'▸'}</span>
@@ -6528,6 +6572,8 @@ function verbindKarten() {
           <div class="j">${alle ? 'Total' : 'Jahr ' + S.jahr}</div></div>
         ${zeile('Je ' + (alle ? 'Jahr' : 'Monat'), 'was tatsächlich abging', w)}
         ${zeile('Kumuliert', 'auflaufend' + (alle ? '' : ' ab Januar'), kum, 'kum')}
+        ${zeile('Saldo budgetiert', 'Einnahmen − Ausgaben, Tilgung inbegriffen',
+                bud, 'bud', vz, budJahr)}
         </div></div>` : ''}</article>`;
   };
 
@@ -7015,6 +7061,54 @@ function rechnungTabelle() {
                               : 'In ' + zeitTitel() + ' steht keine Rechnung.'}
         Der Zeitraum steht in der Leiste links.</p>`;
 
+  /* U-90 — Die Summenkarte ueber der Rechnungstafel.
+     Dasselbe Bauteil wie U-59 im Budget und U-60 bei den Verbindlichkeiten,
+     dritte Anwendung statt Neubau (G-4). Keine neue Bedienform: eine Karte
+     ist der Rahmen um einen Kennzahlenblock, und der Klappkopf ist Form 6.
+     Sie beantwortet die Frage, die der Tafelkopf nur halb beantwortet — der
+     nennt EINE Anzahl und DREI Betraege; hier steht zu jedem Zustand beides.
+     Gezaehlt wird ueber imZeit, also nach Faelligkeit im gewaehlten Zeitraum.
+     Die Gruppe «Überfällig» steht bewusst NICHT im Total: sie stammt
+     definitionsgemaess aus einem ANDEREN Zeitraum (rechnungUeberfaellig).
+     Sie steht dafuer im Hinweis — sonst zeigte die Karte eine Summe,
+     waehrend darunter sichtbar mehr steht. */
+  const kAuf   = !S.sZu.includes('rechnung');
+  const kTotal = summe(imZeit);
+  const kSp    = [['Erwartet', erwartet], ['Erfasst', offen], ['Erledigt', bezahlt]];
+  const kZeit  = S.zeitraum === 'alle' ? 'alle Jahrgänge'
+    : S.zeitraum === 'jahr' ? 'Jahr ' + S.jahr : MON[S.monat] + ' ' + S.jahr;
+  const kHint  = 'nach Fälligkeit · ' + kZeit + (spaet.length
+    ? ' · dazu ' + fmt(summe(spaet)) + ' überfällig aus einem anderen Zeitraum' : '');
+  /* R 1 aus U-61 gilt hier genauso: eine Schreibweise fuer «nichts». */
+  /* fmt() und nicht fmtG(): Eine Rechnung ist ein exakter Betrag, und der
+     Tafelkopf unmittelbar darueber nennt ihn auf den Rappen. R 2 aus U-61
+     («ganze Franken») gilt fuer das Raster in «Alle Jahre», nicht hier. */
+  const kBetrag = l => l.length ? fmt(summe(l)) : '<span class="null">–</span>';
+  const kAnzahl = l => l.length ? String(l.length) : '<span class="null">–</span>';
+  const summenKarte = () => `<div class="k-rechnung">
+    <article class="streifen summenkarte ${kAuf?'offen':''}">
+      <div class="reihe" data-sklapp="rechnung">
+        <div class="nam"><span class="chev">${kAuf?'▾':'▸'}</span>
+          <span class="t">Rechnungen</span>
+          <span class="z">erwartet · erfasst · erledigt</span></div>
+        <div class="n gross">${fmt(kTotal)}</div>
+        <div class="kbalken"><span class="p">${kHint}</span></div>
+        <div class="pfeil">›</div></div>
+      ${kAuf ? `<div class="kauf"><div class="praster"
+        style="--pgrid:280px repeat(3,minmax(0,1fr)) 120px">
+        <div class="r kopf"><div class="p">Rechnungen</div>
+          ${kSp.map(x => `<div class="c">${x[0]}</div>`).join('')}
+          <div class="j">Total</div></div>
+        <div class="r"><div class="p"><span class="t">Betrag</span>
+            <span class="z">Summe der Rechnungen</span></div>
+          ${kSp.map(x => `<div class="c">${kBetrag(x[1])}</div>`).join('')}
+          <div class="j">${kBetrag(imZeit)}</div></div>
+        <div class="r kum"><div class="p"><span class="t">Anzahl</span>
+            <span class="z">wie viele es sind</span></div>
+          ${kSp.map(x => `<div class="c">${kAnzahl(x[1])}</div>`).join('')}
+          <div class="j">${kAnzahl(imZeit)}</div></div>
+        </div></div>` : ''}</article></div>`;
+
   return `<div class="tafel-kopf"><span class="titel">Rechnungen</span>${tafelKennzahlen()}
       <span class="nr">${imZeit.length} ${imZeit.length===1?'Rechnung':'Rechnungen'} · ${
         fmt(summe(offen))} offen${
@@ -7024,6 +7118,7 @@ function rechnungTabelle() {
       <button class="knopf klein" id="btnRechNeu">Rechnung erfassen</button>
       ${vollbildKnopf()}</div>
     <div class="rollflaeche" style="padding:0 var(--pad) var(--pad)">
+      ${imZeit.length ? summenKarte() : ''}
       ${gErw}${gSpaet}${gOffen}${gBez}${(gErw || gSpaet || gOffen || gBez) ? '' : leer}</div>`;
 }
 
@@ -7824,7 +7919,9 @@ function vortragBlock(v) {
         <td>${ab ? `<span style="color:var(--open)">durchgerechnet ${fmt(vortragGerechnet(v, j))}
              · Abweichung ${fmt(d)}</span>` : 'wie durchgerechnet'}</td>
         <td class="r num">${fmt(vortrag(v, j))}</td>
-        <td class="r"><span class="zwerk">
+        <td class="r"><span class="zwerk">${ab && !_ro ? `
+          <button class="knopf klein" data-vtzieh="${v.id}:${j}"
+            title="Den Vortrag auf den durchgerechneten Wert setzen: ${fmt(vortragGerechnet(v, j))}">Nachziehen</button>` : ''}
           <button class="knopf klein" data-vtset="${v.id}:${j}">Ändern</button>
           <button class="knopf klein" data-vtdel="${v.id}:${j}">Löschen</button></span></td></tr>`;
     }).join('')}</tbody></table>`
@@ -11601,7 +11698,7 @@ document.addEventListener('click', async ev => {
   const t = ev.target.closest('[data-oeffne],[data-tat],[data-klapp],[data-filter],[data-reiter],[data-bereich],[data-faltauf],[data-vwseite],[data-vwklapp],[data-dokneu],[data-dokumb],[data-dokloesch],' +
     '[data-blattreiter],[data-art],[data-krich],[data-takt],[data-sart],[data-rzust],[data-zu],[data-weg],[data-add],' +
     '[data-spring],[data-schuld],[data-jedit],[data-jdel],[data-vbuch],[data-vskip],[data-rst],[data-rweg],' +
-    '[data-vtset],[data-vtdel],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
+    '[data-vtset],[data-vtdel],[data-vtzieh],[data-beleg],[data-edel],[data-bericht],[data-vwum],[data-vwaus],[data-vwneu],[data-hb],' +
     '[data-rechauf],[data-vadd],[data-gaend],[data-gaus],[data-vwloesch],[data-jleer],[data-jweg],[data-kaend],' +
     '[data-zblatt],[data-zvl],[data-dokweg],[data-zeilenauf],[data-kklapp],[data-sklapp],[data-tklapp],[data-buchen],[data-csv],[data-offen],[data-getilgt],' +
     /* U-86: `[data-urich]` fehlte hier. Der Schalter der Umbuchungsmaske
@@ -11905,6 +12002,30 @@ document.addEventListener('click', async ev => {
     merkeStand('Anfangssaldo ' + jj + ' gelöscht');
     const v = verbind(vId);
     if (v && v.staende) delete v.staende[jj];
+    persist(); blattZeichnen(); return zeichne();
+  }
+  /* U-91 — Den Vortrag nachziehen.
+     Der Vortrag wird einmal beim Anlegen des Jahrgangs gesetzt und danach
+     nie nachgerechnet. Aendert sich etwas im Vorjahr, stimmt er nicht mehr;
+     bisher blieb nur, den Jahrgang zu loeschen oder von Hand zu tippen.
+     Gerechnet ist die Zahl laengst — vortragDifferenz() zeigt sie seit U-47
+     als «!» in der Standspalte und ausgeschrieben in diesem Block. Hier
+     bekommt sie den Griff, der ihr gefehlt hat.
+     Geschrieben wird zeichengleich das, was jahrAnlegenTun() schreiben
+     wuerde: rd(verbindPrognose(v, j-1, 11)). Kein zweiter Rechenweg.
+     Regel 4 des Saldovortrags bleibt unberuehrt — «kein Vortrag heisst kein
+     Eintrag»: Der Knopf legt keinen Vortrag an, wo keiner steht, sondern
+     berichtigt einen vorhandenen. Er erscheint nur bei Abweichung, wie der
+     Knopf «Übertragen» beim Glaeubigerauszug.
+     merkeStand() steht VOR der Mutation — das Nachziehen ueberschreibt
+     einen bewusst gesetzten Wert und muss ruecknehmbar sein (A-96). */
+  if (t.dataset.vtzieh) {
+    if (_ro) return;
+    const [vId, jj] = t.dataset.vtzieh.split(':');
+    const v = verbind(vId), j = parseInt(jj, 10);
+    if (!v || !v.staende || vortrag(v, j) === null) return;
+    merkeStand('Anfangssaldo ' + jj + ' nachgezogen');
+    v.staende[jj] = rd(vortragGerechnet(v, j));
     persist(); blattZeichnen(); return zeichne();
   }
   if (t.dataset.edel) {
