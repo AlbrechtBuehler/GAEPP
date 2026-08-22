@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de-CH" data-theme="dunkel">
+<html lang="de-CH" data-theme="hell">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,12 +8,29 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#1c1f23;--card:#23272c;--soft:#2b3036;--line:#2e3338;--rule:#3d444b;--ink:#edf0f2;
- --muted:#98a0a8;--chrome:#9aa2aa;--accent:#e6eaee;--onaccent:#1c1f23;--gruen:#8ec9a8;--flaeche:#4a5259;
- --gitter:#4f5760;--zebra:#16191d}
-[data-theme="hell"]{--bg:#eceef0;--card:#f8f9fa;--soft:#e1e4e7;--line:#dcdfe3;--rule:#c1c6cc;--ink:#1a1e22;
- --muted:#5e656c;--chrome:#525862;--accent:#2b3137;--onaccent:#f8f9fa;--gruen:#1c6b46;--flaeche:#a8afb6;
- --gitter:#bcc3ca;--zebra:#e2e5e8}
+/* ---------------------------------------------------------------------------
+   Zwei Farbwelten. «hell» ist die Vorgabe und bildet Albrechts Excel nach:
+   helle Datenzeilen mit weissen Gitterlinien, dunkle Balken fuer Kopf-, Gruppen-
+   und Summenzeilen mit weisser Schrift. «dunkel» bleibt als Nachtfassung.
+   --zeile      Grund der Datenzeilen
+   --balken     Grund der Kopf-, Summen- und Saldozeilen
+   --balken2    Grund der Gruppenkoepfe
+   --aufbalken  Schrift auf einem Balken
+--------------------------------------------------------------------------- */
+:root{--bg:#ffffff;--card:#f3f3f3;--soft:#ebebeb;--line:#c9c9c9;--rule:#808080;--ink:#1a1a1a;
+ --muted:#4f4f4f;--chrome:#404040;--accent:#404040;--onaccent:#ffffff;--gruen:#0e6b3d;
+ --gitter:#ffffff;--zebra:#d0d0d0;--zeile:#d9d9d9;
+ --balken:#404040;--balken2:#5a5a5a;--aufbalken:#ffffff;--gruenbalken:#a8e5c4;--rotbalken:#ffcfc0;--feldrand:#6b6b6b;
+ /* EE7F00 steht so im Auftrag — dieselbe Farbe in beiden Schemata. */
+ --merk:#c96a00;--claim:#ee7f00;--pgruen:#1c6b46;--porange:#ee7f00;--pgrau:#6f767e;--prot:#8f2c14;
+ /* Eine Hoehe fuer alle Kopf-, Gruppen-, Summen- und Saldozeilen. Sie steht hier
+    einmal, damit keine Zeile sie sich aus ihrem Inhalt selbst ausrechnet. */
+ --kopfzeile:43px}
+[data-theme="dunkel"]{--bg:#1c1f23;--card:#23272c;--soft:#2b3036;--line:#2e3338;--rule:#3d444b;--ink:#edf0f2;
+ --muted:#98a0a8;--chrome:#9aa2aa;--accent:#e6eaee;--onaccent:#1c1f23;--gruen:#8ec9a8;
+ --gitter:#4f5760;--zebra:#16191d;--zeile:#1c1f23;
+ --balken:#23272c;--balken2:#2b3036;--aufbalken:#edf0f2;--gruenbalken:#8ec9a8;--rotbalken:#e8ab97;--feldrand:#6b747d;
+ --merk:#ee7f00;--claim:#ee7f00;--pgruen:#4caf7d;--porange:#ee7f00;--pgrau:#7c848c;--prot:#d4705a}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg)}
 body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;
@@ -31,17 +48,22 @@ input,select,button{font-family:inherit}
 .gruppe button.mono{font-family:'IBM Plex Mono',monospace}
 .gruppe button.an{background:var(--accent);color:var(--onaccent);font-weight:600}
 .gruppe .trenn{width:1px;height:18px;background:var(--rule);margin:0 3px}
-.rechts{margin-left:auto;display:flex;align-items:center;gap:7px}
+.rechts{margin-left:auto;display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
 .knopf{background:none;border:1px solid var(--rule);border-radius:9px;padding:7px 12px;cursor:pointer;
  font:500 11.5px/1 'Space Grotesk',sans-serif;color:var(--muted)}
 .knopf:hover{color:var(--ink)}
 .knopf.hell{color:var(--ink)}
 .knopf.hell:hover{background:var(--soft)}
-.punkt{width:9px;height:9px;border-radius:50%;background:var(--rule);flex:none}
-.punkt[data-s="lokal"]{background:var(--muted)}
-.punkt[data-s="sichert"]{background:var(--chrome)}
-.punkt[data-s="gesichert"]{background:var(--gruen)}
-.punkt[data-s="fehler"]{background:#e0a08d}
+/* Drei Farben: gruen geschrieben, orange schreibt, grau nicht verbunden.
+   Rot bleibt als vierte — ein Fehler, der wie «nicht verbunden» aussieht, wird uebersehen. */
+/* Ein Ring gibt dem Punkt eine Form. Ohne ihn steht Orange auf hellem Grund
+   bei 2.5:1 und ist als Flaeche kaum auszumachen. */
+.punkt{width:9px;height:9px;border-radius:50%;background:var(--pgrau);flex:none;
+ box-shadow:0 0 0 1px var(--chrome)}
+.punkt[data-s="lokal"]{background:var(--pgrau)}
+.punkt[data-s="sichert"]{background:var(--porange)}
+.punkt[data-s="gesichert"]{background:var(--pgruen)}
+.punkt[data-s="fehler"]{background:var(--prot)}
 
 /* ---------- Kennzahlenband ---------- */
 .band{display:flex;gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
@@ -54,62 +76,95 @@ input,select,button{font-family:inherit}
 .blatt{flex:1;min-height:0;overflow:auto;padding:0 0 34px}
 table{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;
  width:100%;table-layout:fixed}
-th{position:sticky;top:0;z-index:4;background:var(--card);border-bottom:1px solid var(--rule);
+th{position:sticky;top:0;z-index:4;background:var(--balken);border-bottom:1px solid var(--rule);
  padding:11px 8px;text-align:right;font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.08em;
- text-transform:uppercase;color:var(--muted);white-space:nowrap}
-th.ecke{left:0;z-index:5;text-align:left;border-right:1px solid var(--line);padding:11px 14px;letter-spacing:.11em}
-th.jahr{border-left:1px solid var(--line);padding:11px 14px;color:var(--ink);letter-spacing:.11em}
+ text-transform:uppercase;color:var(--aufbalken);white-space:nowrap}
+th.ecke{left:0;z-index:5;text-align:left;border-right:1px solid var(--balken2);padding:11px 14px;letter-spacing:.11em}
+th.jahr{border-left:1px solid var(--balken2);padding:11px 14px;color:var(--aufbalken);letter-spacing:.11em}
+/* Jede Zelle traegt den Zeilengrund — die Namensspalte klebt und darf nicht durchscheinen. */
 td{padding:6px 8px;text-align:right;font:400 12px/1.25 'IBM Plex Mono',monospace;color:var(--ink);
- white-space:nowrap;border-top:1px dotted var(--gitter);border-right:1px dotted var(--gitter)}
+ background:var(--zeile);white-space:nowrap;
+ border-top:1px solid var(--gitter);border-right:1px solid var(--gitter)}
 tr td:last-child{border-right:none}
 td.name{position:sticky;left:0;z-index:1;border-right:1px solid var(--rule);text-align:left;
  padding-right:12px;font-family:'Space Grotesk',sans-serif;overflow:hidden}
-td.jahr{border-left:1px solid var(--line);padding-right:14px}
-tr.kopf td{background:var(--card);font-weight:600}
-tr.kopf td.name{background:var(--card)}
-tr.pos td.name,tr.gkopf td.name,tr.summe td.name{background:var(--bg)}
-tr.kopf td.name,tr.stark td.name{background:var(--card)}
-tr.stark td{background:var(--card);font-weight:600}
+td.jahr{border-left:1px solid var(--rule);padding-right:14px}
+/* Balkenzeilen: Kategorie, Summe, Saldo dunkel; die Gruppen eine Stufe heller. */
+tr.kopf td,tr.summe td,tr.stark td{background:var(--balken);color:var(--aufbalken);font-weight:600}
+tr.gkopf td{background:var(--balken2);color:var(--aufbalken)}
+tr.kopf td.gruen,tr.gkopf td.gruen,tr.summe td.gruen{color:var(--gruenbalken)}
 /* Zebra zaehlt innerhalb der Sektion, nicht ueber die ganze Tabelle. */
-tr.pos.zebra td,tr.pos.zebra td.name{background:var(--zebra)}
+tr.pos.zebra td{background:var(--zebra)}
 .gruen{color:var(--gruen)}
 tr.pos td.abgehakt{background:var(--soft);font-weight:600}
+/* .zelle setzt color:inherit und steht weiter unten — bei gleicher Staerke gewinnt
+   die spaetere Regel. Ohne diese Zeile bleibt ein abgehaktes Eingabefeld grau. */
+.zelle.gruen,.namensfeld.gruen,.datumsfeld.gruen{color:var(--gruen)}
+/* Ein Saldo unter null geht nicht auf. Er wird gezeigt, nicht gekappt — aber er
+   wird gekennzeichnet, damit er nicht wie eine gewoehnliche Zahl dasteht. */
+td.unstimmig{color:var(--prot);font-weight:600}
+tr.kopf td.unstimmig,tr.gkopf td.unstimmig,tr.summe td.unstimmig,
+tr.saldo td.unstimmig{color:var(--rotbalken)}
 
-/* Die beiden Saldozeilen tragen das Ergebnis — sie duerfen groesser sein. */
-tr.saldo td{font-size:13px;padding-top:12px;padding-bottom:12px}
-tr.saldo td.name{font:600 14.5px/1.2 'Space Grotesk',sans-serif;letter-spacing:.01em}
-tr.saldo.stark td.name{font-weight:700}
-tr.saldo.stark td{font-size:14px}
-thead tr.saldo td{position:sticky;z-index:4;background:var(--card)}
+/* Die beiden Saldozeilen tragen das Ergebnis — sie duerfen groesser sein.
+   Und seit dem 22.08.2026 tragen Kategorie-, Gruppen- und Summenzeilen dieselbe
+   Hoehe: die Masse stehen hier an einer Stelle statt fuenfmal als Inline-Stil. */
+tr.saldo td,tr.kopf td,tr.gkopf td,tr.summe td{
+ font-size:13px;height:var(--kopfzeile);padding-top:0;padding-bottom:0}
+tr.saldo td.name,tr.kopf td.name,tr.gkopf td.name,tr.summe td.name{
+ font:600 14.5px/1.2 'Space Grotesk',sans-serif;letter-spacing:.01em}
+/* «hoch» ist nur die Hoehe, ohne Balken: fuer Zeilen, die in der Jahresansicht
+   in derselben Reihe stehen wie die Balken, aber keine Summe sind. */
+tr.hoch td{font-size:13px;height:var(--kopfzeile);padding-top:0;padding-bottom:0}
+tr.hoch td.name{font-family:'Space Grotesk',sans-serif;font-size:13.5px}
+tr.saldo.stark td.name,tr.kopf.stark td.name{font-weight:700}
+tr.saldo.stark td,tr.kopf.stark td{font-size:14px}
+tr.kopf .klapper{font:inherit;font-weight:700}
+tr.gkopf .klapper{font:inherit;font-weight:600}
+tr.kopf td.name .namensfeld,tr.gkopf td.name .namensfeld{font:inherit;color:inherit}
+/* Ein kleiner Punkt neben dem Glaeubiger: hier ist von Hand korrigiert worden. */
+.mkorr{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--merk);
+ margin-left:7px;flex:none;box-shadow:0 0 0 1px var(--chrome)}
+thead tr.saldo td{position:sticky;z-index:4;background:var(--balken);color:var(--aufbalken)}
 thead tr.saldo td.name{left:0;z-index:5}
 tbody tr:first-child td{border-top:none}
 tr.saldoende td{box-shadow:inset 0 -2px 0 var(--rule)}
 tr.luft td{height:22px;background:var(--bg);border:none;padding:0}
-.klapper{display:flex;align-items:center;gap:9px;background:none;border:none;padding:0;cursor:pointer;
- text-align:left;color:var(--ink);font:inherit}
-.chev{width:10px;font-size:9px;color:var(--muted);flex:none}
-.anzahl{font:400 11px/1 'Space Grotesk',sans-serif;color:var(--chrome);margin-left:8px}
+/* inline-flex, nicht flex: als Block waere der Knopf eine eigene Zeile, und der
+   Zaehler daneben braeche um — die Kopfzeile waere dann anderthalb Zeilen hoch. */
+.klapper{display:inline-flex;align-items:center;vertical-align:middle;gap:9px;background:none;
+ border:none;padding:0;cursor:pointer;text-align:left;color:inherit;font:inherit}
+.chev{width:10px;font-size:9px;opacity:.75;flex:none}
+.anzahl{font:400 11px/1 'Space Grotesk',sans-serif;color:inherit;opacity:.7;margin-left:8px}
 .marke{font:400 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;
- color:var(--chrome);margin-left:8px}
+ color:inherit;opacity:.7;margin-left:8px}
 .zelle{width:100%;background:none;border:1px solid transparent;border-radius:5px;text-align:right;
  padding:3px 4px;font:inherit;color:inherit;font-variant-numeric:tabular-nums}
-.zelle:hover{border-color:var(--line)}
+.zelle:hover{border-color:var(--feldrand)}
 .zelle:focus{outline:none;border-color:var(--accent);background:var(--soft)}
 .namensfeld{background:none;border:1px solid transparent;border-radius:5px;padding:3px 5px;
- font:400 13px/1.3 'Space Grotesk',sans-serif;color:var(--muted);flex:1 1 auto;min-width:0;width:100%}
-.namensfeld:hover{border-color:var(--line)}
+ font:400 13px/1.3 'Space Grotesk',sans-serif;color:var(--ink);flex:1 1 auto;min-width:0;width:100%}
+.namensfeld:hover{border-color:var(--feldrand)}
 .namensfeld:focus{outline:none;border-color:var(--accent);background:var(--soft);color:var(--ink)}
 .werkzeug{opacity:0;display:inline-flex;gap:5px;margin-left:6px}
 tr:hover .werkzeug,tr:focus-within .werkzeug{opacity:1}
-.griff{cursor:grab;color:var(--chrome);font-size:11px;background:none;border:none;padding:0 2px}
-.weg{cursor:pointer;color:var(--chrome);font-size:12px;background:none;border:none;padding:0 2px;line-height:1}
-.weg:hover{color:var(--ink)}
-.plus{background:none;border:1px solid var(--rule);border-radius:7px;width:20px;height:20px;
- cursor:pointer;color:var(--muted);font-size:12px;line-height:1;padding:0}
-.plus:hover{color:var(--ink)}
-tr.ziel td{background:var(--soft)}
-.fuss{padding:18px 24px 0;max-width:1300px;font:400 12.5px/1.7 'Space Grotesk',sans-serif;color:var(--chrome)}
+.griff{cursor:grab;color:inherit;opacity:.7;font-size:11px;background:none;border:none;padding:0 2px}
+.weg{cursor:pointer;color:inherit;opacity:.7;font-size:12px;background:none;border:none;padding:0 2px;line-height:1}
+.weg:hover{opacity:1}
+.plus{background:none;border:1px solid currentColor;border-radius:7px;width:20px;height:20px;
+ cursor:pointer;color:inherit;opacity:.7;font-size:12px;line-height:1;padding:0}
+.plus:hover{opacity:1}
+.dialog .weg{color:var(--chrome);opacity:1}
+.dialog .weg:hover{color:var(--ink)}
+/* Das Ablegeziel muss man sehen: Flaeche allein ist zu leise. */
+tr.ziel td{background:var(--soft);box-shadow:inset 0 2px 0 var(--accent)}
 .leer{padding:60px 24px;font:400 14px/1.7 'Space Grotesk',sans-serif;color:var(--muted);max-width:640px}
+/* Fusszeile: der Anspruch links, die Version daneben. Kein Hilfetext mehr —
+   der steht seit dem 22.08.2026 im Handbuch hinter dem Fragezeichen oben. */
+.fusszeile{display:flex;align-items:baseline;gap:14px;padding:9px 22px;flex:none;
+ border-top:1px solid var(--line);background:var(--card)}
+.fusszeile .claim{font:600 11.5px/1 'Space Grotesk',sans-serif;letter-spacing:.05em;color:var(--claim)}
+.fusszeile .ver{font:400 11px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;color:var(--muted)}
 
 /* ---------- Dialoge ---------- */
 .schleier{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;display:flex;
@@ -139,25 +194,71 @@ select.feld{font-family:'Space Grotesk',sans-serif}
 .stand{background:none;border:1px solid transparent;border-radius:5px;padding:2px 4px;
  font:400 11px/1.2 'Space Grotesk',sans-serif;color:var(--ink);cursor:pointer;width:100%;
  text-align:right;-webkit-appearance:none;appearance:none;text-align-last:right}
-.stand:hover{border-color:var(--line)}
+.stand:hover{border-color:var(--feldrand)}
 .stand:focus{outline:none;border-color:var(--accent)}
 .datumsfeld{background:none;border:1px solid transparent;border-radius:5px;padding:3px 2px;
  font:400 11px/1.2 'IBM Plex Mono',monospace;color:var(--muted);width:100%;text-align:right}
-.datumsfeld:hover{border-color:var(--line)}
+.datumsfeld:hover{border-color:var(--feldrand)}
 .datumsfeld:focus{outline:none;border-color:var(--accent);background:var(--soft);color:var(--ink)}
 .neusteller{background:none;border:1px dashed var(--rule);border-radius:9px;padding:7px 14px;
  cursor:pointer;font:500 12px/1 'Space Grotesk',sans-serif;color:var(--muted);margin:12px 0 0 22px}
 .neusteller:hover{color:var(--ink)}
+
+/* ---------- Handbuch und Korrekturen ---------- */
+.dialog.gross{min-width:min(720px,92vw);max-width:min(720px,92vw)}
+.handbuch{max-height:62vh;overflow:auto;padding-right:8px;
+ font:400 12.5px/1.65 'Space Grotesk',sans-serif;color:var(--chrome)}
+.handbuch h3{margin:18px 0 6px;font:600 12.5px/1.3 'Space Grotesk',sans-serif;color:var(--ink);
+ letter-spacing:.01em}
+.handbuch h3:first-child{margin-top:0}
+.handbuch p{margin:0 0 9px}
+.handbuch b{color:var(--ink);font-weight:600}
+.handbuch ul{margin:0 0 10px;padding-left:19px}
+.handbuch li{margin:0 0 5px}
+.wahl{display:flex;gap:2px;background:var(--soft);border:1px solid var(--rule);border-radius:9px;padding:3px}
+.wahl button{background:none;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;
+ font:500 12px/1 'Space Grotesk',sans-serif;color:var(--muted)}
+.wahl button.an{background:var(--accent);color:var(--onaccent);font-weight:600}
+.vorschau{font:400 12px/1.6 'IBM Plex Mono',monospace;color:var(--chrome)}
+.vorschau b{color:var(--ink);font-weight:600}
+.korrliste{display:flex;flex-direction:column;gap:7px;max-height:32vh;overflow:auto}
+.korrzeile{display:flex;align-items:center;gap:8px}
+.korrzeile .feld{padding:6px 8px;font-size:12px}
+.korrzeile .betrag{width:104px;flex:none;text-align:right;
+ font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.korrweg{width:82px;flex:none;text-align:center;font:500 11px/1 'IBM Plex Mono',monospace;
+ letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.leerzeile{font:400 12px/1.5 'Space Grotesk',sans-serif;color:var(--muted)}
+
 @page{size:landscape;margin:10mm}
-@media print{.leiste,.fuss,.schleier,.neusteller,.werkzeug,.plus{display:none !important}
- .blatt{overflow:visible;padding:0}body{background:#fff;height:auto;overflow:visible}
- th,tr.saldo td{position:static}}
+/* Druck: schwarz auf weiss, keine Graustufen. Abgehaktes steht fett,
+   weil Gruen und Flaeche auf dem Papier nicht mehr da sind. */
+@media print{
+ :root,[data-theme="hell"],[data-theme="dunkel"]{
+  --bg:#fff;--card:#fff;--soft:#fff;--line:#000;--rule:#000;--ink:#000;--muted:#000;--chrome:#000;
+  --accent:#000;--onaccent:#fff;--gruen:#000;--gitter:#000;--zebra:#fff;--zeile:#fff;
+  --balken:#fff;--balken2:#fff;--aufbalken:#000;--gruenbalken:#000;--rotbalken:#000;--feldrand:#000;
+  --merk:#000;--claim:#000;--pgruen:#000;--porange:#000;--pgrau:#000;--prot:#000}
+ .leiste,.fusszeile,.schleier,.neusteller,.werkzeug,.plus,.mkorr{display:none !important}
+ .blatt{overflow:visible;padding:0}
+ body{background:#fff;height:auto;overflow:visible}
+ *{color:#000 !important;background:#fff !important;background-color:#fff !important;
+  box-shadow:none !important;text-shadow:none !important;-webkit-print-color-adjust:exact}
+ th,tr.saldo td{position:static}
+ td.abgehakt,td.abgehakt .zelle,.gruen{font-weight:700 !important}
+ /* Ohne Flaechen muessen Linie und Fettdruck die Gliederung tragen. */
+ tr.kopf td,tr.gkopf td,tr.summe td,tr.saldo td{font-weight:700 !important;
+  border-top:1px solid #000;border-bottom:1px solid #000}
+ tr.saldoende td{border-bottom:2px solid #000}
+ .zelle,.namensfeld,.datumsfeld,.stand{border-color:transparent !important}
+}
 </style>
 </head>
 <body>
 <div class="leiste" id="leiste"></div>
 <div id="band"></div>
 <div class="blatt" id="blatt"></div>
+<div class="fusszeile" id="fusszeile"></div>
 <div id="dialoge"></div>
 <script>
 "use strict";
@@ -168,6 +269,11 @@ select.feld{font-family:'Space Grotesk',sans-serif}
    Die Daten stehen NICHT in dieser Datei — sie kommen aus gaepp-daten.json,
    aus dem Browserspeicher oder aus dem privaten Repo.
    ========================================================================== */
+
+/* Die Version steht genau hier. Fusszeile, Handbuch, HTML-Export und CSV lesen sie —
+   abgeschrieben wird sie nirgends. */
+const VERSION = '2.0.0';
+const RUNDE = 10;   /* Verteilen rundet auf volle Zehner, immer aufwaerts. */
 
 const MK = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 const ML = ['Januar','Februar','März','April','Mai','Juni','Juli','August',
@@ -183,9 +289,10 @@ const esc = s => String(s == null ? '' : s)
 
 /* ---------------------------------------------------------------- Zustand */
 const S = {
-  theme: 'dunkel', jahr: null, ansicht: 'budget', nullen: false,
+  theme: 'hell', jahr: null, ansicht: 'budget', alleWas: 'budget', nullen: false,
   auf: [], haken: {}, jahre: [], daten: {}, rechnungen: {},
   neu: null, ueb: null, exp: null, wegJahr: null, zieht: null, ziel: null,
+  korr: null, korrWarn: null, basis: null, hb: false,
   stichmonat: '2026-08', sync: 'nicht verbunden', syncText: '',
   geladen: false
 };
@@ -199,13 +306,43 @@ function nutzdaten() {
     daten: S.daten, rechnungen: S.rechnungen, haken: S.haken
   };
 }
+/* Eine Datei aus fremder Hand darf die Anzeige nicht zum Absturz bringen. Alles,
+   was gerechnet oder gezeichnet wird, kommt hier in eine brauchbare Form: zwoelf
+   Monatswerte, Ganzzahlen, Zeichenketten. Was nicht zu retten ist, wird zu null. */
+const zw12 = r => { const a = Array.isArray(r) ? r.slice(0,12) : [];
+  while (a.length < 12) a.push(0);
+  return a.map(x => { const n = Number(x); return isFinite(n) ? Math.round(n) : 0; }); };
+const zGanz = x => { const n = Number(x); return isFinite(n) ? Math.round(n) : 0; };
+const zText = x => (x == null ? '' : String(x));
+
 function uebernimm(d) {
   if (!d || typeof d !== 'object') throw new Error('Keine gültige Datei.');
   if (!d.daten || !d.jahre) throw new Error('Der Datei fehlen «jahre» oder «daten».');
-  S.jahre = d.jahre.map(Number).sort((a,b) => a-b);
+  S.jahre = (Array.isArray(d.jahre) ? d.jahre : []).map(Number)
+    .filter(x => isFinite(x)).sort((a,b) => a-b);
+  if (!S.jahre.length) throw new Error('Die Datei führt keinen einzigen Jahrgang.');
   S.daten = d.daten;
   S.rechnungen = d.rechnungen || {};
   S.haken = d.haken || {};
+  let ersatz = 0;
+  const heilePos = p => { p.reihe = zw12(p.reihe); p.basis = zGanz(p.basis);
+    p.name = zText(p.name); p.key = zText(p.key) || ('ohne' + (++ersatz)); };
+  S.jahre.forEach(j => {
+    if (!Array.isArray(S.daten[j])) S.daten[j] = [];
+    S.daten[j].forEach(b => {
+      b.name = zText(b.name); b.key = zText(b.key);
+      if (b.art === 'schulden') { if (!Array.isArray(b.gruppen)) b.gruppen = [];
+        b.gruppen.forEach(g => { g.name = zText(g.name); g.key = zText(g.key);
+          if (!Array.isArray(g.pos)) g.pos = []; g.pos.forEach(heilePos); }); }
+      else { if (!Array.isArray(b.pos)) b.pos = []; b.pos.forEach(heilePos); }
+    });
+    if (!Array.isArray(S.rechnungen[j])) S.rechnungen[j] = [];
+    S.rechnungen[j].forEach(g => { g.name = zText(g.name);
+      if (!Array.isArray(g.rechnungen)) g.rechnungen = [];
+      g.rechnungen.forEach(r => { r.reihe = zw12(r.reihe); r.betrag = zGanz(r.betrag);
+        r.zweck = zText(r.zweck); r.datum = zText(r.datum);
+        if (STAENDE.indexOf(r.stand) < 0) r.stand = STAENDE[0]; }); });
+  });
   if (d.meta && d.meta.stichmonat) S.stichmonat = d.meta.stichmonat;
   /* Zähler über alle vergebenen Ids heben, damit neue Ids nie kollidieren. */
   let hoch = 0;
@@ -224,50 +361,125 @@ function uebernimm(d) {
 }
 
 /* ------------------------------------------------------------- Formatieren */
+/* Symmetrisch runden: minus zwei Komma fuenf wird minus drei, nicht minus zwei.
+   Math.round rundet bei einer halben Einheit zur Null hin und behandelt Plus und
+   Minus dadurch verschieden. */
+const runde = n => (n < 0 ? -1 : 1) * Math.round(Math.abs(n));
 function fmt(n, immer) {
-  const r = Math.round(n || 0);
+  const r = runde(n || 0);
   if (r === 0 && !S.nullen && !immer) return '';
   return (r < 0 ? '−' : '') + String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 }
 function zahl(v) {
-  const n = parseFloat(String(v).replace(/[^0-9.,−-]/g,'').replace(/'/g,'')
-    .replace('−','-').replace(',','.'));
-  return isNaN(n) ? 0 : Math.round(n);
+  let s = String(v == null ? '' : v).replace(/[\s'’]/g,'').replace(/−/g,'-');
+  s = s.replace(/[^0-9.,-]/g,'');
+  /* Steht ein Komma da, ist es der Dezimaltrenner und der Punkt trennt Tausender:
+     «1.234,50» ist eintausendzweihundertvierunddreissig Franken fuenfzig. */
+  if (s.indexOf(',') >= 0) s = s.replace(/\./g,'').replace(',','.');
+  /* Mehr als ein Punkt kann nur eine Tausendertrennung sein: «1.234.567». */
+  else if ((s.match(/\./g) || []).length > 1) s = s.replace(/\./g,'');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : runde(n);
 }
 const su = r => (r || []).reduce((s,x) => s + (x||0), 0);
+/* Raten koennen eine Schuld auf null tilgen, aber nicht ins Minus. Eine Basis,
+   die schon im Minus steht, bleibt dort — sie ist ein Befund, und eine Rate darf
+   einen Befund nicht wegrechnen. */
+const nachRaten = (basis, raten) => {
+  if (raten < 0) return basis - raten;            /* negative Rate: die Schuld waechst */
+  return basis <= 0 ? basis : Math.max(0, basis - raten);
+};
 const jahre = () => S.jahre.slice().sort((a,b) => a-b);
 const vorjahr = j => { const k = S.jahre.filter(x => x < j); return k.length ? Math.max.apply(null,k) : null; };
 const offen = id => S.auf.indexOf(id) >= 0;
 const hakenAn = (pid,m) => !!S.haken[pid + ':' + m];
+/* Rechnungen tragen ihre Monatshaken im selben Vorrat wie das Budget. Eine ganz
+   als «Bezahlt» gemeldete Rechnung gilt in jedem ihrer Monate als abgehakt. */
+const monatBezahlt = (r,m) => r.stand === 'Bezahlt' || hakenAn(r.id, m);
+const stellerGruen = (g,m) => {
+  const mit = (g.rechnungen||[]).filter(r => ((r.reihe||[])[m]||0) !== 0);
+  return mit.length > 0 && mit.every(r => monatBezahlt(r,m));
+};
+/* Alle Monate mit einem Wert abgehakt? Dann ist die Rechnung bezahlt. */
+const rechnungRund = r => {
+  const mit = (r.reihe||[]).map((v,m) => ({v,m})).filter(x => x.v !== 0);
+  return mit.length > 0 && mit.every(x => hakenAn(r.id, x.m));
+};
 const schuldBlock = j => (S.daten[j] || []).find(b => b.art === 'schulden');
+/* Rueckstellungen werden verteilt, alle anderen Kategorien uebertragen — der
+   Vorschlag im Basis-Fenster haengt daran, nicht die Wahl selbst. */
+const istRueckstellung = b => /r(ue|ü|u)ckstell/i.test(String(b && b.key || '') + ' ' + String(b && b.name || ''));
+/* Verteilen: Betrag durch zwoelf, auf volle Zehner AUFgerundet. Nie abrunden. */
+const proMonat = betrag => Math.ceil(Math.abs(betrag) / 12 / RUNDE) * RUNDE * (betrag < 0 ? -1 : 1);
 /* Rechnungssteller stehen immer alphabetisch — Ansicht, Druck und Export gleich. */
 const steller = j => (S.rechnungen[j] || []).slice().sort((a,b) =>
   String(a.name||'').localeCompare(String(b.name||''), 'de-CH', { sensitivity:'base', numeric:true }));
 
+/* ---- Manuelle Korrekturen an Schuldsalden ---------------------------------
+   p.korr = { basis: [{id,betrag,notiz}], rest: [{id,betrag,notiz}] }
+   betrag positiv = Saldo erhoehen, negativ = Saldo reduzieren.
+
+     basis(J) = (geerbt ? rest(J-1) : eigener Anfangsstand) + Summe korr.basis(J)
+     rest(J)  = max(0, basis(J) - Summe Raten(J))          + Summe korr.rest(J)
+
+   Damit ist die Fortschreibung ins Folgejahr keine Aktion, sondern die Rechnung
+   selbst — wie eine Verknuepfung im Excel. Nichts wird von Hand ausgeloest. */
+const korrListe = (p, art) => ((p && p.korr && p.korr[art]) || []);
+const korrSum = (p, art) => korrListe(p, art).reduce((s,x) => s + (x.betrag||0), 0);
+const hatKorr = p => korrListe(p,'basis').length > 0 || korrListe(p,'rest').length > 0;
+
+function posVon(j, gKey, pKey) {
+  const blk = schuldBlock(j); if (!blk) return null;
+  const g = (blk.gruppen||[]).find(x => x.key === gKey); if (!g) return null;
+  return (g.pos||[]).find(x => x.key === pKey) || null;
+}
+
 /* Anfangsstand = Rest des Vorjahrs. Ändert sich eine Rate 2026, wandert der
    neue Rest von selbst in 2027 und weiter. Rekursiv bis zum ersten Jahrgang. */
 function basisVon(j, gKey, pKey, eigen) {
+  const kb = korrSum(posVon(j, gKey, pKey), 'basis');
+  /* Die Raten klemmen bei null — mehr als die Schuld kann keine Rate tilgen.
+     Eine Korrektur klemmt NICHT: Wer mehr wegnimmt, als da ist, soll das sehen.
+     Ein Plan, der nicht aufgeht, ist ein Befund und keine Aufgabe fuer den
+     Taschenrechner — und sonst zeigten Rest und Basis des Folgejahrs zwei
+     verschiedene Zahlen fuer dieselbe Sache. */
+  const selbst = () => (eigen || 0) + kb;
   const v = vorjahr(j);
-  if (v === null) return eigen;
-  const blk = schuldBlock(v); if (!blk) return eigen;
-  const g = (blk.gruppen||[]).find(x => x.key === gKey); if (!g) return eigen;
-  const p = (g.pos||[]).find(x => x.key === pKey); if (!p) return eigen;
-  const vorBasis = basisVon(v, gKey, pKey, p.basis);
+  if (v === null) return selbst();
+  const vp = posVon(v, gKey, pKey);
+  if (!vp) return selbst();
+  const vorBasis = basisVon(v, gKey, pKey, vp.basis);
   /* Ein Jahrgang, der die Schuld nur dem Namen nach fuehrt — kein Anfangsstand,
-     keine Rate — traegt nichts bei und ist durchlaessig. Sonst wuerde ein leeres
-     Geruest den Anfangsstand des Folgejahrs auf null ziehen. */
-  if (vorBasis === 0 && su(p.reihe) === 0) return eigen;
-  return Math.max(0, vorBasis - su(p.reihe));
+     keine Rate, keine Korrektur — traegt nichts bei und ist durchlaessig. Sonst
+     wuerde ein leeres Geruest den Anfangsstand des Folgejahrs auf null ziehen. */
+  if (vorBasis === 0 && su(vp.reihe) === 0 && korrSum(vp,'rest') === 0) return selbst();
+  return nachRaten(vorBasis, su(vp.reihe)) + korrSum(vp,'rest') + kb;
+}
+
+/* Der Rest am 31.12. — dieselbe Zahl, die im Folgejahr die Basis ist.
+   Derselbe Rechenweg wie oben, damit die beiden nie auseinanderlaufen. */
+function restVon(j, gKey, pKey) {
+  const p = posVon(j, gKey, pKey); if (!p) return 0;
+  return nachRaten(basisVon(j, gKey, pKey, p.basis), su(p.reihe)) + korrSum(p,'rest');
 }
 
 /* Traegt das direkte Vorjahr dieselbe Schuld? Dann ist die Basis geerbt und
    nicht tippbar — der Anfangsstand ist der Rest des Vorjahrs, keine Wahl. */
 function basisGeerbt(j, gKey, pKey) {
   const v = vorjahr(j); if (v === null) return false;
-  const blk = schuldBlock(v); if (!blk) return false;
-  const g = (blk.gruppen||[]).find(x => x.key === gKey); if (!g) return false;
-  const p = (g.pos||[]).find(x => x.key === pKey); if (!p) return false;
-  return basisVon(v, gKey, pKey, p.basis) > 0 || su(p.reihe) !== 0;
+  const vp = posVon(v, gKey, pKey); if (!vp) return false;
+  return basisVon(v, gKey, pKey, vp.basis) !== 0 || su(vp.reihe) !== 0 || korrSum(vp,'rest') !== 0;
+}
+
+/* Spaetere Jahrgaenge, die fuer dieselbe Schuld eine eigene Korrektur am
+   Anfangssaldo tragen — der Grund fuer die Warnung beim Fortschreiben. */
+function folgeKorrekturen(j, gKey, pKey) {
+  return jahre().filter(x => x > j).map(x => {
+    const p = posVon(x, gKey, pKey);
+    if (!p || !korrListe(p,'basis').length) return null;
+    return { jahr:x, betrag:korrSum(p,'basis'),
+      notizen: korrListe(p,'basis').map(k => k.notiz).filter(Boolean) };
+  }).filter(Boolean);
 }
 
 /* ------------------------------------------------- Zeilen eines Jahrgangs */
@@ -294,13 +506,14 @@ function bau(jahr, alles) {
         const enkel = [];
         (g.pos||[]).forEach(p => {
           const basis = basisVon(jahr, g.key, p.key, p.basis);
-          const rest = Math.max(0, basis - su(p.reihe));
+          const rest = nachRaten(basis, su(p.reihe)) + korrSum(p,'rest');
           gsum = plus(gsum, p.reihe); gBasis += basis; gRest += rest;
           enkel.push({ typ:'pos', id:p.id, eltern:g.id, name:p.name, bs:basis,
-            reihe:p.reihe, jw:rest, tief:3, geerbt: basisGeerbt(jahr, g.key, p.key) });
+            reihe:p.reihe, jw:rest, tief:3, geerbt: basisGeerbt(jahr, g.key, p.key),
+            schuld:true, korr:hatKorr(p) });
         });
         kinder.push({ typ:'gkopf', id:g.id, eltern:b.id, name:g.name, reihe:gsum, auf:gAuf,
-          bs:gBasis, jw:gRest, anzahl:(g.pos||[]).length + ' Gläubiger' });
+          bs:gBasis, jw:gRest, anzahl:(g.pos||[]).length });
         if (gAuf) enkel.forEach(x => kinder.push(x));
         bsum = plus(bsum, gsum); bBasis += gBasis; bRest += gRest;
       });
@@ -309,7 +522,7 @@ function bau(jahr, alles) {
         const r = p.spiegel === 'tilgung' ? tilgung : p.reihe;
         bsum = plus(bsum, r);
         kinder.push({ typ:'pos', id:p.id, eltern:b.id, name:p.name, bs:p.basis, reihe:r,
-          jw:su(r), tief:2, fix: !!p.fix,
+          jw:su(r), tief:2, fix: !!p.fix, verteilen: istRueckstellung(b),
           marke: p.spiegel === 'tilgung' ? 'gegenposten zur tilgung' : '' });
       });
       bRest = su(bsum);
@@ -317,8 +530,7 @@ function bau(jahr, alles) {
 
     out.push({ typ:'kopf', id:b.id, name:b.name, reihe:bsum, auf:bAuf,
       bs: b.art === 'schulden' ? bBasis : 0, jw:bRest, schulden: b.art === 'schulden',
-      anzahl: b.art === 'schulden' ? (b.gruppen||[]).length + ' Gruppen'
-                                   : (b.pos||[]).length + ' Positionen' });
+      anzahl: b.art === 'schulden' ? (b.gruppen||[]).length : (b.pos||[]).length });
     if (bAuf) kinder.forEach(x => out.push(x));
     if (b.vz === 1) einnahmen = plus(einnahmen, bsum); else ausgaben = plus(ausgaben, bsum);
   });
@@ -361,36 +573,84 @@ function kennzahlen() {
   const hm = parseInt(S.stichmonat.slice(5,7), 10) - 1;
   const hj = js.indexOf(hj0) >= 0 ? hj0 : js[js.length-1];
 
-  let rest = 0, getilgt = 0, anfang = 0;
   const blk = schuldBlock(hj);
+  /* Stand einer einzelnen Schuld am Stichmonat. Eine Korrektur am Jahresende ist
+     am 31.12. gebucht — sie zaehlt hier nur, wenn der Stichmonat der Dezember
+     ist. Sonst zeigten zwei Anzeigen derselben Zahl sie verschieden. */
+  const standHeute = (g, p) =>
+    nachRaten(basisVon(hj, g.key, p.key, p.basis), su((p.reihe||[]).slice(0, hm+1)))
+    + (hm === 11 ? korrSum(p,'rest') : 0);
+
+  let rest = 0;
+  if (blk) (blk.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => { rest += standHeute(g, p); }));
+
+  /* Anfangsstand: jede Schuld mit dem Stand ihres EIGENEN ersten Jahres — nicht
+     alle aus einem Jahrgang. Gemessen wird an den Zahlen, nicht an der Laenge der
+     Liste: ein Geruest fuehrt seine Glaeubiger dem Namen nach und traegt nichts. */
+  let anfang = 0, erstJahr = null;
+  const anfangVon = (gKey, pKey) => {
+    for (const j of js) {
+      if (j > hj) break;                          /* was spaeter beginnt, laeuft noch nicht */
+      const p = posVon(j, gKey, pKey);
+      if (!p || basisGeerbt(j, gKey, pKey)) continue;
+      const a = basisVon(j, gKey, pKey, p.basis);
+      if (a === 0) continue;
+      return { a, j };
+    }
+    return null;
+  };
+  /* Gezaehlt werden genau die Schulden, die auch in «Restschuld heute» stecken.
+     Sonst stuende in «Getilgt bisher» eine Schuld, die noch gar nicht laeuft. */
   if (blk) (blk.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => {
-    const basis = basisVon(hj, g.key, p.key, p.basis);
-    rest += Math.max(0, basis - su((p.reihe||[]).slice(0, hm+1)));
+    const t = anfangVon(g.key, p.key);
+    if (!t) return;
+    anfang += t.a;
+    if (erstJahr === null || t.j < erstJahr) erstJahr = t.j;
   }));
-  /* Leere Jahrgaenge zaehlen nicht als Anfang — sonst waere die Quote null. */
-  let erstJahr = null;
-  for (const j of js) { const b = schuldBlock(j);
-    if (b && (b.gruppen||[]).some(g => (g.pos||[]).length)) { erstJahr = j; break; } }
-  const erst = erstJahr === null ? null : schuldBlock(erstJahr);
-  if (erst) (erst.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => { anfang += p.basis; }));
+
+  /* Getilgt ist, was vom Anfangsstand verschwunden ist. Roh aufsummierte Raten
+     gehen nicht auf — eine Rate, die groesser ist als die Restschuld, tilgt nur
+     bis null. «Anfang minus Getilgt» muss die Restschuld ergeben, sonst steht
+     im Band eine Quote, die niemand nachrechnen kann. */
+  const getilgt = anfang - rest;
+
+  /* Schuldenfrei: jede Schuld laeuft fuer sich. Wer alle Raten in einen Topf
+     wirft, rechnet die Rate einer getilgten Schuld auf die uebrigen an und wird
+     zu frueh fertig. Nach dem letzten erfassten Jahr wiederholt sich dessen Rate. */
+  const letzte = js[js.length-1];
+  const rateVon = (j, gKey, pKey, m) => {
+    const p = posVon(j >= letzte ? letzte : j, gKey, pKey);
+    return p ? ((p.reihe||[])[m] || 0) : 0; };
+  const korrVon = (j, gKey, pKey, art) => {
+    const p = posVon(j, gKey, pKey); return p ? korrSum(p, art) : 0; };
+
+  let frei = null, haengt = false, unstimmig = false;
+  if (blk) (blk.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => {
+    let stand = standHeute(g, p);
+    if (stand <= 0) return;                       /* diese Schuld ist durch */
+    let jL = hj, mL = hm, schritte = 0, ueberspringe = (hm === 11), fertig = null;
+    while (schritte < 480) {
+      mL++;
+      if (mL > 11) { if (ueberspringe) ueberspringe = false;
+        else stand += korrVon(jL, g.key, p.key, 'rest');
+        mL = 0; jL++; stand += korrVon(jL, g.key, p.key, 'basis'); }
+      const rate = rateVon(jL, g.key, p.key, mL);
+      if (rate <= 0 && stand > 0 && schritte > 240) break;
+      stand -= rate; schritte++;
+      if (stand <= 0) { fertig = { j:jL, m:mL }; break; }
+    }
+    if (!fertig) { haengt = true; return; }
+    if (!frei || fertig.j > frei.j || (fertig.j === frei.j && fertig.m > frei.m)) frei = fertig;
+  }));
+  if (haengt) frei = null;
+  else if (!frei) frei = { j:hj, m:hm };          /* keine offene Schuld mehr */
+
+  /* Ein Befund ist ein Befund, egal in welchem Monat man draufschaut. Deshalb
+     wird jeder Jahrgang gefragt und nicht nur der Stichmonat. */
   js.forEach(j => { const b = schuldBlock(j); if (!b) return;
     (b.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => {
-      const bis = j < hj ? 12 : (j === hj ? hm+1 : 0);
-      getilgt += su((p.reihe||[]).slice(0, bis)); })); });
-
-  /* Schuldenfrei: Raten der erfassten Jahre, danach das letzte Jahr wiederholt. */
-  const letzte = js[js.length-1];
-  const ratenIn = j => { const b = schuldBlock(j >= letzte ? letzte : j), r = N12();
-    if (b) (b.gruppen||[]).forEach(g => (g.pos||[]).forEach(p =>
-      (p.reihe||[]).forEach((v,m) => { r[m] += v; }))); return r; };
-  let stand = rest, jL = hj, mL = hm, schritte = 0, frei = null;
-  while (schritte < 480) {
-    mL++; if (mL > 11) { mL = 0; jL++; }
-    const rate = ratenIn(jL)[mL];
-    if (rate <= 0 && stand > 0 && schritte > 240) break;
-    stand -= rate; schritte++;
-    if (stand <= 0) { frei = { j:jL, m:mL }; break; }
-  }
+      if (basisVon(j, g.key, p.key, p.basis) < 0 || restVon(j, g.key, p.key) < 0) unstimmig = true;
+    })); });
 
   let off = 0;
   (S.daten[hj]||[]).forEach(b => {
@@ -400,11 +660,15 @@ function kennzahlen() {
     liste.forEach(p => { const v = (p.reihe||[])[hm];
       if (v !== 0 && !hakenAn(p.id, hm)) off += v; });
   });
+  /* Wie im Budget: was in diesem Monat weder abgehakt noch als bezahlt gemeldet ist. */
   (S.rechnungen[hj]||[]).forEach(g => (g.rechnungen||[]).forEach(r => {
-    if (r.stand === 'Offen') off += (r.reihe||[])[hm] || 0; }));
+    if (r.stand !== 'Bezahlt' && !hakenAn(r.id, hm)) off += (r.reihe||[])[hm] || 0; }));
 
   return { jahr:hj, monat:hm, rest, getilgt, anfang, offen:off, erstJahr,
-    quote: anfang ? Math.round(getilgt/anfang*100) : 0, frei };
+    quote: anfang ? Math.round(getilgt/anfang*100) : 0, frei,
+    /* Ein Saldo unter null heisst: eine Korrektur nimmt mehr weg, als da ist.
+       Das ist ein Befund, keine Zahl, mit der weitergerechnet wird. */
+    unstimmig: unstimmig || rest < 0 };
 }
 
 /* ==================================================================== Bild */
@@ -414,31 +678,105 @@ const B = {  /* Spaltenbreiten — zwölf Monate ohne Querscrollen */
   rech:   { name:206, datum:96, betrag:74, monat:64, saldo:66, stand:128 }
 };
 
+/* Die Kennzeichen, ueber die ein Feld nach dem Neuzeichnen wiedergefunden wird.
+   Links der Name im dataset, rechts der im Auszeichnungstext. */
+const MERKFELD = [['z','z'],['rm','rm'],['r','r'],['f','f'],['p','p'],['s','s'],['m','m'],['b','b'],
+                  ['korrB','korr-b'],['korrN','korr-n']];
+
+/* Ein Neuzeichnen kann waehrend des Neuzeichnens ausgeloest werden: das Ersetzen
+   des Blatts nimmt dem getippten Feld den Fokus, das loest «change» aus, und
+   «change» zeichnet neu. Die aeussere Zuweisung von innerHTML brach dann mit
+   NotFoundError ab. Deshalb ein Riegel und hoechstens zwei Nachzuege. */
+let zeichnet = false, nachzug = 0;
+/* Wer eine Zeile anlegt, will sie benennen. Das Feld gibt es erst nach dem
+   Neuzeichnen — deshalb der Wunsch, der danach eingeloest wird. */
+let fokusWunsch = null;
 function zeichne() {
+  if (zeichnet) { nachzug++; return; }
+  zeichnet = true;
+  try {
+    let runden = 0;
+    do { nachzug = 0; zeichneJetzt(); runden++; } while (nachzug && runden < 3);
+  } catch (e) {
+    /* Ein Datenstand, der die Anzeige zum Absturz bringt, darf die App nicht
+       unbedienbar zuruecklassen. Es muss immer einen Weg zurueck geben. */
+    notausgang(e);
+  } finally { zeichnet = false; }
+}
+function notausgang(e) {
+  try {
+    document.getElementById('leiste').innerHTML = '<span class="wort">GÄPP</span>';
+    document.getElementById('band').innerHTML = '';
+    document.getElementById('dialoge').innerHTML = '';
+    document.getElementById('fusszeile').innerHTML = fusszeile();
+    document.getElementById('blatt').innerHTML = '<div class="leer">'
+      + '<p style="margin:0 0 14px">Dieser Datenstand lässt sich nicht anzeigen.</p>'
+      + '<p style="margin:0 0 18px;color:var(--chrome)">' + esc(String((e && e.message) || e)) + '</p>'
+      + '<button class="tat" data-laden="1">Andere Datei laden</button> '
+      + '<button class="ab" data-vergiss="1">Browserspeicher leeren und neu starten</button></div>';
+  } catch (x) {}
+}
+
+/* Ein Klick von einer Zelle in die naechste loest auf der alten Zelle «change»
+   aus. Wuerde GAEPP sofort neu zeichnen, waere die angeklickte Zelle weg, bevor
+   der Klick dort ankommt — der Fokus landete wieder in der zuvor bearbeiteten
+   Zelle. Deshalb wird nach einer Aenderung erst im naechsten Durchgang gezeichnet,
+   wenn der Klick angekommen ist. */
+let baldZeichnen = null;
+function zeichneBald() {
+  if (baldZeichnen) return;
+  baldZeichnen = setTimeout(() => { baldZeichnen = null; zeichne(); }, 0);
+}
+function zeichneJetztFalls() {
+  if (!baldZeichnen) return;
+  clearTimeout(baldZeichnen); baldZeichnen = null; zeichne();
+}
+/* Nur der Rahmen. Eine Meldung aus dem Sichern geht das Blatt nichts an — wer
+   dort gerade tippt, soll seinen halben Satz behalten. */
+function zeichneRahmen() {
+  const l = document.getElementById('leiste');
+  if (l) l.innerHTML = leiste();
+}
+
+function zeichneJetzt() {
   const akt = document.activeElement;
-  const merk = akt && akt.dataset ? { z:akt.dataset.z, r:akt.dataset.r, f:akt.dataset.f,
-    p:akt.dataset.p, s:akt.dataset.s, m:akt.dataset.m, b:akt.dataset.b, k:akt.className,
-    pos:(akt.selectionStart != null ? akt.selectionStart : null) } : null;
+  const merk = akt && akt.dataset ? { k:akt.className,
+    pos:(akt.selectionStart != null ? akt.selectionStart : null),
+    bis:(akt.selectionEnd != null ? akt.selectionEnd : null) } : null;
+  if (merk) MERKFELD.forEach(f => { merk[f[0]] = akt.dataset[f[0]]; });
 
   document.documentElement.setAttribute('data-theme', S.theme);
   document.getElementById('leiste').innerHTML = leiste();
   document.getElementById('band').innerHTML = band();
   document.getElementById('blatt').innerHTML = blatt();
+  document.getElementById('fusszeile').innerHTML = fusszeile();
   document.getElementById('dialoge').innerHTML = dialoge();
 
   klebEinstellen();
 
   if (merk) {
     const teile = [];
-    ['z','r','f','p','s','m','b'].forEach(k => { if (merk[k] != null) teile.push('[data-'+k+'="'+merk[k]+'"]'); });
+    MERKFELD.forEach(f => { if (merk[f[0]] != null) teile.push('[data-'+f[1]+'="'+merk[f[0]]+'"]'); });
     if (teile.length) {
       const kand = document.querySelectorAll(teile.join(''));
+      /* Verglichen wird nur der erste Klassenteil. Eine Zelle, die durch die
+         eigene Eingabe von «zelle» auf «zelle gruen» wechselt, waere sonst nach
+         dem Neuzeichnen nicht mehr wiederzufinden — der Fokus fiele ins Leere. */
+      const erste = c => String(c || '').trim().split(/\s+/)[0];
       for (const el of kand) {
-        if (el.className === merk.k) { el.focus();
-          if (merk.pos != null && el.setSelectionRange) { try { el.setSelectionRange(merk.pos, merk.pos); } catch(e){} }
+        if (erste(el.className) === erste(merk.k)) {
+          el.focus();
+          if (merk.pos != null && el.setSelectionRange) {
+            try { el.setSelectionRange(merk.pos, merk.bis != null ? merk.bis : merk.pos); } catch(e){} }
           break; }
       }
     }
+  }
+
+  if (fokusWunsch) {
+    const ziel = document.querySelector(fokusWunsch);
+    fokusWunsch = null;
+    if (ziel) { ziel.focus(); if (ziel.select) { try { ziel.select(); } catch(e){} } }
   }
 }
 
@@ -460,10 +798,12 @@ function leiste() {
   const jk = js.map(j => '<button class="mono' + (S.ansicht !== 'alle' && S.jahr === j ? ' an' : '')
     + '" data-geh-jahr="' + j + '">' + j + '</button>').join('');
   const an = S.ansicht === 'alle';
-  const ans = S.ansicht === 'alle' ? '' :
-    '<span class="gruppe">'
-    + '<button' + (S.ansicht==='budget'?' class="an"':'') + ' data-geh-ansicht="budget">Budget</button>'
-    + '<button' + (S.ansicht==='rechnung'?' class="an"':'') + ' data-geh-ansicht="rechnung">Rechnungen</button>'
+  /* Die Umschaltung bleibt auch in «Alle» stehen — Rechnungen fuehren dort
+     seit dem 22.08.2026 eine eigene Jahresansicht, analog zum Budget. */
+  const was = an ? S.alleWas : S.ansicht;
+  const ans = '<span class="gruppe">'
+    + '<button' + (was==='budget'?' class="an"':'') + ' data-geh-ansicht="budget">Budget</button>'
+    + '<button' + (was==='rechnung'?' class="an"':'') + ' data-geh-ansicht="rechnung">Rechnungen</button>'
     + '</span>';
   return '<span class="wort">GÄPP</span>'
     + '<span class="gruppe">' + jk
@@ -475,6 +815,8 @@ function leiste() {
     + '</span>'
     + ans
     + '<span class="rechts">'
+    + '<button class="knopf" data-hb="1" title="Handbuch" '
+    + 'style="font-weight:700;padding:7px 12px;font-size:13px">?</button>'
     + '<button class="knopf" data-alle-um="1">' + (S.auf.length ? 'Alles zuklappen' : 'Alles aufklappen') + '</button>'
     + '<button class="knopf" data-nullen="1">' + (S.nullen ? 'Nullen ausblenden' : 'Nullen zeigen') + '</button>'
     + '<button class="knopf hell" data-exp="1">HTML sichern</button>'
@@ -488,18 +830,32 @@ function leiste() {
 
 /* ------------------------------------------------------ Kennzahlenband */
 function band() {
-  if (!(S.ansicht === 'budget' || S.ansicht === 'alle') || !S.geladen) return '';
+  const was = S.ansicht === 'alle' ? S.alleWas : S.ansicht;
+  if (was !== 'budget' || !S.geladen) return '';
   const k = kennzahlen(); if (!k) return '';
   const js = jahre();
   const frei = k.frei ? ML[k.frei.m] + ' ' + k.frei.j : null;
   const monate = k.frei ? (k.frei.j - k.jahr) * 12 + (k.frei.m - k.monat) : null;
   const kach = [
-    ['Restschuld heute', fmt(k.rest, true), '', ML[k.monat] + ' ' + k.jahr],
-    ['Schuldenfrei', frei || 'nicht nach diesem Plan', frei ? '' : 'color:var(--muted)',
-      frei ? 'in ' + monate + ' Monaten, wenn die Raten so laufen'
-           : 'die Raten der letzten Jahre reichen nicht'],
-    ['Getilgt bisher', fmt(k.getilgt, true), '',
-      k.quote + ' % von ' + fmt(k.anfang, true) + ' seit ' + (k.erstJahr || js[0])],
+    ['Restschuld heute', fmt(k.rest, true), k.rest < 0 ? 'color:var(--prot)' : '',
+      k.rest < 0 ? 'unter null — eine Korrektur nimmt mehr weg, als da ist'
+                 : ML[k.monat] + ' ' + k.jahr],
+    ['Schuldenfrei',
+      k.unstimmig ? 'der Plan geht nicht auf' : (frei || 'nicht nach diesem Plan'),
+      (k.unstimmig || !frei) ? 'color:var(--muted)' : '',
+      k.unstimmig ? 'erst die Korrekturen richtigstellen'
+        : (frei ? (monate > 0
+                     ? 'in ' + monate + (monate === 1 ? ' Monat' : ' Monaten')
+                       + ', wenn die Raten so laufen'
+                     : 'keine offene Schuld mehr')
+                : 'die Raten der letzten Jahre reichen nicht')],
+    /* Eine Quote ausserhalb von null bis hundert ist ein Befund, keine Meldung. */
+    ['Getilgt bisher', fmt(k.getilgt, true),
+      (k.anfang > 0 && (k.quote < 0 || k.quote > 100)) ? 'color:var(--prot)' : '',
+      k.anfang <= 0 ? 'keine Schuld mit Anfangsstand erfasst'
+        : (k.quote < 0 || k.quote > 100)
+          ? 'die Zahlen gehen nicht auf — ' + k.quote + ' % von ' + fmt(k.anfang, true)
+          : k.quote + ' % von ' + fmt(k.anfang, true) + ' seit ' + (k.erstJahr || js[0])],
     ['Offen in ' + ML[k.monat], fmt(k.offen, true),
       k.offen > 0 ? '' : 'color:var(--gruen)',
       k.offen > 0 ? 'noch nicht erledigt — Rechtsklick hakt ab' : 'alles erledigt']
@@ -513,9 +869,15 @@ function band() {
 /* ------------------------------------------------------------ Das Blatt */
 function blatt() {
   if (!S.geladen) return leerText();
-  if (S.ansicht === 'alle') return alleJahre();
+  if (S.ansicht === 'alle') return S.alleWas === 'rechnung' ? alleJahreRechnungen() : alleJahre();
   if (S.ansicht === 'rechnung') return rechnungsblatt();
   return budgetblatt();
+}
+/* Kein Hilfetext mehr unter der Tabelle — der steht im Handbuch hinter dem
+   Fragezeichen. Hier unten stehen Anspruch und Version. */
+function fusszeile() {
+  return '<span class="claim">Passend | Präzise | Praktisch</span>'
+    + '<span class="ver">GÄPP V ' + VERSION + '</span>';
 }
 function leerText() {
   return '<div class="leer"><p style="margin:0 0 14px">Noch keine Daten geladen.</p>'
@@ -551,7 +913,11 @@ function budgetblatt() {
     + '<td class="name" style="padding-left:14px">' + esc(name) + '</td>'
     + '<td></td>'
     + reihe.map(v => '<td style="font-weight:' + (stark ? 700 : 600) + '">' + F(v) + '</td>').join('')
-    + '<td class="jahr" style="font-weight:700">' + F(jw) + '</td></tr>';
+    /* Ein Jahressaldo unter null ist ein Befund und steht nicht da wie jede
+       andere Zahl — auch wenn einzelne Monate im Minus voellig normal sind. */
+    + '<td class="jahr' + (jw < 0 ? ' unstimmig' : '') + '" style="font-weight:700"'
+    + (jw < 0 ? ' title="Der Plan dieses Jahres geht nicht auf."' : '') + '>'
+    + F(jw) + '</td></tr>';
 
   const kopf = '<thead><tr><th class="ecke">Budget ' + jahr + '</th><th>Basis</th>'
     + MK.map(m => '<th>' + m + '</th>').join('')
@@ -568,20 +934,25 @@ function budgetblatt() {
       const haupt = z.typ === 'kopf';
       zeilen.push('<tr class="' + (haupt ? 'kopf' : 'gkopf') + '" data-k="' + z.id + '"'
         + ' data-p="' + esc(z.eltern || '') + '" data-id="' + z.id + '">'
-        + '<td class="name" style="padding-left:' + (haupt ? 14 : 30) + 'px;padding-top:'
-        + (haupt ? 11 : 9) + 'px;padding-bottom:' + (haupt ? 11 : 9)
-        + 'px;border-top:1px solid var(--rule)' + (haupt ? '' : ';background:var(--bg)') + '">'
-        + '<button class="klapper" data-klapp="' + z.id + '" style="font-weight:' + (haupt?700:600) + ';font-size:13px">'
+        /* Kein eigener Grund fuer die Gruppenzeile: den setzt «tr.gkopf td». Ein
+           Inline-Grund gewinnt gegen die Regel und liess den Namen im hellen
+           Schema weiss auf weiss stehen. */
+        + '<td class="name" style="padding-left:' + (haupt ? 14 : 30) + 'px'
+        + ';border-top:1px solid var(--rule)">'
+        + '<button class="klapper" data-klapp="' + z.id + '" title="' + esc(z.name) + '">'
         + '<span class="chev">' + (z.auf ? '▾' : '▸') + '</span>' + esc(z.name) + '</button>'
-        + (z.auf ? '' : '<span class="anzahl">' + esc(z.anzahl) + '</span>')
+        + (z.auf ? '' : '<span class="anzahl" title="'
+            + (z.schulden ? 'Gruppen in dieser Sektion' : 'Zeilen in dieser Sektion')
+            + '">' + esc(z.anzahl) + '</span>')
         + '<span class="werkzeug"><button class="plus" data-neu-pos="' + z.id + '" title="Zeile einfügen">+</button></span>'
         + '</td>'
-        + '<td style="border-top:1px solid var(--rule);font-weight:' + (haupt?600:500) + '">'
-        + (z.bs ? F(z.bs) : '') + '</td>'
+        + '<td class="' + (z.bs < 0 ? 'unstimmig' : '') + '" style="border-top:1px solid var(--rule);font-weight:'
+        + (haupt?600:500) + '">' + (z.bs ? F(z.bs) : '') + '</td>'
         + z.reihe.map((v,m) => { const gr = haupt ? kopfGruen(jahr, z.id, m) : gruppeGruen(jahr, z.id, m);
             return '<td class="' + (gr && v !== 0 ? 'gruen' : '') + '" style="border-top:1px solid var(--rule);font-weight:'
               + (haupt?600:500) + '">' + F(v) + '</td>'; }).join('')
-        + '<td class="jahr" style="border-top:1px solid var(--rule);font-weight:700">' + F(z.jw) + '</td></tr>');
+        + '<td class="jahr' + (z.schulden !== false && z.jw < 0 ? ' unstimmig' : '')
+        + '" style="border-top:1px solid var(--rule);font-weight:700">' + F(z.jw) + '</td></tr>');
       return;
     }
     if (z.typ === 'pos' && z.fix) {
@@ -597,26 +968,40 @@ function budgetblatt() {
     if (z.typ === 'pos') {
       const lauf = (zebra[z.eltern] = (zebra[z.eltern] || 0) + 1);
       zeilen.push('<tr class="pos' + (lauf % 2 === 0 ? ' zebra' : '')
+        /* Gezogen wird am Griff, nicht an der Zeile: eine ziehbare Zeile laesst
+           sich mit der Maus nicht mehr markieren, und dann ist ein Tippfehler
+           mitten in einem Namen nicht mehr einzukreisen. */
         + (S.ziel === z.id ? ' ziel' : '') + '" data-p="' + esc(z.eltern) + '"'
-        + ' data-id="' + z.id + '" draggable="true">'
+        + ' data-id="' + z.id + '">'
         + '<td class="name" style="padding-left:' + (z.tief === 3 ? 52 : 32) + 'px">'
         + '<span style="display:flex;align-items:center">'
         + '<input class="namensfeld" data-p="' + z.id + '" value="' + esc(z.name) + '">'
-        + '<span class="werkzeug"><button class="griff" data-griff="' + z.id + '" title="Verschieben">⠿</button>'
+        + (z.korr ? '<span class="mkorr" title="Manuell angepasst — Doppelklick auf Basis oder Rest zeigt die Korrekturen"></span>' : '')
+        + '<span class="werkzeug"><button class="griff" draggable="true" data-griff="' + z.id + '" '
+        + 'title="Verschieben — ziehen, oder mit Pfeil rauf und runter">⠿</button>'
         + '<button class="weg" data-weg="' + z.id + '" title="Zeile löschen">×</button></span></span></td>'
-        + (z.geerbt
-            ? '<td style="color:var(--muted)" title="Rest des Vorjahrs — gerechnet">' + F(z.bs) + '</td>'
-            : '<td><input class="zelle" data-b="' + z.id + '" value="' + F(z.bs) + '"></td>')
+        + (z.schuld
+            ? (z.geerbt
+                ? '<td data-kb="' + z.id + '" class="' + (z.bs < 0 ? 'unstimmig' : '') + '"'
+                  + (z.bs < 0 ? '' : ' style="color:var(--muted)"')
+                  + ' title="Saldovortrag: Rest des Vorjahrs plus die Korrekturen dieses Jahres — gerechnet. Doppelklick korrigiert ihn.">' + F(z.bs) + '</td>'
+                : '<td data-kb="' + z.id + '" class="' + (z.bs < 0 ? 'unstimmig' : '')
+                  + '" title="Anfangsstand. Doppelklick korrigiert ihn.">'
+                  + '<input class="zelle" data-b="' + z.id + '" value="' + F(z.bs) + '"></td>')
+            : '<td data-bs="' + z.id + '" title="Doppelklick überträgt oder verteilt diesen Betrag auf die Monate">'
+              + '<input class="zelle" data-b="' + z.id + '" value="' + F(z.bs) + '"></td>')
         + z.reihe.map((v,m) => { const an = hakenAn(z.id, m);
             return '<td' + (an && v !== 0 ? ' class="abgehakt"' : '') + '>'
               + '<input class="zelle' + (an && v !== 0 ? ' gruen' : '') + '" data-z="' + z.id
               + '" data-m="' + m + '" value="' + F(v) + '"></td>'; }).join('')
-        + '<td class="jahr" style="font-weight:500">' + F(z.jw) + '</td></tr>');
+        + '<td class="jahr' + (z.schuld && z.jw < 0 ? ' unstimmig' : '') + '"'
+        + (z.schuld ? ' data-kr="' + z.id + '" title="Rest am 31.12. — Doppelklick korrigiert ihn"' : '')
+        + ' style="font-weight:500">' + F(z.jw) + '</td></tr>');
       return;
     }
     zeilen.push('<tr class="summe' + (z.stark ? ' stark kopf' : '') + '">'
-      + '<td class="name" style="padding-left:' + (z.klein ? 24 : 14) + 'px;padding-top:11px;'
-      + 'padding-bottom:11px;border-top:1px solid var(--rule);font-weight:' + (z.stark?700:600) + '">'
+      + '<td class="name" style="padding-left:' + (z.klein ? 24 : 14) + 'px;'
+      + 'border-top:1px solid var(--rule);font-weight:' + (z.stark?700:600) + '">'
       + esc(z.name) + (z.marke ? '<span class="marke">' + esc(z.marke) + '</span>' : '') + '</td>'
       + '<td style="border-top:1px solid var(--rule)"></td>'
       + z.reihe.map(v => '<td style="border-top:1px solid var(--rule);font-weight:' + (z.stark?600:500)
@@ -624,14 +1009,7 @@ function budgetblatt() {
       + '<td class="jahr" style="border-top:1px solid var(--rule);font-weight:700">' + F(z.jw) + '</td></tr>');
   });
 
-  return tabelle(spalten('budget'), kopf + '<tbody>' + zeilen.join('') + '</tbody>')
-    + '<div class="fuss">Rechtsklick auf eine Zahl macht den Monat erledigt — die Zahl wird grün, und der Kopf '
-    + 'darüber auch, sobald alles darunter erledigt ist. Doppelklick überträgt einen Wert auf mehrere Monate und, '
-    + 'wenn du willst, in die Folgejahre. Das + im Sektionskopf fügt eine Zeile ein, am Griff links lässt sie sich '
-    + 'innerhalb der Sektion verschieben. Bei den Verbindlichkeiten heisst «Basis» der Anfangsstand und die letzte '
-    + 'Spalte der Rest am 31.12. — dieser Rest ist im nächsten Jahr automatisch die Basis und dort grau, weil er '
-    + 'gerechnet ist. Tippbar ist die Basis nur im ersten Jahr, das eine Schuld führt. Die Zeile «Rechnungen» '
-    + 'kommt aus dem Blatt Rechnungen und ist hier nicht tippbar.</div>';
+  return tabelle(spalten('budget'), kopf + '<tbody>' + zeilen.join('') + '</tbody>');
 }
 
 /* -------------------------------------------------------- Rechnungen */
@@ -658,25 +1036,26 @@ function rechnungsblatt() {
       if (r.stand !== 'Bezahlt') offene++;
       (r.reihe||[]).forEach((v,m) => { mon[m] += v; }); });
     zeilen.push('<tr class="kopf" data-k="' + g.id + '" data-p="">'
-      + '<td class="name" style="padding-left:12px;padding-top:10px;padding-bottom:10px;border-top:1px solid var(--rule)">'
+      + '<td class="name" style="padding-left:12px;border-top:1px solid var(--rule)">'
       + '<span style="display:flex;align-items:center">'
-      + '<button class="klapper" data-klapp="' + g.id + '" style="font-weight:700;font-size:13px">'
+      + '<button class="klapper" data-klapp="' + g.id + '">'
       + '<span class="chev">' + (auf ? '▾' : '▸') + '</span></button>'
-      + '<input class="namensfeld" style="color:var(--ink);font-weight:700;max-width:120px" data-s="' + g.id + '" value="' + esc(g.name) + '">'
-      + (auf ? '' : '<span class="anzahl">' + liste.length + (liste.length === 1 ? ' Rechnung' : ' Rechnungen') + '</span>')
+      + '<input class="namensfeld" style="font-weight:700;max-width:160px" data-s="' + g.id + '" value="' + esc(g.name) + '">'
+      + (auf ? '' : '<span class="anzahl" title="Rechnungen dieses Stellers">' + liste.length + '</span>')
       + '<span class="werkzeug"><button class="plus" data-neu-rech="' + g.id + '" title="Rechnung einfügen">+</button>'
       + '<button class="weg" data-weg-steller="' + g.id + '" title="Steller löschen">×</button></span>'
       + '</span></td>'
       + '<td style="border-top:1px solid var(--rule)"></td>'
-      + '<td style="border-top:1px solid var(--rule);font-weight:600' + (offene ? '' : ';color:var(--gruen)') + '">'
+      /* Auf dem Balken gilt das helle Gruen — das dunkle waere dort nicht zu lesen. */
+      + '<td style="border-top:1px solid var(--rule);font-weight:600' + (offene ? '' : ';color:var(--gruenbalken)') + '">'
       + fmt(bet, true) + '</td>'
-      + mon.map(v => '<td style="border-top:1px solid var(--rule);font-weight:600'
-          + (offene ? '' : ';color:var(--gruen)') + '">' + F(v) + '</td>').join('')
-      + '<td style="border-top:1px solid var(--rule);font-weight:700'
-      + (Math.abs(sal) < 0.5 ? ';color:var(--muted)' : '') + '">'
+      + mon.map((v,m) => { const gr = stellerGruen(g,m);
+          return '<td style="border-top:1px solid var(--rule);font-weight:600'
+            + (gr && v !== 0 ? ';color:var(--gruenbalken)' : '') + '">' + F(v) + '</td>'; }).join('')
+      + '<td style="border-top:1px solid var(--rule);font-weight:700">'
       + (Math.abs(sal) < 0.5 ? '—' : fmt(sal, true)) + '</td>'
       + '<td class="jahr" style="border-top:1px solid var(--rule);font-weight:600'
-      + (offene ? '' : ';color:var(--gruen)') + '">'
+      + (offene ? '' : ';color:var(--gruenbalken)') + '">'
       + (offene ? offene + ' offen' : 'bezahlt') + '</td></tr>');
     if (!auf) return;
     let lauf = 0;
@@ -693,8 +1072,10 @@ function rechnungsblatt() {
         + '<td><input class="datumsfeld" data-r="' + r.id + '" data-f="datum" value="' + esc(r.datum) + '"></td>'
         + '<td><input class="zelle' + gf + '" data-r="' + r.id + '" data-f="betrag" data-bez="' + r.id + '" value="'
         + fmt(r.betrag, true) + '"></td>'
-        + (r.reihe||N12()).map((v,m) => '<td><input class="zelle' + gf + '" data-rm="' + r.id
-            + '" data-m="' + m + '" data-bez="' + r.id + '" value="' + F(v) + '"></td>').join('')
+        + (r.reihe||N12()).map((v,m) => { const an = monatBezahlt(r,m);
+            return '<td' + (an && v !== 0 ? ' class="abgehakt"' : '') + '>'
+              + '<input class="zelle' + (an && v !== 0 ? ' gruen' : '') + '" data-rm="' + r.id
+              + '" data-m="' + m + '" value="' + F(v) + '"></td>'; }).join('')
         + '<td style="font-weight:' + (Math.abs(sa) < 0.5 ? '400' : '600') + ';color:'
         + (Math.abs(sa) < 0.5 ? 'var(--muted)' : 'var(--ink)') + '">'
         + (Math.abs(sa) < 0.5 ? '—' : fmt(sa, true)) + '</td>'
@@ -706,10 +1087,10 @@ function rechnungsblatt() {
   });
 
   const summe = (name, betrag, mon, saldo, gruen, stark) =>
-    '<tr class="summe' + (stark ? ' stark kopf' : '') + '">'
-    + '<td class="name" style="padding-left:12px;padding-top:10px;padding-bottom:10px;border-top:1px solid var(--'
+    '<tr class="' + (stark ? 'summe stark kopf' : 'hoch') + '">'
+    + '<td class="name" style="padding-left:12px;border-top:1px solid var(--'
     + (stark ? 'rule' : 'line') + ');font-weight:' + (stark ? 700 : 600) + ';color:var(--'
-    + (stark ? 'ink' : 'muted') + ')">' + esc(name) + '</td>'
+    + (stark ? 'aufbalken' : 'muted') + ')">' + esc(name) + '</td>'
     + '<td style="border-top:1px solid var(--' + (stark?'rule':'line') + ')"></td>'
     + '<td style="border-top:1px solid var(--' + (stark?'rule':'line') + ');font-weight:'
     + (stark?600:500) + (gruen ? ';color:var(--gruen)' : '') + '">' + fmt(betrag, true) + '</td>'
@@ -723,12 +1104,7 @@ function rechnungsblatt() {
   zeilen.push(summe('davon bezahlt', bBetrag, bMon, null, true, false));
 
   return tabelle(spalten('rech'), kopf + '<tbody>' + zeilen.join('') + '</tbody>')
-    + '<button class="neusteller" data-neu-steller="1">+ Neuer Rechnungssteller</button>'
-    + '<div class="fuss">Wie im Excel: der Betrag steht links, verteilt wird er auf die Monate — eine Rechnung '
-    + 'darf auf mehrere Monate aufgeteilt werden. «Saldo» zeigt, was vom Betrag noch nicht verteilt ist; steht dort '
-    + 'ein Strich, stimmt es. Rechtsklick auf Betrag oder Monatszelle schaltet zwischen bezahlt und offen. Die '
-    + 'Monatssummen unten erscheinen im Budget desselben Jahres als Zeile «Rechnungen» — dort nicht tippbar, weil '
-    + 'sie hier entsteht.</div>';
+    + '<button class="neusteller" data-neu-steller="1">+ Neuer Rechnungssteller</button>';
 }
 
 /* -------------------------------------------------------- Alle Jahre */
@@ -737,31 +1113,37 @@ function alleJahre() {
   const kopfW = (b,n) => { const z = b.zeilen.find(x => x.typ === 'kopf' && x.name === n); return z ? su(z.reihe) : 0; };
   const restW = (b,n) => { const z = b.zeilen.find(x => x.typ === 'kopf' && x.name === n); return z ? z.jw : 0; };
   const grW   = (b,n) => { const z = b.zeilen.find(x => x.typ === 'gkopf' && x.name === n); return z ? su(z.reihe) : 0; };
-  const def = [
-    ['Einnahmen',            b => su(b.einnahmen),          {stark:1}],
-    ['Fixkosten',            b => kopfW(b,'Fixkosten'),      {tief:1}],
-    ['Lebenshaltung',        b => kopfW(b,'Lebenshaltung'),  {tief:1}],
-    ['Abonnements',          b => kopfW(b,'Abonnements'),    {tief:1}],
-    ['Rückstellungen',       b => kopfW(b,'Rückstellungen'), {tief:1}],
-    ['Steuerverwaltung',     b => grW(b,'Steuerverwaltung'), {tief:1}],
-    ['Schulden Privat',      b => grW(b,'Schulden Privat'),  {tief:1}],
-    ['Schulden Firmen',      b => grW(b,'Schulden Firmen'),  {tief:1}],
-    ['Raten zusammen',       b => kopfW(b,'Verbindlichkeiten'), {}],
-    ['Rechnungen',           b => su(b.rech),                {tief:1}],
-    ['Ausgaben',             b => su(b.ausgaben),            {stark:1}],
-    ['Saldo',                b => su(b.saldo),               {stark:1}],
-    ['Restschuld am 31.12.', b => restW(b,'Verbindlichkeiten'), {stark:1, letzte:1}]
-  ];
+  /* Die Aufgliederung wird aus den Daten gelesen, nicht aufgezaehlt. Eine feste
+     Liste laesst eine neue Kategorie aus der Aufgliederung fallen und trotzdem
+     in der Summe stehen — dann sind Zahlen da, die nirgends erscheinen. */
+  const ausgabeNamen = [], gruppenNamen = [];
+  let schuldName = 'Verbindlichkeiten';
+  js.forEach(j => (S.daten[j]||[]).forEach(b => {
+    if (b.art === 'schulden') { schuldName = b.name;
+      (b.gruppen||[]).forEach(g => { if (gruppenNamen.indexOf(g.name) < 0) gruppenNamen.push(g.name); }); }
+    else if (b.vz !== 1 && ausgabeNamen.indexOf(b.name) < 0) ausgabeNamen.push(b.name);
+  }));
+  const def = [['Einnahmen', b => su(b.einnahmen), {stark:1}]]
+    .concat(ausgabeNamen.map(n => [n, b => kopfW(b,n), {tief:1}]))
+    .concat(gruppenNamen.map(n => [n, b => grW(b,n), {tief:1}]))
+    .concat([
+      ['Raten zusammen',       b => kopfW(b, schuldName),   {}],
+      ['Rechnungen',           b => su(b.rech),             {tief:1}],
+      ['Ausgaben',             b => su(b.ausgaben),         {stark:1}],
+      ['Saldo',                b => su(b.saldo),            {stark:1}],
+      ['Restschuld am 31.12.', b => restW(b, schuldName),   {stark:1, letzte:1}]
+    ]);
   const kopf = '<thead><tr><th class="ecke">Alle Jahre</th>'
     + js.map(j => '<th>' + j + '</th>').join('')
     + '<th class="jahr">Total</th></tr></thead>';
   const zeilen = def.map(([name, fn, o]) => {
     const w = bauten.map(fn);
     const total = o.letzte ? w[w.length-1] : w.reduce((s,x) => s+x, 0);
-    return '<tr class="' + (o.stark ? 'kopf stark' : 'pos') + '">'
-      + '<td class="name" style="padding-left:' + (o.tief ? 32 : 14) + 'px;padding-top:11px;'
-      + 'padding-bottom:11px;border-top:1px solid var(--' + (o.stark ? 'rule' : 'line') + ');font-weight:'
-      + (o.stark ? 700 : (o.tief ? 400 : 600)) + ';color:var(--' + (o.tief ? 'muted' : 'ink') + ')">'
+    return '<tr class="' + (o.stark ? 'kopf stark' : 'hoch') + '">'
+      + '<td class="name" style="padding-left:' + (o.tief ? 32 : 14) + 'px;'
+      + 'border-top:1px solid var(--' + (o.stark ? 'rule' : 'line') + ');font-weight:'
+      + (o.stark ? 700 : (o.tief ? 400 : 600)) + ';color:var(--'
+      + (o.stark ? 'aufbalken' : (o.tief ? 'muted' : 'ink')) + ')">'
       + esc(name) + '</td>'
       + w.map(v => '<td style="border-top:1px solid var(--' + (o.stark?'rule':'line') + ');font-weight:'
           + (o.stark?600:500) + '">' + F(v) + '</td>').join('')
@@ -770,9 +1152,65 @@ function alleJahre() {
   }).join('');
   const bre = Math.max(110, Math.min(210, Math.floor(1010 / Math.max(1, js.length))));
   const sp = anteile([B.budget.name].concat(js.map(() => bre)).concat([B.budget.jahr]));
-  return tabelle(sp, kopf + '<tbody>' + zeilen + '</tbody>')
-    + '<div class="fuss">Ein Jahr ist eine Spalte. Die letzte Zeile ist keine Summe, sondern der Stand am '
-    + 'Jahresende — im Total steht deshalb der Rest des letzten Jahres.</div>';
+  return tabelle(sp, kopf + '<tbody>' + zeilen + '</tbody>');
+}
+
+/* -------------------------------------- Alle Jahre, Rechnungen -----------
+   Analog zum Budget: ein Jahr ist eine Spalte, eine Zeile ist ein Steller.
+   Gezeigt wird der Rechnungsbetrag — die fuehrende Zahl der Rechnungstafel. */
+function alleJahreRechnungen() {
+  const js = jahre();
+  const namen = [];
+  js.forEach(j => steller(j).forEach(g => {
+    if (namen.indexOf(g.name) < 0) namen.push(g.name); }));
+  namen.sort((a,b) => String(a).localeCompare(String(b), 'de-CH', { sensitivity:'base', numeric:true }));
+
+  const betragVon = (j, name, filter) => steller(j)
+    .filter(g => g.name === name)
+    .reduce((s,g) => s + (g.rechnungen||[])
+      .filter(r => !filter || filter(r))
+      .reduce((t,r) => t + (r.betrag||0), 0), 0);
+
+  const kopf = '<thead><tr><th class="ecke">Alle Jahre · Rechnungen</th>'
+    + js.map(j => '<th>' + j + '</th>').join('')
+    + '<th class="jahr">Total</th></tr></thead>';
+
+  const zeile = (name, werte, o) =>
+    '<tr class="' + (o.stark ? 'kopf stark' : 'hoch') + '">'
+    + '<td class="name" style="padding-left:' + (o.tief ? 32 : 14) + 'px;'
+    + 'border-top:1px solid var(--' + (o.stark ? 'rule' : 'line') + ');font-weight:'
+    + (o.stark ? 700 : (o.tief ? 400 : 600)) + ';color:var(--'
+    + (o.stark ? 'aufbalken' : (o.tief ? 'muted' : 'ink')) + ')">'
+    + esc(name) + '</td>'
+    + werte.map(v => '<td style="border-top:1px solid var(--' + (o.stark?'rule':'line')
+        + ');font-weight:' + (o.stark?600:500) + (o.gruen ? ';color:var(--gruen)' : '') + '">'
+        + F(v) + '</td>').join('')
+    + '<td class="jahr" style="border-top:1px solid var(--' + (o.stark?'rule':'line')
+    + ');font-weight:700' + (o.gruen ? ';color:var(--gruen)' : '') + '">'
+    + F(werte.reduce((s,x) => s+x, 0)) + '</td></tr>';
+
+  /* Was im Budget als Zeile «Rechnungen» steht, ist die auf Monate verteilte
+     Summe — nicht die Summe der Rechnungsbetraege. Beide stehen hier mit Namen
+     nebeneinander, damit ein Klick weiter nicht zwei Zahlen fuer dasselbe zeigt. */
+  const verteiltIn = j => (S.rechnungen[j]||[]).reduce((s,g) =>
+    s + (g.rechnungen||[]).reduce((t,r) => t + su(r.reihe), 0), 0);
+
+  const leer = !namen.length;
+  const zeilen = namen.map(n => zeile(n, js.map(j => betragVon(j, n)), { tief:1 })).join('')
+    + zeile('Rechnungsbeträge zusammen',
+        js.map(j => namen.reduce((s,n) => s + betragVon(j, n), 0)), { stark:1 })
+    + zeile('davon offen',
+        js.map(j => namen.reduce((s,n) => s + betragVon(j, n, r => r.stand !== 'Bezahlt'), 0)), {})
+    + zeile('davon bezahlt',
+        js.map(j => namen.reduce((s,n) => s + betragVon(j, n, r => r.stand === 'Bezahlt'), 0)),
+        { gruen:1 })
+    + zeile('auf Monate verteilt', js.map(verteiltIn), { stark:1 });
+
+  const bre = Math.max(110, Math.min(210, Math.floor(1010 / Math.max(1, js.length))));
+  const sp = anteile([B.budget.name].concat(js.map(() => bre)).concat([B.budget.jahr]));
+  if (leer) return tabelle(sp, kopf + '<tbody></tbody>')
+    + '<div class="leer">In keinem Jahrgang steht eine Rechnung.</div>';
+  return tabelle(sp, kopf + '<tbody>' + zeilen + '</tbody>');
 }
 
 /* ------------------------------------------------------------ Dialoge */
@@ -810,7 +1248,10 @@ function dialoge() {
       + '<button class="haken" data-neu-raten="1"><span class="kasten' + (S.neu.raten ? ' an' : '')
       + '">' + (S.neu.raten ? '✓' : '') + '</span>Raten fortschreiben</button>'
       + '<p>Der Anfangsstand jeder Schuld ist die Restschuld am 31.12.' + vor
-      + ' — das ist gerechnet, keine Wahl. Schulden, die dort auf null stehen, kommen nicht mit.</p>'
+      + ' — das ist gerechnet, keine Wahl. '
+      + (S.neu.raten
+          ? 'Weil die Raten fortgeschrieben werden, kommen auch Schulden mit, die auf null stehen.'
+          : 'Schulden, die dort auf null stehen, kommen nicht mit.') + '</p>'
       + '<div class="tasten"><button class="ab" data-zu="neu">Abbrechen</button>'
       + '<button class="tat" data-neu-an="1">Anlegen</button></div></div></div>';
   }
@@ -819,15 +1260,20 @@ function dialoge() {
     const zeilen = (S.daten[j]||[]).reduce((s,b) => s + (b.pos||[]).length
       + (b.gruppen||[]).reduce((a,g) => a + (g.pos||[]).length, 0), 0);
     const rech = (S.rechnungen[j]||[]).reduce((s,g) => s + (g.rechnungen||[]).length, 0);
-    const folge = jahre().filter(x => x > j);
+    const folge = jahre().filter(x => x > j), vorher = jahre().filter(x => x < j);
     h += '<div class="schleier" data-schleier="wegJahr"><div class="dialog">'
       + '<h2>Jahr ' + j + ' löschen</h2>'
-      + '<p>Es gehen ' + zeilen + ' Budgetzeilen und ' + rech + ' Rechnungen mit, dazu die '
+      + '<p>Es ' + (zeilen === 1 ? 'geht 1 Budgetzeile' : 'gehen ' + zeilen + ' Budgetzeilen')
+      + ' und ' + (rech === 1 ? '1 Rechnung' : rech + ' Rechnungen') + ' mit, dazu die '
       + 'Erledigt-Marken dieses Jahres. Rückgängig geht das nicht.</p>'
       + (folge.length
-          ? '<p>' + folge.join(' und ') + ' rückt nach: der Anfangsstand jeder Schuld kommt danach '
-            + 'aus ' + (jahre().filter(x => x < j).length
-                ? String(jahre().filter(x => x < j).pop()) : 'der Position selbst') + '.</p>'
+          ? '<p>' + folge.join(' und ') + (folge.length === 1 ? ' rückt' : ' rücken') + ' nach: '
+            + 'der Anfangsstand jeder Schuld kommt danach '
+            + (vorher.length ? 'aus ' + vorher[vorher.length-1] : 'aus der Position selbst') + '.'
+            + (vorher.length
+                ? ' <b>Führt ' + vorher[vorher.length-1] + ' eine Schuld nicht oder nur dem Namen '
+                  + 'nach, beginnt sie danach bei null</b> — ihr bisheriger Stand ist dann weg.'
+                : '') + '</p>'
           : '')
       + '<div class="tasten"><button class="ab" data-zu="wegJahr">Abbrechen</button>'
       + '<button class="tat" data-weg-jahr-an="1">Jahr löschen</button></div></div></div>';
@@ -869,7 +1315,241 @@ function dialoge() {
       + '<button class="ab" data-repo-holen="1">Aus dem Repo holen</button>'
       + '<button class="tat" data-repo-sichern="1">Ins Repo sichern</button></div></div></div>';
   }
+  if (S.basis) h += basisDialog();
+  if (S.korr)  h += korrDialog();
+  if (S.korrWarn) h += korrWarnDialog();
+  if (S.hb)    h += handbuchDialog();
   return h;
+}
+
+/* ---- Doppelklick auf Basis: uebertragen oder verteilen ------------------- */
+function basisDialog() {
+  const b = S.basis, je = proMonat(b.wert);
+  const uebertragen = '<button class="' + (b.verteilen ? 'ab' : 'tat')
+    + '" data-basis-tat="uebertragen">Auf alle Monate übertragen</button>';
+  const verteilen = '<button class="' + (b.verteilen ? 'tat' : 'ab')
+    + '" data-basis-tat="verteilen">Auf zwölf Monate verteilen</button>';
+  return '<div class="schleier" data-schleier="basis"><div class="dialog">'
+    + '<h2>«' + esc(b.name) + '» — Basis ' + fmt(b.wert, true) + '</h2>'
+    + '<p>Beides setzt alle zwölf Monatsspalten dieses Jahres. Danach sind sie ganz '
+    + 'normal tippbar — was hier steht, ist kein fester Wert.</p>'
+    + '<div class="vorschau">'
+    + 'Übertragen &nbsp; <b>' + fmt(b.wert, true) + '</b> je Monat &nbsp;·&nbsp; Jahr <b>'
+    + fmt(b.wert * 12, true) + '</b><br>'
+    + 'Verteilen &nbsp;&nbsp; <b>' + fmt(je, true) + '</b> je Monat &nbsp;·&nbsp; Jahr <b>'
+    + fmt(je * 12, true) + '</b> &nbsp;(auf volle ' + RUNDE + ' aufgerundet)'
+    + '</div>'
+    + '<div class="tasten"><button class="ab" data-zu="basis">Abbrechen</button>'
+    + (b.verteilen ? uebertragen + verteilen : verteilen + uebertragen)
+    + '</div></div></div>';
+}
+
+/* ---- Saldokorrektur bei Schulden ---------------------------------------- */
+function korrDialog() {
+  const k = S.korr, p = posVon(k.jahr, k.gKey, k.pKey);
+  if (!p) return '';
+  const liste = korrListe(p, k.art);
+  const summe = korrSum(p, k.art);
+  const jetzt = k.art === 'basis'
+    ? basisVon(k.jahr, k.gKey, k.pKey, p.basis)
+    : restVon(k.jahr, k.gKey, k.pKey);
+  const titel = k.art === 'basis'
+    ? 'Saldo Vortrag ' + k.jahr : 'Rest am 31.12.' + k.jahr;
+  const vz = n => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(Math.abs(n), true);
+
+  const zeilen = liste.length ? liste.map(x =>
+      '<div class="korrzeile">'
+      + '<input class="feld betrag" data-korr-b="' + esc(x.id) + '" value="' + vz(x.betrag) + '">'
+      + '<input class="feld" data-korr-n="' + esc(x.id) + '" value="' + esc(x.notiz || '')
+      + '" placeholder="Notiz">'
+      + '<button class="weg" data-korr-weg="' + esc(x.id) + '" title="Korrektur entfernen">×</button>'
+      + '</div>').join('')
+    : '<div class="leerzeile">Noch keine Korrektur an dieser Zahl.</div>';
+
+  return '<div class="schleier" data-schleier="korr"><div class="dialog">'
+    + '<h2>«' + esc(k.name) + '» — ' + titel + '</h2>'
+    + '<div class="vorschau">Gerechnet <b>' + fmt(jetzt - summe, true) + '</b>'
+    + ' &nbsp;·&nbsp; Korrektur <b>' + vz(summe) + '</b>'
+    + ' &nbsp;·&nbsp; Ergebnis <b>' + fmt(jetzt, true) + '</b></div>'
+    + '<p>' + (k.art === 'basis'
+        ? 'Die Korrektur wirkt auf den Anfangssaldo dieses Jahres und wandert von dort '
+          + 'in alle Folgejahre.'
+        : 'Die Korrektur wirkt auf den Stand am 31.12. und ist im Folgejahr automatisch '
+          + 'der Anfangssaldo — ohne dass du etwas auslösen musst.') + '</p>'
+    + '<div class="reihe">'
+    + '<div style="flex:none"><label>Richtung</label><span class="wahl">'
+    + '<button' + (k.richtung !== 'minus' ? ' class="an"' : '') + ' data-korr-richt="plus">Erhöhen</button>'
+    + '<button' + (k.richtung === 'minus' ? ' class="an"' : '') + ' data-korr-richt="minus">Reduzieren</button>'
+    + '</span></div>'
+    + '<div><label>Betrag in Franken</label>'
+    + '<input class="feld" data-korr-betrag="1" value="' + esc(k.betrag) + '"></div>'
+    + '</div>'
+    + '<div><label>Notiz</label><input class="feld" data-korr-notiz="1" value="' + esc(k.notiz)
+    + '" placeholder="Warum wird korrigiert?"></div>'
+    + '<div class="tasten"><button class="tat" data-korr-add="1">Korrektur eintragen</button></div>'
+    + '<div><label>Bisherige Korrekturen</label><div class="korrliste">' + zeilen + '</div></div>'
+    + '<div class="tasten"><button class="ab" data-zu="korr">Schliessen</button></div>'
+    + '</div></div>';
+}
+
+/* ---- Handbuch ------------------------------------------------------------
+   Es steht hinter dem Fragezeichen oben und nicht mehr unter der Tabelle.
+   Wo es eine Zahl oder einen Namen nennt, die der Code fuehrt, liest es sie
+   aus dem Code — abgeschriebenes veraltet, gelesenes nicht. */
+function handbuchDialog() {
+  return '<div class="schleier" data-schleier="hb"><div class="dialog gross">'
+    + '<h2>Handbuch — GÄPP V ' + VERSION + '</h2>'
+    + '<div class="handbuch">'
+
+    + '<h3>Was GÄPP ist</h3>'
+    + '<p>Ein Tabellenwerkzeug für dein Geld. Je Jahrgang zwei Tabellen — <b>Budget</b> und '
+    + '<b>Rechnungen</b> — dazu die Übersicht <b>Alle</b>, die beide über die Jahre zeigt. '
+    + 'Zwölf Monatsspalten stehen immer im Bild. Alles ist gerechnet, nichts abgeschrieben.</p>'
+    + '<p>Die Zahlen stehen <b>nicht</b> in dieser Datei, sondern in einer JSON-Datei: im '
+    + 'Browserspeicher, neben der App oder im privaten Repo.</p>'
+
+    + '<h3>Zahlen eintragen</h3>'
+    + '<ul>'
+    + '<li>In eine Zelle tippen und die Zelle verlassen — dann wird neu gerechnet.</li>'
+    + '<li><b>Tab</b> springt in die nächste Zelle der Zeile, <b>Shift+Tab</b> zurück; am '
+    + 'Zeilenende geht es in die nächste Zeile.</li>'
+    + '<li><b>Pfeil rauf</b> und <b>Pfeil runter</b> springen in derselben Spalte eine Zeile '
+    + 'weiter. Im Auswahlfeld «Stand» gehören die Pfeile der Auswahl.</li>'
+    + '<li>Nur ganze Franken. Rappen gibt es nicht — auch bei Rechnungen nicht.</li>'
+    + '</ul>'
+
+    + '<h3>Erledigt machen</h3>'
+    + '<p><b>Rechtsklick</b> auf eine Zahl hakt diesen Monat ab: die Zahl wird grün, die Zelle '
+    + 'bekommt eine Fläche. Der Kopf darüber wird grün, sobald alles darunter erledigt ist. '
+    + 'Nochmals Rechtsklick nimmt den Haken zurück.</p>'
+    + '<p>In den Rechnungen wirkt der Rechtsklick genauso: auf einer Monatszelle hakt er diesen '
+    + 'Monat ab, und sobald alle Monate mit einem Wert abgehakt sind, springt der Stand auf '
+    + '<b>Bezahlt</b>. Rechtsklick auf den <b>Betrag</b> schaltet die ganze Rechnung um.</p>'
+
+    + '<h3>Doppelklick auf eine Monatszelle</h3>'
+    + '<p>Überträgt den Wert auf einen Bereich von Monaten und, wenn du willst, in alle '
+    + 'Folgejahre. Der Wert <b>ersetzt</b>, was dort steht.</p>'
+
+    + '<h3>Doppelklick auf die Basis</h3>'
+    + '<p>Ausserhalb der Verbindlichkeiten öffnet sich die Frage, was mit dem Betrag geschehen '
+    + 'soll:</p>'
+    + '<ul>'
+    + '<li><b>Auf alle Monate übertragen</b> — derselbe Betrag steht in jedem der zwölf Monate. '
+    + 'Das ist überall der Vorschlag ausser bei den Rückstellungen.</li>'
+    + '<li><b>Auf zwölf Monate verteilen</b> — der Betrag geteilt durch zwölf, auf volle '
+    + RUNDE + ' <b>aufgerundet</b>, nie abgerundet. Das ist der Vorschlag bei den '
+    + 'Rückstellungen. Weil aufgerundet wird, liegt die Jahressumme etwas über der Basis; '
+    + 'das ist gewollt.</li>'
+    + '</ul>'
+    + '<p>Die Monatszellen bleiben danach ganz normal tippbar.</p>'
+
+    + '<h3>Verbindlichkeiten: Basis, Rest, Vortrag</h3>'
+    + '<p>Bei den Verbindlichkeiten heisst <b>Basis</b> der Anfangsstand und die letzte Spalte '
+    + '<b>Jahr / Rest</b> der Stand am 31.12. Dieser Rest ist im nächsten Jahr automatisch die '
+    + 'Basis und dort grau, weil er gerechnet ist. Tippbar ist die Basis in jedem Jahrgang, '
+    + 'dessen Vorjahr die Schuld <b>nicht</b> führt — dort beginnt sie neu.</p>'
+    + '<p>Verknüpft wird über den Schlüssel der Zeile, nicht über den Namen — Umbenennen bricht '
+    + 'den Vortrag nicht. Führt ein Jahrgang eine Schuld nicht, beginnt sie im nächsten mit ihrem '
+    + 'eigenen Anfangsstand.</p>'
+
+    + '<h3>Saldo von Hand korrigieren</h3>'
+    + '<p><b>Doppelklick auf die Basis</b> oder auf <b>Jahr / Rest</b> einer Schuld öffnet die '
+    + 'Korrektur: Saldo erhöhen oder reduzieren, dazu eine Notiz. Ein erneuter Doppelklick zeigt '
+    + 'alle Korrekturen dieser Zahl; sie lassen sich dort ändern und entfernen.</p>'
+    + '<p>Ein kleiner Punkt neben dem Gläubiger zeigt: hier ist von Hand angepasst worden.</p>'
+    + '<p><b>Die Korrektur wandert von selbst ins Folgejahr</b> — sie ist Teil der Rechnung, wie '
+    + 'eine Verknüpfung im Excel, und muss nirgends ausgelöst werden. Trägt ein späteres Jahr für '
+    + 'dieselbe Schuld eine eigene Korrektur am Anfangssaldo, fragt GÄPP vorher nach: beides '
+    + 'behalten oder die Korrektur im Folgejahr entfernen.</p>'
+    + '<p>Eine Korrektur am Jahresende zählt in der Kennzahl «Restschuld heute» erst, wenn der '
+    + 'Stichmonat der Dezember ist — sie ist am 31.12. gebucht.</p>'
+    + '<p>Nimmt eine Korrektur mehr weg, als da ist, wird die Zahl <b>nicht</b> stillschweigend '
+    + 'auf null gesetzt: sie steht rot und im Minus da, und das Kennzahlenband sagt «der Plan '
+    + 'geht nicht auf». Ein Plan, der nicht aufgeht, ist ein Befund und keine Aufgabe für den '
+    + 'Taschenrechner.</p>'
+
+    + '<h3>Zeilen und Jahrgänge</h3>'
+    + '<ul>'
+    + '<li>Das <b>+</b> im Sektionskopf fügt eine Zeile ein, das <b>×</b> löscht sie, am Griff '
+    + 'neben dem Namen lässt sie sich innerhalb der Sektion verschieben. Gezogen wird nur am '
+    + 'Griff — überall sonst lässt sich Text ganz normal mit der Maus markieren.</li>'
+    + '<li>Eine von Hand eingefügte Zeile bekommt beim Benennen ihren Schlüssel aus dem Namen. '
+    + 'Legst du dieselbe Schuld in zwei Jahrgängen gleich an, findet der Vortrag von selbst '
+    + 'zusammen.</li>'
+    + '<li>Löschen wirkt nur im gezeigten Jahr. Eine Schuld, die dieses Jahr erledigt ist, bleibt '
+    + 'in den Vorjahren stehen — dort ist sie gelaufen.</li>'
+    + '<li><b>+</b> in der Jahresleiste legt einen Jahrgang an, <b>−</b> löscht den gezeigten. '
+    + 'Der Anfangsstand jeder Schuld ist dabei der Rest des Vorjahrs.</li>'
+    + '<li>Die Zahl neben einem zugeklappten Sektionskopf sagt, wie viele Zeilen darunter '
+    + 'liegen — bei den Verbindlichkeiten, wie viele Gruppen.</li>'
+    + '</ul>'
+
+    + '<h3>Rechnungen</h3>'
+    + '<p>Der Betrag steht links, verteilt wird er auf die Monate — eine Rechnung darf auf '
+    + 'mehrere Monate aufgeteilt werden. <b>Saldo</b> zeigt, was vom Betrag noch nicht verteilt '
+    + 'ist; steht dort ein Strich, stimmt es. Die Stände sind: ' + STAENDE.join(' · ') + '.</p>'
+    + '<p>Die Monatssummen erscheinen im Budget desselben Jahres als Zeile «Rechnungen» — dort '
+    + 'nicht tippbar, weil sie hier entsteht. Rechnungssteller stehen immer alphabetisch, in der '
+    + 'Ansicht wie im Export.</p>'
+
+    + '<h3>Die Knöpfe oben rechts</h3>'
+    + '<ul>'
+    + '<li><b>?</b> öffnet dieses Handbuch.</li>'
+    + '<li><b>Alles zuklappen</b> und <b>Alles aufklappen</b> wirken auf alle Sektionen aller '
+    + 'Jahrgänge auf einmal.</li>'
+    + '<li><b>Nullen zeigen</b> schreibt auch die Nullen aus; sonst bleibt eine Null eine leere '
+    + 'Zelle. Die Rechnung ändert sich dadurch nicht.</li>'
+    + '<li><b>Hell</b> und <b>Dunkel</b> schalten das Farbschema um. Vorgabe ist hell — es folgt '
+    + 'dem Excel, aus dem GÄPP kommt.</li>'
+    + '</ul>'
+
+    + '<h3>Daten</h3>'
+    + '<p>Der Punkt neben <b>Daten</b> sagt, woran du bist: <b>grün</b> geschrieben, '
+    + '<b>orange</b> schreibt gerade, <b>grau</b> nicht verbunden oder nur lokal, <b>rot</b> '
+    + 'ein Fehler. Gesichert wird verzögert und nur, wenn sich die Zahlen wirklich geändert '
+    + 'haben; was zugeklappt oder ausgewählt ist, geht nie in die Datendatei.</p>'
+    + '<p>«Startdatei holen» ersetzt den Browserspeicher durch die Datei neben der App — geholt '
+    + 'wird zuerst, ersetzt danach: misslingt es, bleibt dein Stand stehen.</p>'
+
+    + '<h3>Ausgeben</h3>'
+    + '<ul>'
+    + '<li><b>HTML sichern</b> friert die gewählten Ansichten in einer Datei ein: gleiche '
+    + 'Tabelle, nichts änderbar.</li>'
+    + '<li><b>CSV</b> kommt je Jahr als eigene Datei und öffnet in Excel.</li>'
+    + '<li><b>JSON sichern</b> im Daten-Fenster ist die Arbeitsdatei.</li>'
+    + '<li><b>Drucken</b> gibt Querformat in Schwarz-Weiss aus, ohne Grautöne. Abgehaktes steht '
+    + 'dort fett, weil Grün und Fläche auf Papier nicht mehr da sind.</li>'
+    + '</ul>'
+
+    + '<h3>Was GÄPP nicht tut</h3>'
+    + '<p>Kein Zins, keine Gebühr, kein Schritt zurück. Was eine Rate an Kosten trägt, muss in '
+    + 'der Rate stehen — GÄPP warnt nicht, wenn eine Rate sie nicht deckt.</p>'
+
+    + '</div>'
+    + '<div class="tasten"><button class="tat" data-zu="hb">Schliessen</button></div>'
+    + '</div></div>';
+}
+
+function korrWarnDialog() {
+  const f = S.korrWarn.folge;
+  const mehr = f.length > 1;
+  const teil = f.map(x => x.jahr + ' (' + (x.betrag > 0 ? '+' : x.betrag < 0 ? '−' : '')
+    + fmt(Math.abs(x.betrag), true) + (x.notizen.length ? ', «' + esc(x.notizen.join(', ')) + '»' : '')
+    + ')').join(' und ');
+  return '<div class="schleier" data-schleier="korrWarn"><div class="dialog">'
+    + '<h2>' + (mehr ? 'Spätere Jahrgänge bereits korrigiert' : 'Saldo Folgejahr bereits korrigiert')
+    + '</h2>'
+    + '<p>Für diese Schuld ' + (mehr ? 'tragen ' : 'trägt ') + teil
+    + ' eine eigene Korrektur am Anfangssaldo. Deine Änderung wandert automatisch dorthin und '
+    + 'wirkt <b>zusätzlich</b> zu ' + (mehr ? 'jenen Korrekturen' : 'jener Korrektur') + '.</p>'
+    + '<p>Behalte beides, wenn beide Korrekturen wirklich gemeint sind. Überschreiben entfernt '
+    + 'die Korrektur' + (mehr ? 'en in allen ' + f.length + ' späteren Jahrgängen'
+                              : ' im Folgejahr') + ' und lässt nur die Fortschreibung stehen.</p>'
+    + '<div class="tasten"><button class="ab" data-korr-warn="ab">Abbrechen</button>'
+    + '<button class="ab" data-korr-warn="beide">Beide behalten</button>'
+    + '<button class="tat" data-korr-warn="ueber">'
+    + (mehr ? 'Spätere Jahrgänge überschreiben' : 'Folgejahr überschreiben') + '</button>'
+    + '</div></div></div>';
 }
 
 /* ==================================================== Daten ändern */
@@ -891,6 +1571,24 @@ function findePos(id) {
   }));
   return out;
 }
+/* Eine Stelle rauf oder runter — der Weg fuer die Tastatur, wenn niemand ziehen
+   will oder kann. */
+function verschiebeUm(id, richtung) {
+  const listen = [];
+  Object.keys(S.daten).forEach(j => (S.daten[j]||[]).forEach(b => {
+    if (b.art === 'schulden') (b.gruppen||[]).forEach(g => listen.push(g.pos));
+    else listen.push(b.pos); }));
+  for (const L of listen) {
+    const i = L.findIndex(p => p.id === id);
+    if (i < 0) continue;
+    const k = i + richtung;
+    if (k < 0 || k >= L.length) return;
+    const [weg] = L.splice(i, 1); L.splice(k, 0, weg);
+    fokusWunsch = '[data-griff="' + id + '"]';
+    merke(); neu(); return;
+  }
+}
+
 /* Verschieben nur innerhalb derselben Sektion. */
 function verschiebe(vonId, aufId) {
   if (!vonId || !aufId || vonId === aufId) return;
@@ -913,9 +1611,9 @@ function jahrAnlegen() {
       return { id:neueId(), art:'schulden', name:b.name, key:b.key, vz:b.vz,
         gruppen: (b.gruppen||[]).map(g => ({ id:neueId(), name:g.name, key:g.key,
           pos: (g.pos||[]).map(p => ({ id:neueId(), key:p.key, name:p.name,
-            basis: Math.max(0, basisVon(vor, g.key, p.key, p.basis) - su(p.reihe)),
+            basis: restVon(vor, g.key, p.key),
             reihe: S.neu.raten ? p.reihe.slice() : N12() }))
-            .filter(p => p.basis > 0 || S.neu.raten) })) };
+            .filter(p => p.basis !== 0 || S.neu.raten) })) };
     }
     return { id:neueId(), art:'block', name:b.name, key:b.key, vz:b.vz,
       pos: (b.pos||[]).map(p => ({ id:neueId(), key:p.key, name:p.name, basis:p.basis,
@@ -932,6 +1630,7 @@ function jahrLoeschen(j) {
   (S.daten[j]||[]).forEach(b => {
     if (b.art === 'schulden') (b.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => ids.push(p.id)));
     else (b.pos||[]).forEach(p => ids.push(p.id)); });
+  (S.rechnungen[j]||[]).forEach(g => (g.rechnungen||[]).forEach(r => ids.push(r.id)));
   Object.keys(S.haken).forEach(k => {
     if (ids.indexOf(k.slice(0, k.lastIndexOf(':'))) >= 0) delete S.haken[k]; });
   delete S.daten[j]; delete S.rechnungen[j];
@@ -946,20 +1645,104 @@ function jahrLoeschen(j) {
 function uebertragen() {
   const u = S.ueb, von = Math.min(u.von, u.bis), bis = Math.max(u.von, u.bis);
   const setz = p => { for (let m = von; m <= bis; m++) p.reihe[m] = u.wert; };
-  let key = null, gKey = null;
+  /* Der Block gehoert zur Kennung dazu. Zwei gleichnamige Zeilen in verschiedenen
+     Kategorien tragen denselben Schluessel — ohne den Block wuerde das Fortschreiben
+     eine fremde Zeile in einem Jahr ueberschreiben, das niemand ansieht. */
+  let key = null, gKey = null, bKey = null;
   (S.daten[u.jahr]||[]).forEach(b => {
     if (b.art === 'schulden') (b.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => {
-      if (p.id === u.id) { setz(p); key = p.key; gKey = g.key; } }));
-    else (b.pos||[]).forEach(p => { if (p.id === u.id) { setz(p); key = p.key; } });
+      if (p.id === u.id) { setz(p); key = p.key; gKey = g.key; bKey = b.key; } }));
+    else (b.pos||[]).forEach(p => { if (p.id === u.id) { setz(p); key = p.key; bKey = b.key; } });
   });
   if (u.folge && key) {
     jahre().filter(j => j > u.jahr).forEach(j => (S.daten[j]||[]).forEach(b => {
+      if (b.key !== bKey) return;
       if (b.art === 'schulden') (b.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => {
         if (p.key === key && (!gKey || g.key === gKey)) p.reihe = new Array(12).fill(u.wert); }));
       else (b.pos||[]).forEach(p => { if (p.key === key) p.reihe = new Array(12).fill(u.wert); });
     }));
   }
+  fokusWunsch = '.zelle[data-z="' + u.id + '"][data-m="' + u.m + '"]';
   S.ueb = null; merke();
+}
+
+/* ---- Basis: uebertragen oder verteilen ---------------------------------- */
+function basisTat(art) {
+  const b = S.basis; if (!b) return;
+  const wert = art === 'verteilen' ? proMonat(b.wert) : b.wert;
+  mitPos(b.id, p => { p.reihe = new Array(12).fill(wert); });
+  fokusWunsch = '.zelle[data-b="' + b.id + '"]';
+  S.basis = null; neu();
+}
+
+/* ---- Saldokorrekturen bei Schulden -------------------------------------- */
+let wartetTat = null;                 /* haengt an der Warnung, nicht am Zustand */
+
+function korrOeffnen(id, art) {
+  let treffer = null;
+  (S.daten[S.jahr]||[]).forEach(b => { if (b.art !== 'schulden') return;
+    (b.gruppen||[]).forEach(g => (g.pos||[]).forEach(p => {
+      if (p.id === id) treffer = { gKey:g.key, pKey:p.key, name:p.name }; })); });
+  if (!treffer) return;
+  S.korr = { id, art, jahr:S.jahr, gKey:treffer.gKey, pKey:treffer.pKey,
+    name:treffer.name, richtung:'plus', betrag:'', notiz:'' };
+  zeichne();
+}
+
+/* Jede Aenderung an einer Korrektur wandert von selbst ins Folgejahr. Trägt
+   dort schon eine eigene Korrektur am Anfangssaldo, wird vorher gefragt. */
+function korrAnwenden(tat) {
+  const k = S.korr; if (!k) return;
+  const folge = folgeKorrekturen(k.jahr, k.gKey, k.pKey);
+  if (folge.length) { wartetTat = tat; S.korrWarn = { folge }; return zeichne(); }
+  tat(); merke(); neu();
+}
+function korrAufraeumen(p) {
+  if (korrListe(p,'basis').length === 0 && korrListe(p,'rest').length === 0) delete p.korr;
+}
+function korrHinzu() {
+  const k = S.korr; const p = posVon(k.jahr, k.gKey, k.pKey); if (!p) return;
+  const betrag = (k.richtung === 'minus' ? -1 : 1) * Math.abs(zahl(k.betrag));
+  if (!betrag) return;
+  const notiz = String(k.notiz || '');
+  korrAnwenden(() => {
+    if (!p.korr) p.korr = {};
+    if (!p.korr[k.art]) p.korr[k.art] = [];
+    p.korr[k.art].push({ id:neueId(), betrag, notiz });
+    S.korr.betrag = ''; S.korr.notiz = '';
+  });
+}
+function korrWeg(eid) {
+  const k = S.korr; const p = posVon(k.jahr, k.gKey, k.pKey); if (!p) return;
+  korrAnwenden(() => {
+    p.korr[k.art] = korrListe(p, k.art).filter(x => x.id !== eid);
+    korrAufraeumen(p);
+  });
+}
+function korrBetrag(eid, wert) {
+  const k = S.korr; const p = posVon(k.jahr, k.gKey, k.pKey); if (!p) return;
+  const n = zahl(wert);
+  korrAnwenden(() => {
+    if (n === 0) { p.korr[k.art] = korrListe(p, k.art).filter(x => x.id !== eid); korrAufraeumen(p); }
+    else korrListe(p, k.art).forEach(x => { if (x.id === eid) x.betrag = n; });
+  });
+}
+function korrNotiz(eid, wert) {
+  const k = S.korr; const p = posVon(k.jahr, k.gKey, k.pKey); if (!p) return;
+  korrListe(p, k.art).forEach(x => { if (x.id === eid) x.notiz = wert; });
+  merke(); neu();                      /* Notizen aendern keine Zahl — keine Warnung */
+}
+function korrWarnAntwort(wahl) {
+  const tat = wartetTat, folge = (S.korrWarn || {}).folge || [];
+  wartetTat = null; S.korrWarn = null;
+  if (wahl === 'ab') return zeichne();
+  if (tat) tat();
+  if (wahl === 'ueber') {
+    const k = S.korr;
+    folge.forEach(x => { const p = posVon(x.jahr, k.gKey, k.pKey);
+      if (p && p.korr) { p.korr.basis = []; korrAufraeumen(p); } });
+  }
+  merke(); neu();
 }
 
 /* ================================================== Sichern und Laden */
@@ -993,14 +1776,15 @@ function merke() {
 }
 function anzeigeMerken() {
   try { localStorage.setItem(SCHLUESSEL + '.ansicht', JSON.stringify({
-    theme:S.theme, jahr:S.jahr, ansicht:S.ansicht, nullen:S.nullen, auf:S.auf })); } catch(e) {}
+    theme:S.theme, jahr:S.jahr, ansicht:S.ansicht, alleWas:S.alleWas,
+    nullen:S.nullen, auf:S.auf })); } catch(e) {}
 }
 
 /* ------------------------------------------------------ GitHub Contents */
 async function repoLesen(still) {
   const c = syncConf();
-  if (!c.repo || !c.token) { melde('fehler', 'Repo und Zugangsschlüssel fehlen.'); return; }
-  melde('sichert', 'Hole aus dem Repo …');
+  if (!c.repo || !c.token) { melde('fehler', 'Repo und Zugangsschlüssel fehlen.'); zeichneRahmen(); return; }
+  melde('sichert', 'Hole aus dem Repo …'); zeichneRahmen();
   try {
     const u = 'https://api.github.com/repos/' + c.repo + '/contents/' + c.pfad + '?ref=' + encodeURIComponent(c.zweig);
     const a = await fetch(u, { headers:{ Authorization:'Bearer ' + c.token,
@@ -1014,12 +1798,14 @@ async function repoLesen(still) {
     melde('gesichert', 'Aus dem Repo geholt.');
     S.syncAuf = false;
     zeichne();
-  } catch(e) { melde('fehler', 'Holen misslungen: ' + e.message); if (!still) zeichne(); }
+  } catch(e) { melde('fehler', 'Holen misslungen: ' + e.message);
+    if (still) zeichneRahmen(); else zeichne(); }
 }
 async function insRepo(still) {
   const c = syncConf();
-  if (!c.repo || !c.token) { melde('fehler', 'Repo und Zugangsschlüssel fehlen.'); zeichne(); return; }
-  melde('sichert', 'Sichert …'); if (!still) zeichne();
+  if (!c.repo || !c.token) { melde('fehler', 'Repo und Zugangsschlüssel fehlen.');
+    if (still) zeichneRahmen(); else zeichne(); return; }
+  melde('sichert', 'Sichert …'); if (still) zeichneRahmen(); else zeichne();
   const leib = () => {
     const roh = JSON.stringify(nutzdaten(), null, 1);
     const bytes = new TextEncoder().encode(roh);
@@ -1044,7 +1830,9 @@ async function insRepo(still) {
     druck = (await a.json()).content.sha;
     melde('gesichert', 'Ins Repo gesichert um ' + new Date().toLocaleTimeString('de-CH') + '.');
   } catch(e) { melde('fehler', 'Sichern misslungen: ' + e.message); }
-  zeichne();
+  /* Beim stillen Sichern nur den Punkt oben nachfuehren — nicht das Blatt, in dem
+     jemand gerade tippt. */
+  if (still) zeichneRahmen(); else zeichne();
 }
 function melde(zustand, text) { S.sync = zustand; S.syncText = text; }
 
@@ -1065,7 +1853,7 @@ function dateiLaden() {
     const l = new FileReader();
     l.onload = () => { try { uebernimm(JSON.parse(l.result));
         letzterFinger = finger(); merke();
-        S.syncAuf = false; melde(syncConf().token ? 'lokal' : 'lokal', 'Aus Datei geladen.');
+        S.syncAuf = false; melde('lokal', 'Aus Datei geladen.');
         zeichne();
       } catch(e) { melde('fehler', 'Datei nicht lesbar: ' + e.message); zeichne(); } };
     l.readAsText(f); };
@@ -1095,25 +1883,34 @@ function csvSichern() {
     return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
   const z = a => a.map(zell).join(';');
   const erledigt = pid => MK.filter((k,m) => hakenAn(pid, m)).join(' ');
+  /* Korrekturen gehoeren in den Export — sonst erklaert die Zahl sich nicht. */
+  const korrText = id => { const f = findePos(id); if (!f || !f.p.korr) return '';
+    const teil = [];
+    ['basis','rest'].forEach(a => korrListe(f.p, a).forEach(x => {
+      teil.push((a === 'basis' ? 'Vortrag ' : 'Rest ') + (x.betrag > 0 ? '+' : '')
+        + x.betrag + (x.notiz ? ' ' + x.notiz : '')); }));
+    return teil.join(' | '); };
   js.forEach(j => {
     const b = bau(j, true), L = [];
-    L.push(z(['GÄPP', 'Budget ' + j, 'Stand ' + new Date().toLocaleDateString('de-CH')]));
+    L.push(z(['GÄPP V ' + VERSION, 'Budget ' + j, 'Stand ' + new Date().toLocaleDateString('de-CH')]));
     L.push('');
-    L.push(z(['Ebene','Position','Basis'].concat(MK).concat(['Jahr / Rest','Erledigt'])));
-    L.push(z(['Kennzahl','Saldo budgetiert',''].concat(b.saldo).concat([su(b.saldo),''])));
-    L.push(z(['Kennzahl','Saldo kumuliert',''].concat(b.kum).concat([b.kum[11],''])));
+    L.push(z(['Ebene','Position','Basis'].concat(MK).concat(['Jahr / Rest','Erledigt','Korrektur'])));
+    L.push(z(['Kennzahl','Saldo budgetiert',''].concat(b.saldo).concat([su(b.saldo),'',''])));
+    L.push(z(['Kennzahl','Saldo kumuliert',''].concat(b.kum).concat([b.kum[11],'',''])));
     b.zeilen.forEach(x => {
       const eb = x.typ === 'kopf' ? 'Kategorie' : x.typ === 'gkopf' ? 'Gruppe'
         : x.typ === 'pos' ? 'Position' : 'Summe';
       L.push(z([eb, x.name, x.bs || ''].concat(x.reihe)
-        .concat([x.jw, x.typ === 'pos' ? erledigt(x.id) : ''])));
+        .concat([x.jw, x.typ === 'pos' ? erledigt(x.id) : '',
+                 x.typ === 'pos' ? korrText(x.id) : ''])));
     });
     if (S.exp.rech) {
       const gruppen = steller(j);
       L.push(''); L.push(z(['Rechnungen ' + j]));
-      L.push(z(['Ebene','Rechnungssteller / Zweck','Datum','Betrag'].concat(MK).concat(['Saldo','Stand'])));
+      L.push(z(['Ebene','Rechnungssteller / Zweck','Datum','Betrag'].concat(MK)
+        .concat(['Saldo','Stand','Erledigt'])));
       const tot = N12(), off = N12(), bez = N12();
-      let tb = 0, ob = 0, bb = 0;
+      let tb = 0, ob = 0, bb = 0, ts = 0;
       gruppen.forEach(g => {
         const liste = g.rechnungen || [], mon = N12();
         let bet = 0, sal = 0;
@@ -1121,14 +1918,15 @@ function csvSichern() {
           (r.reihe||[]).forEach((v,m) => { mon[m] += v; tot[m] += v;
             if (r.stand === 'Bezahlt') bez[m] += v; else off[m] += v; });
           if (r.stand === 'Bezahlt') bb += r.betrag; else ob += r.betrag; });
-        tb += bet;
-        L.push(z(['Steller', g.name, '', bet].concat(mon).concat([sal,''])));
+        tb += bet; ts += sal;
+        L.push(z(['Steller', g.name, '', bet].concat(mon).concat([sal,'',''])));
         liste.forEach(r => L.push(z(['Rechnung', r.zweck, r.datum, r.betrag]
-          .concat(r.reihe || N12()).concat([r.betrag - su(r.reihe), r.stand]))));
+          .concat(r.reihe || N12())
+          .concat([r.betrag - su(r.reihe), r.stand, erledigt(r.id)]))));
       });
-      L.push(z(['Total','','',tb].concat(tot).concat(['',''])));
-      L.push(z(['Offen','','',ob].concat(off).concat(['',''])));
-      L.push(z(['Bezahlt','','',bb].concat(bez).concat(['',''])));
+      L.push(z(['Total','','',tb].concat(tot).concat([ts,'',''])));
+      L.push(z(['Offen','','',ob].concat(off).concat(['','',''])));
+      L.push(z(['Bezahlt','','',bb].concat(bez).concat(['','',''])));
     }
     gib('GAEPP-' + j + '.csv', '﻿' + L.join('\r\n') + '\r\n', 'text/csv;charset=utf-8');
   });
@@ -1139,33 +1937,42 @@ function csvSichern() {
 function htmlSichern() {
   const js = jahre().filter(j => S.exp.jahre.indexOf(j) >= 0);
   if (!js.length) return;
-  const alt = { jahr:S.jahr, ansicht:S.ansicht, auf:S.auf.slice() };
+  const alt = { jahr:S.jahr, ansicht:S.ansicht, alleWas:S.alleWas, auf:S.auf.slice() };
   const ids = [];
   jahre().forEach(j => (S.daten[j]||[]).forEach(b => { ids.push(b.id);
     if (b.art === 'schulden') (b.gruppen||[]).forEach(g => ids.push(g.id)); }));
   jahre().forEach(j => (S.rechnungen[j]||[]).forEach(g => ids.push(g.id)));
   S.auf = ids;
 
-  const vid = (j,a) => 'v-' + (a === 'alle' ? 'alle' : j + '-' + a);
+  const vid = (j,a) => 'v-' + (a.indexOf('alle') === 0 ? a : j + '-' + a);
   const sicht = [];
   const mach = (j, a) => {
-    S.jahr = j; S.ansicht = a;
+    S.jahr = j;
+    if (a.indexOf('alle') === 0) { S.ansicht = 'alle';
+      S.alleWas = a === 'alle-rechnung' ? 'rechnung' : 'budget'; }
+    else S.ansicht = a;
     const d = document.createElement('div');
     d.innerHTML = '<div class="leiste">' + leiste() + '</div>' + band()
-      + '<div class="blatt">' + blatt() + '</div>';
+      + '<div class="blatt">' + blatt() + '</div>'
+      + '<div class="fusszeile">' + fusszeile() + '</div>';
     /* Eingabefelder werden Text mit denselben Stilen; was ändern würde, fällt weg. */
     d.querySelectorAll('input').forEach(i => { const s = document.createElement('span');
       s.setAttribute('class', i.getAttribute('class') || '');
+      /* Der eigene Stil des Feldes wandert mit — sonst verliert der fett gesetzte
+         Name des Rechnungsstellers im eingefrorenen Blatt seine Staerke. */
       s.setAttribute('style', 'display:inline-block;border-color:transparent;background:none;'
         + (i.className.indexOf('zelle') >= 0 || i.className.indexOf('datum') >= 0 ? 'text-align:right;' : '')
-        + 'padding:3px 4px');
+        + 'padding:3px 4px;' + (i.getAttribute('style') || ''));
       s.textContent = i.value; i.parentNode.replaceChild(s, i); });
+    /* Im eingefrorenen Blatt tut ein Doppelklick nichts — der Hinweis muss weg. */
+    d.querySelectorAll('.mkorr').forEach(x => x.setAttribute('title', 'Manuell angepasst'));
     d.querySelectorAll('select').forEach(sel => { const s = document.createElement('span');
       s.setAttribute('style', (sel.getAttribute('style')||'') + ';padding:2px 4px');
       const o = sel.options[sel.selectedIndex]; s.textContent = o ? o.text : '';
       sel.parentNode.replaceChild(s, sel); });
     d.querySelectorAll('.werkzeug,.plus,.neusteller,[data-exp],[data-drucken],[data-theme],'
-      + '[data-nullen],[data-sync-auf],[data-neu-jahr],[data-theme-um],[data-weg-jahr]').forEach(x => x.remove());
+      + '[data-nullen],[data-sync-auf],[data-neu-jahr],[data-theme-um],[data-weg-jahr],'
+      + '[data-hb]').forEach(x => x.remove());
     d.querySelectorAll('[data-klapp]').forEach(b => { b.removeAttribute('data-klapp'); });
     d.querySelectorAll('.chev').forEach(c => c.setAttribute('data-chev','1'));
     d.querySelectorAll('[data-alle-um]').forEach(b => { b.textContent = 'Alles zuklappen'; });
@@ -1173,22 +1980,31 @@ function htmlSichern() {
     sicht.push({ id:d.id, jahr:j, ansicht:a, el:d });
   };
   js.forEach(j => { mach(j,'budget'); if (S.exp.rech) mach(j,'rechnung'); });
-  if (js.length > 1) mach(js[0], 'alle');
-  S.jahr = alt.jahr; S.ansicht = alt.ansicht; S.auf = alt.auf;
+  if (js.length > 1) { mach(js[0], 'alle-budget'); if (S.exp.rech) mach(js[0], 'alle-rechnung'); }
+  S.jahr = alt.jahr; S.ansicht = alt.ansicht; S.alleWas = alt.alleWas; S.auf = alt.auf;
 
   const hat = id => sicht.some(s => s.id === id);
+  const istAlle = a => a.indexOf('alle') === 0;
+  /* Die Datei oeffnet mit der Ansicht, aus der heraus gesichert wurde — nicht mit
+     dem ersten Jahrgang der Liste, der oft ein leeres Geruest ist. */
+  const gewuenscht = alt.ansicht === 'alle' ? vid(null, 'alle-' + alt.alleWas)
+                                            : vid(alt.jahr, alt.ansicht);
+  const start = hat(gewuenscht) ? gewuenscht : sicht[0].id;
   sicht.forEach(s => {
     s.el.querySelectorAll('[data-geh-jahr]').forEach(b => {
       const j = parseInt(b.dataset.gehJahr,10);
-      const a = s.ansicht === 'alle' ? 'budget' : s.ansicht;
+      const a = istAlle(s.ansicht) ? 'budget' : s.ansicht;
       const ziel = hat(vid(j,a)) ? vid(j,a) : vid(j,'budget');
       if (hat(ziel)) b.setAttribute('data-ziel', ziel); else b.remove(); });
     s.el.querySelectorAll('[data-geh-ansicht]').forEach(b => {
-      const ziel = vid(s.jahr, b.dataset.gehAnsicht);
+      const w = b.dataset.gehAnsicht;
+      const ziel = istAlle(s.ansicht) ? vid(null, 'alle-' + w) : vid(s.jahr, w);
       if (hat(ziel)) b.setAttribute('data-ziel', ziel); else b.remove(); });
     s.el.querySelectorAll('[data-geh-alle]').forEach(b => {
-      if (hat(vid(null,'alle'))) b.setAttribute('data-ziel', vid(null,'alle')); else b.remove(); });
-    if (s.id !== sicht[0].id) s.el.style.display = 'none';
+      const w = istAlle(s.ansicht) ? s.ansicht : 'alle-' + s.ansicht;
+      const ziel = hat(vid(null,w)) ? vid(null,w) : vid(null,'alle-budget');
+      if (hat(ziel)) b.setAttribute('data-ziel', ziel); else b.remove(); });
+    if (s.id !== start) s.el.style.display = 'none';
   });
 
   const css = document.querySelector('style').textContent;
@@ -1224,7 +2040,7 @@ function htmlSichern() {
     + '})();</' + 'script>';
   const huelle = document.createElement('div');
   sicht.forEach(s => huelle.appendChild(s.el));
-  const html = '<!DOCTYPE html><html lang="de-CH" data-theme="dunkel"><head><meta charset="utf-8">'
+  const html = '<!DOCTYPE html><html lang="de-CH" data-theme="' + S.theme + '"><head><meta charset="utf-8">'
     + '<title>GÄPP · ' + js.join(', ') + '</title>'
     + '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700'
     + '&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">'
@@ -1234,8 +2050,8 @@ function htmlSichern() {
     + "font:400 11px/1.4 'Space Grotesk',sans-serif;color:var(--chrome);background:var(--card);"
     + 'border:1px solid var(--line);border-radius:8px;padding:6px 10px}[data-ziel]{cursor:pointer}</style>'
     + '</head><body>' + huelle.innerHTML
-    + '<div class="stempel">Eingefrorener Stand vom ' + new Date().toLocaleDateString('de-CH')
-    + ' · nur lesen</div>' + skript + '</body></html>';
+    + '<div class="stempel">GÄPP V ' + VERSION + ' · eingefrorener Stand vom '
+    + new Date().toLocaleDateString('de-CH') + ' · nur lesen</div>' + skript + '</body></html>';
   gib('GAEPP-' + js.join('-') + '.html', html, 'text/html');
   S.exp = null; zeichne();
 }
@@ -1244,14 +2060,33 @@ function htmlSichern() {
 function daten(el, name) { let n = el; while (n && n !== document) {
   if (n.dataset && n.dataset[name] !== undefined) return n; n = n.parentNode; } return null; }
 
+/* Wer ein Fenster schliesst, will dort weitermachen, wo er es geoeffnet hat —
+   sonst liegt der Fokus danach auf nichts, und die naechste Taste geht ins Leere. */
+function dialogFokus(was) {
+  if (was === 'ueb' && S.ueb)
+    fokusWunsch = '.zelle[data-z="' + S.ueb.id + '"][data-m="' + S.ueb.m + '"]';
+  else if (was === 'basis' && S.basis)
+    fokusWunsch = '.zelle[data-b="' + S.basis.id + '"]';
+}
+
 document.addEventListener('click', e => {
   const t = e.target;
   const tref = n => daten(t, n);
   let x;
+  /* Der Wechsel zwischen einem Jahr und «Alle» behaelt, worauf man gerade schaut —
+     wer in den Rechnungen ist, landet in «Alle» auch in den Rechnungen. */
   if ((x = tref('gehJahr')))    { S.jahr = parseInt(x.dataset.gehJahr,10);
-                                  if (S.ansicht === 'alle') S.ansicht = 'budget'; return neu(); }
-  if ((x = tref('gehAnsicht'))) { S.ansicht = x.dataset.gehAnsicht; return neu(); }
-  if ((x = tref('gehAlle')))    { S.ansicht = 'alle'; return neu(); }
+                                  if (S.ansicht === 'alle') S.ansicht = S.alleWas; return neu(); }
+  if ((x = tref('gehAnsicht'))) { if (S.ansicht === 'alle') S.alleWas = x.dataset.gehAnsicht;
+                                  else S.ansicht = x.dataset.gehAnsicht; return neu(); }
+  if ((x = tref('hb')))         { S.hb = true; return zeichne(); }
+  if ((x = tref('basisTat')))   { return basisTat(x.dataset.basisTat); }
+  if ((x = tref('korrRicht')))  { if (S.korr) S.korr.richtung = x.dataset.korrRicht; return zeichne(); }
+  if ((x = tref('korrAdd')))    { return korrHinzu(); }
+  if ((x = tref('korrWeg')))    { return korrWeg(x.dataset.korrWeg); }
+  if ((x = tref('korrWarn')))   { return korrWarnAntwort(x.dataset.korrWarn); }
+  if ((x = tref('gehAlle')))    { if (S.ansicht !== 'alle') S.alleWas = S.ansicht;
+                                  S.ansicht = 'alle'; return neu(); }
   if ((x = tref('klapp')))      { const id = x.dataset.klapp;
                                   S.auf = offen(id) ? S.auf.filter(y => y !== id) : S.auf.concat([id]); return neu(); }
   if ((x = tref('alleUm')))     { if (S.auf.length) S.auf = []; else {
@@ -1267,17 +2102,23 @@ document.addEventListener('click', e => {
                                   S.exp.jahre = S.exp.jahre.indexOf(j) >= 0 ? S.exp.jahre.filter(y => y !== j)
                                     : S.exp.jahre.concat([j]); return zeichne(); }
   if ((x = tref('expRech')))    { S.exp.rech = !S.exp.rech; return zeichne(); }
-  if ((x = tref('expJson')))    return jsonSichern();
   if ((x = tref('expCsv')))     return csvSichern();
   if ((x = tref('expHtml')))    return htmlSichern();
   if ((x = tref('laden')))      return dateiLaden();
+  if ((x = tref('vergiss')))    { try { localStorage.removeItem(SCHLUESSEL);
+                                    localStorage.removeItem(SCHLUESSEL + '.ansicht'); } catch(err) {}
+                                  location.reload(); return; }
   if ((x = tref('syncAuf')))    { S.syncAuf = true; return zeichne(); }
   if ((x = tref('repoHolen')))  return repoLesen();
-  if ((x = tref('repoSichern'))){ druck = druck; return insRepo(); }
-  if ((x = tref('zu')))         { S[x.dataset.zu === 'sync' ? 'syncAuf' : x.dataset.zu] =
+  if ((x = tref('repoSichern'))){ return insRepo(); }
+  if ((x = tref('zu')))         { dialogFokus(x.dataset.zu);
+                                  S[x.dataset.zu === 'sync' ? 'syncAuf' : x.dataset.zu] =
                                     x.dataset.zu === 'sync' ? false : null; return zeichne(); }
-  if ((x = tref('schleier')) && t === x) { S.ueb = null; S.neu = null; S.exp = null;
-                                    S.wegJahr = null; S.syncAuf = false; return zeichne(); }
+  if ((x = tref('schleier')) && t === x) { dialogFokus(x.dataset.schleier);
+                                    S.ueb = null; S.neu = null; S.exp = null;
+                                    S.wegJahr = null; S.syncAuf = false; S.hb = false;
+                                    S.korr = null; S.korrWarn = null; S.basis = null;
+                                    wartetTat = null; return zeichne(); }
   if ((x = tref('neuJahr')))    { S.neu = { jahr: Math.max.apply(null, jahre()) + 1, budget:true, raten:false }; return zeichne(); }
   if ((x = tref('wegJahrAn')))  { jahrLoeschen(S.wegJahr); return neu(); }
   if ((x = tref('wegJahr')))    { S.wegJahr = S.jahr; return zeichne(); }
@@ -1299,14 +2140,27 @@ document.addEventListener('click', e => {
 /* ---------- Werte tippen: neu gerechnet wird beim Verlassen der Zelle ---------- */
 document.addEventListener('change', e => {
   const d = e.target.dataset || {};
+  /* Die Felder im Korrekturfenster zuerst — sie tragen eigene Kennungen. */
+  if (d.korrBetrag !== undefined) { if (S.korr) S.korr.betrag = e.target.value; return; }
+  if (d.korrNotiz !== undefined)  { if (S.korr) S.korr.notiz = e.target.value; return; }
+  if (d.korrB !== undefined)      { return korrBetrag(d.korrB, e.target.value); }
+  if (d.korrN !== undefined)      { return korrNotiz(d.korrN, e.target.value); }
   if (d.z !== undefined && d.m !== undefined) {
-    mitPos(d.z, p => { p.reihe[+d.m] = zahl(e.target.value); }); return neu(); }
+    const w = zahl(e.target.value);
+    mitPos(d.z, p => { p.reihe[+d.m] = w; });
+    /* Eine Marke ohne Betrag waere unsichtbar und wuerde wieder wirken, sobald
+       dort erneut eine Zahl steht. Sie faellt mit dem Betrag. */
+    if (w === 0) delete S.haken[d.z + ':' + d.m];
+    merke(); return neu(); }
   if (d.b !== undefined) {
     mitPos(d.b, p => { p.basis = zahl(e.target.value); }); return neu(); }
   if (d.p !== undefined && e.target.className.indexOf('namensfeld') >= 0) {
-    mitPos(d.p, p => { p.name = e.target.value; }); return neu(); }
+    mitPos(d.p, p => { p.name = e.target.value; schluesselNachziehen(p); }); return neu(); }
   if (d.rm !== undefined && d.m !== undefined) {
-    inRechnung(d.rm, r => { r.reihe[+d.m] = zahl(e.target.value); }); return neu(); }
+    const w = zahl(e.target.value);
+    inRechnung(d.rm, r => { r.reihe[+d.m] = w; });
+    if (w === 0) delete S.haken[d.rm + ':' + d.m];
+    merke(); return neu(); }
   if (d.r !== undefined && d.f) {
     inRechnung(d.r, r => { r[d.f] = d.f === 'betrag' ? zahl(e.target.value) : e.target.value; }); return neu(); }
   if (d.s !== undefined && e.target.className.indexOf('namensfeld') >= 0) {
@@ -1331,6 +2185,18 @@ function kennung(el) {
   if (!teile.length) return null;
   return teile.join('') + '.' + String(el.className).trim().split(/\s+/)[0];
 }
+/* Erst die Kennung des Ziels merken, dann uebernehmen (das zeichnet neu), dann
+   das Feld an der Zielstelle suchen — das alte gibt es danach nicht mehr. */
+function springeZu(el, ziel) {
+  const marke = kennung(ziel);
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+  zeichneJetztFalls();     /* die Taste wartet nicht — hier wird sofort gezeichnet */
+  const frisch = marke ? document.querySelector(marke) : null;
+  const nimm = frisch || ziel;
+  if (!nimm || !nimm.isConnected) return;
+  nimm.focus();
+  if (nimm.select) { try { nimm.select(); } catch(err) {} }
+}
 document.addEventListener('keydown', e => {
   if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
   const el = e.target;
@@ -1341,13 +2207,61 @@ document.addEventListener('keydown', e => {
   const ziel = felder[i + (e.shiftKey ? -1 : 1)];
   if (!ziel) return;
   e.preventDefault();
-  const marke = kennung(ziel);
-  el.dispatchEvent(new Event('change', { bubbles: true }));   /* zeichnet neu */
-  const frisch = marke ? document.querySelector(marke) : null;
-  const nimm = frisch || ziel;
-  if (!nimm || !nimm.isConnected) return;
-  nimm.focus();
-  if (nimm.select) { try { nimm.select(); } catch(err) {} }
+  springeZu(el, ziel);
+});
+
+/* ---------- Pfeil rauf und runter: dieselbe Spalte, die naechste Zeile ------
+   Gemessen wird ueber die Spaltennummer der Zelle, nicht ueber die Reihenfolge
+   der Felder — sonst liefe der Sprung quer durch die Zeile. */
+const TIPPBARROH = '.zelle,.namensfeld,.datumsfeld';
+function spaltenNachbar(el, richtung) {
+  const td = el.closest('td'), tr = el.closest('tr');
+  if (!td || !tr) return null;
+  const sp = td.cellIndex;
+  const tab = tr.closest('table'); if (!tab) return null;
+  const zeilen = Array.prototype.slice.call(tab.querySelectorAll('tr'));
+  const i = zeilen.indexOf(tr); if (i < 0) return null;
+  for (let k = i + richtung; k >= 0 && k < zeilen.length; k += richtung) {
+    const z = zeilen[k].cells ? zeilen[k].cells[sp] : null;
+    if (!z) continue;
+    const f = z.querySelector(TIPPBARROH);
+    if (f) return f;
+  }
+  return null;
+}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  const el = e.target;
+  if (!el || !el.matches || !el.matches(TIPPBAR)) return;
+  /* Im Auswahlfeld «Stand» gehoeren die Pfeile der Auswahl selbst. */
+  if (el.matches('.stand')) return;
+  const ziel = spaltenNachbar(el, e.key === 'ArrowDown' ? 1 : -1);
+  if (!ziel) return;
+  e.preventDefault();
+  springeZu(el, ziel);
+});
+
+/* ---------- Escape schliesst das oberste Fenster ---------- */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!(S.ueb || S.neu || S.exp || S.wegJahr || S.syncAuf || S.korr || S.korrWarn
+        || S.basis || S.hb)) return;
+  e.preventDefault();
+  if (S.korrWarn) return korrWarnAntwort('ab');
+  dialogFokus(S.ueb ? 'ueb' : (S.basis ? 'basis' : ''));
+  S.ueb = null; S.neu = null; S.exp = null; S.wegJahr = null; S.syncAuf = false;
+  S.korr = null; S.basis = null; S.hb = false; wartetTat = null;
+  zeichne();
+});
+
+/* ---------- Am Griff verschieben Pfeil rauf und runter die Zeile ---------- */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  const g = e.target && e.target.dataset ? e.target.dataset.griff : undefined;
+  if (g === undefined) return;
+  e.preventDefault();
+  verschiebeUm(g, e.key === 'ArrowDown' ? 1 : -1);
 });
 
 /* ---------- Rechtsklick: Monat erledigt / Rechnung bezahlt ---------- */
@@ -1355,31 +2269,72 @@ document.addEventListener('contextmenu', e => {
   const d = e.target.dataset || {};
   if (d.z !== undefined && d.m !== undefined) {
     e.preventDefault();
+    /* Eine leere Zelle laesst sich nicht abhaken: die Marke waere unsichtbar und
+       wuerde spaeter wirken, wenn dort eine Zahl steht. */
+    const f = findePos(d.z);
+    if (!f || !((f.p.reihe||[])[+d.m])) return;
     const k = d.z + ':' + d.m;
     if (S.haken[k]) delete S.haken[k]; else S.haken[k] = true;
     merke(); return neu();
   }
+  /* Rechnungen: derselbe Griff wie im Budget — ein Monat, ein Haken. */
+  if (d.rm !== undefined && d.m !== undefined) {
+    e.preventDefault();
+    const m = +d.m;
+    inRechnung(d.rm, r => {
+      if (!((r.reihe||[])[m])) return;   /* leere Zelle: nichts abzuhaken */
+      /* «Bezahlt» heisst: jeder Monat gilt als abgehakt, ohne dass ein Haken
+         gesetzt waere. Wer dann einen Monat zuruecknimmt, muss die uebrigen
+         Haken zuerst wirklich bekommen — sonst nimmt der Klick nichts zurueck,
+         sondern setzt den einzigen Haken und loescht alle anderen Marken. */
+      if (r.stand === 'Bezahlt' && !rechnungRund(r))
+        (r.reihe||[]).forEach((v,i) => { if (v !== 0) S.haken[r.id + ':' + i] = true; });
+      const k = r.id + ':' + m;
+      if (S.haken[k]) delete S.haken[k]; else S.haken[k] = true;
+      if (rechnungRund(r)) r.stand = 'Bezahlt';
+      else if (r.stand === 'Bezahlt') r.stand = 'Offen';
+    });
+    merke(); return neu();
+  }
+  /* Rechtsklick auf den Betrag schaltet die ganze Rechnung um. */
   if (d.bez !== undefined) {
     e.preventDefault();
-    inRechnung(d.bez, r => { r.stand = r.stand === 'Bezahlt' ? 'Offen' : 'Bezahlt'; });
+    inRechnung(d.bez, r => {
+      if (r.stand === 'Bezahlt') { r.stand = 'Offen';
+        Object.keys(S.haken).forEach(k => { if (k.indexOf(r.id + ':') === 0) delete S.haken[k]; });
+      } else r.stand = 'Bezahlt';
+    });
     return neu();
   }
 });
 
-/* ---------- Doppelklick: Wert auf mehrere Monate übertragen ---------- */
+/* ---------- Doppelklick: übertragen, verteilen, korrigieren ---------- */
 document.addEventListener('dblclick', e => {
   const d = e.target.dataset || {};
-  if (d.z === undefined || d.m === undefined) return;
-  const f = findePos(d.z); if (!f) return;
-  const m = +d.m;
-  S.ueb = { id:d.z, jahr:S.jahr, m, von:m, bis:11, folge:false, wert:f.p.reihe[m], name:f.p.name };
-  zeichne();
+  if (d.z !== undefined && d.m !== undefined) {
+    const f = findePos(d.z); if (!f) return;
+    const m = +d.m;
+    S.ueb = { id:d.z, jahr:S.jahr, m, von:m, bis:11, folge:false, wert:f.p.reihe[m], name:f.p.name };
+    return zeichne();
+  }
+  let x;
+  /* Basis oder Rest einer Schuld: das Korrekturfenster. */
+  if ((x = daten(e.target, 'kb'))) { e.preventDefault(); return korrOeffnen(x.dataset.kb, 'basis'); }
+  if ((x = daten(e.target, 'kr'))) { e.preventDefault(); return korrOeffnen(x.dataset.kr, 'rest'); }
+  /* Basis ausserhalb der Schulden: uebertragen oder verteilen. */
+  if ((x = daten(e.target, 'bs'))) {
+    e.preventDefault();
+    const id = x.dataset.bs, f = findePos(id); if (!f) return;
+    const blk = (S.daten[S.jahr]||[]).find(b => (b.pos||[]).some(p => p.id === id));
+    S.basis = { id, name:f.p.name, wert:f.p.basis || 0, verteilen: istRueckstellung(blk) };
+    return zeichne();
+  }
 });
 
 /* ---------- Ziehen: nur innerhalb derselben Sektion ---------- */
 document.addEventListener('dragstart', e => {
-  const tr = daten(e.target, 'id'); if (!tr || tr.tagName !== 'TR') return;
-  S.zieht = tr.dataset.id; S.ziel = null;
+  const g = daten(e.target, 'griff'); if (!g) { e.preventDefault(); return; }
+  S.zieht = g.dataset.griff; S.ziel = null;
   if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move';
     try { e.dataTransfer.setData('text/plain', S.zieht); } catch(err) {} }
 });
@@ -1389,7 +2344,14 @@ document.addEventListener('dragover', e => {
   const a = findePos(S.zieht), b = findePos(id);
   if (!a || !b || a.eltern !== b.eltern) return;
   e.preventDefault();
-  if (S.ziel !== id) { S.ziel = id; zeichne(); }
+  if (S.ziel === id) return;
+  S.ziel = id;
+  /* Hier wird NICHT neu gezeichnet: das Neuzeichnen loescht den Griff, an dem
+     gerade gezogen wird, und Chromium bricht den Zug ab, sobald die Quelle aus
+     dem Dokument verschwindet — «drop» kam dann nie an. Die Marke wird von Hand
+     gesetzt, das Blatt bleibt stehen. */
+  document.querySelectorAll('tr.ziel').forEach(x => x.classList.remove('ziel'));
+  tr.classList.add('ziel');
 });
 document.addEventListener('drop', e => {
   const tr = daten(e.target, 'id'); if (!tr || tr.tagName !== 'TR') return;
@@ -1411,8 +2373,27 @@ function neuePos(ziel) {
   });
   if (!rein) return;
   if (!offen(ziel)) S.auf = S.auf.concat([ziel]);
+  fokusWunsch = '.namensfeld[data-p="' + frisch.id + '"]';
   merke(); neu();
 }
+/* Eine von Hand eingefuegte Zeile traegt zunaechst einen Verlegenheitsschluessel
+   («neu17»). Beim Benennen wird daraus der Schluessel aus dem Namen — dann findet
+   dieselbe Schuld ueber die Jahrgaenge von selbst zusammen, statt in jedem Jahr
+   eine neue zu sein. Ein in derselben Liste schon vergebener Schluessel bleibt
+   unangetastet: zwei Zeilen duerfen nicht auf denselben Vortrag zeigen. */
+function schluesselNachziehen(p) {
+  if (!/^neu\d+$/.test(String(p.key || ''))) return;
+  const neuKey = slug(p.name); if (!neuKey) return;
+  /* Geprueft wird der ganze Jahrgang, nicht nur die eigene Liste: zwei Zeilen mit
+     demselben Schluessel in verschiedenen Kategorien waeren eine Falle. */
+  let belegt = false;
+  (S.daten[S.jahr]||[]).forEach(b => {
+    const listen = b.art === 'schulden' ? (b.gruppen||[]).map(g => g.pos||[]) : [b.pos||[]];
+    listen.forEach(L => L.forEach(x => { if (x !== p && x.key === neuKey) belegt = true; }));
+  });
+  if (!belegt) p.key = neuKey;
+}
+
 /* Nur im gezeigten Jahrgang. Eine Schuld, die 2027 erledigt ist, bleibt in den
    Vorjahren stehen — dort ist sie ja gelaufen. */
 function loeschePos(id) {
@@ -1430,30 +2411,40 @@ function inRechnung(id, fn) {
 function neuerSteller() {
   const g = { id:neueId(), name:'Neuer Rechnungssteller', rechnungen:[] };
   S.rechnungen[S.jahr] = (S.rechnungen[S.jahr]||[]).concat([g]);
-  S.auf = S.auf.concat([g.id]); merke(); neu();
+  S.auf = S.auf.concat([g.id]);
+  fokusWunsch = '.namensfeld[data-s="' + g.id + '"]';
+  merke(); neu();
 }
 function neueRechnung(gid) {
+  let neueRid = null;
   (S.rechnungen[S.jahr]||[]).forEach(g => { if (g.id !== gid) return;
-    g.rechnungen = (g.rechnungen||[]).concat([{ id:neueId(), zweck:'Neue Rechnung', datum:'',
+    neueRid = neueId();
+    g.rechnungen = (g.rechnungen||[]).concat([{ id:neueRid, zweck:'Neue Rechnung', datum:'',
       betrag:0, reihe:N12(), stand:'Offen' }]); });
   if (!offen(gid)) S.auf = S.auf.concat([gid]);
+  if (neueRid) fokusWunsch = '.namensfeld[data-r="' + neueRid + '"][data-f="zweck"]';
   merke(); neu();
 }
 function loescheRechnung(id) {
   (S.rechnungen[S.jahr]||[]).forEach(g => { g.rechnungen = (g.rechnungen||[]).filter(r => r.id !== id); });
+  Object.keys(S.haken).forEach(k => { if (k.indexOf(id + ':') === 0) delete S.haken[k]; });
   merke(); neu();
 }
 function loescheSteller(id) {
+  (S.rechnungen[S.jahr]||[]).forEach(g => { if (g.id !== id) return;
+    (g.rechnungen||[]).forEach(r => Object.keys(S.haken).forEach(k => {
+      if (k.indexOf(r.id + ':') === 0) delete S.haken[k]; })); });
   S.rechnungen[S.jahr] = (S.rechnungen[S.jahr]||[]).filter(g => g.id !== id);
   merke(); neu();
 }
-function neu() { anzeigeMerken(); zeichne(); }
+function neu() { anzeigeMerken(); zeichneBald(); }
 
 /* ==================================================== Start */
 (function start() {
   try { const a = JSON.parse(localStorage.getItem(SCHLUESSEL + '.ansicht') || '{}');
     if (a.theme) S.theme = a.theme;
     if (a.ansicht) S.ansicht = a.ansicht;
+    if (a.alleWas) S.alleWas = a.alleWas;
     if (a.nullen != null) S.nullen = a.nullen;
     if (Array.isArray(a.auf)) S.auf = a.auf;
     if (a.jahr) S.jahr = a.jahr;
@@ -1462,7 +2453,7 @@ function neu() { anzeigeMerken(); zeichne(); }
   let da = false;
   try { const roh = localStorage.getItem(SCHLUESSEL);
     if (roh) { uebernimm(JSON.parse(roh)); letzterFinger = finger(); da = true;
-      melde(syncConf().repo && syncConf().token ? 'lokal' : 'lokal', 'Aus dem Browserspeicher.'); }
+      melde('lokal', 'Aus dem Browserspeicher.'); }
   } catch(e) {}
 
   zeichne();
