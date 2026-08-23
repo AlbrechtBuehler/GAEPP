@@ -1,26 +1,55 @@
-/* GAEPP — Pruefstand: die vierzehn Befunde einer unabhaengigen Nachkontrolle,
-   dazu zwei weitere Punkte zum Excel-Layout vom 22.08.2026. Alle sechzehn
-   sind inzwischen behoben — dieser Lauf haelt die Behebung fest. Jeder
-   Abschnitt wird rot, wenn der jeweilige Fehler zurueckkaeme.
+/* GAEPP — Pruefstand: die vierzehn Befunde der unabhaengigen Nachkontrolle vom
+   22.08.2026, dazu die zwei Punkte zum damaligen «Excel-Layout». Alle sechzehn
+   waren in V 2.0.0 behoben. Dieser Lauf traegt dieselben sechzehn Fragen an den
+   Neubau (V 3.0.0, Tabellenwerkzeug, Bauhaus) heran: Jede Frage bleibt, nur die
+   Messpunkte sind neu. Ein Abschnitt wird rot, wenn der jeweilige Fehler
+   zurueckgekommen ist.
 
-   Gemessen wird durchgehend die Wirkung: der gerenderte Text, die berechnete
-   Farbe, der Datenstand nach einer echten Bedienung — nicht der Quelltext.
-   Wo eine Erwartung eine Zahl nennt, ist sie aus vorrat.mjs hergeleitet oder
-   von Hand nachgerechnet (siehe Kommentare je Abschnitt), nirgends aus einem
-   Lauf dieser App abgeschrieben.
+   Was der Umbau an den Messpunkten geaendert hat — je Abschnitt vermerkt, hier
+   das Grundsaetzliche:
+     - «Alles zuklappen» ist kein Knopf mehr. In der App klappt die Taste z zu
+       und auf, n schaltet die Nullen. Nur der HTML-Export traegt den Knopf noch.
+     - Es gibt kein helles Schema mehr. Hell ist nur noch das Papier (@media
+       print). Der Abschnitt 15 ist deshalb in seiner alten Form gegenstandslos
+       und wird gestrichen — die Frage dahinter steht in neuer Form daneben.
+     - Keine Akzentfarbe, keine Flaeche, kein Rot, kein Gruen. Rang entsteht aus
+       Schriftgroesse und Gewicht; abgehakt heisst halbfett. Wo ein Befund frueher
+       an einer Farbe oder an einer Klasse «gruen»/«unstimmig» gemessen wurde,
+       misst er jetzt Gewicht, Titel oder die Zahl selbst.
+     - Zeilenklassen heissen kat/grp/pos/sum/sumstark/saldo/zwischen/aufglied/
+       stark17; die Monatsmarke sitzt als Klasse «hak» an der Zelle, nicht am
+       Eingabefeld.
 
-   Port 8105. Fahren: node befunde.mjs */
+   Gemessen wird durchgehend die Wirkung: der gerenderte Text, das berechnete
+   Gewicht, der Datenstand nach einer echten Bedienung — nicht der Quelltext.
+   Jede Erwartung, die eine Zahl nennt, ist aus vorrat.mjs von Hand hergeleitet
+   (die Rechnung steht je Abschnitt im Kommentar), keine stammt aus einem Lauf
+   dieser App.
+
+   Stand 23.08.2026: 208 gruen, 1 rot. Das eine Rot ist keine Frage der Messung,
+   sondern ein Befund an der App — Abschnitt 14, zweite Haelfte: Der
+   Korrekturpunkt heisst im Neubau «korrmarke» statt «mkorr», und die Stelle in
+   htmlSichern(), die ihm im Export den Doppelklick-Hinweis nahm, ist beim
+   Umbenennen nicht mitgekommen. Die Pruefung bleibt rot, bis das behoben ist;
+   gelockert wird sie nicht.
+
+   Port 8744. Fahren: node befunde.mjs */
 
 import { serve, browser, bilanzbuch, bisRuhe } from './hilfe.mjs';
+import { STICHJAHR, STICHM, JAHRE } from './vorrat.mjs';
 
-const PORT = 8105;
-const ARBEITSJAHR = 2026;
+const PORT = 8744;
+const ARBEITSJAHR = STICHJAHR;                    /* der Jahrgang des Stichmonats */
 const { pruef, gleich, ende } = bilanzbuch('befunde');
 
+/* Spalte eines Jahrgangs in der Ansicht «Alle Jahre»: Name, dann je Jahrgang
+   eine Spalte, zuletzt Total. */
+const ALLE_SP = 1 + JAHRE.indexOf(ARBEITSJAHR);
+
 /* ---------------------------------------------------------------- Helfer,
-   dieselben Muster wie in rechnen.mjs/bedienung.mjs/eingabe.mjs — jede Datei
-   im Pruefstand traegt ihre eigenen, es gibt bewusst keine gemeinsame Datei
-   ausser hilfe.mjs/vorrat.mjs. */
+   dieselben Muster wie in rangordnung.mjs/bedienung.mjs/ausgabe.mjs — jede
+   Datei im Pruefstand traegt ihre eigenen, gemeinsam ist nur hilfe.mjs und
+   vorrat.mjs. */
 
 /* Betraege stehen mit Apostroph als Tausendertrennung und U+2212 als Minus;
    eine leere Zelle oder ein Strich zaehlt als 0. */
@@ -31,39 +60,40 @@ function lies(txt) {
   const n = parseInt(s.replace(/'/g, '').replace(/−/g, '-'), 10);
   return isNaN(n) ? null : n;
 }
-/* Formatierung wie in index.html — fmt(n, immer). */
-function fmt(n, immer) {
-  const r = Math.round(n || 0);
-  if (r === 0 && !immer) return '';
+/* Formatierung wie in index.html — fmt(n, immer). Hier immer mit «immer», damit
+   die Erwartung nicht davon abhaengt, ob gerade Nullen gezeigt werden. */
+function fmt(n) {
+  const r = (n < 0 ? -1 : 1) * Math.round(Math.abs(n || 0));
   return (r < 0 ? '−' : '') + String(Math.abs(r)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 }
 
 async function dbl(seite, sel) { await seite.locator(sel).first().dblclick(); await bisRuhe(seite); }
 async function klick(seite, sel) { await seite.locator(sel).first().click(); await bisRuhe(seite); }
 async function rklick(seite, sel) { await seite.locator(sel).first().click({ button: 'right' }); await bisRuhe(seite); }
+async function schwebe(seite, sel) { await seite.locator(sel).first().hover(); await bisRuhe(seite); }
 async function tippe(seite, sel, wert) {
   const el = seite.locator(sel).first();
   await el.fill(String(wert));
   await el.dispatchEvent('change');
   await bisRuhe(seite);
 }
-/* Echtes Tippen mit echtem Enter — anders als tippe() (fill+change), fuer die
-   Befunde, die die Bedienung selbst pruefen (5 und 9). Ein Enter auf einem
-   alleinstehenden <input> (kein <form> drumherum) loest in Chromium tatsaechlich
-   ein "change" aus, ohne das Feld zu verlassen — geprueft mit einer eigenen
-   Probe, bevor dieser Lauf sich darauf verlaesst. */
+/* Echtes Tippen mit echtem Enter — anders als tippe() (fill+change) fuer die
+   Abschnitte, die die Bedienung selbst pruefen (5, 9). Ein Enter auf einem
+   alleinstehenden <input> (kein <form> drumherum) loest in Chromium ein
+   «change» aus, ohne das Feld zu verlassen; dass es das wirklich tut, prueft
+   Abschnitt 5 als erste Aussage mit.
+   Gefokussiert wird ohne Maus: ein Klick in eine Monatszelle, die den Fokus
+   schon hat, setzt im Neubau den Haken — die Maus wuerde hier also nebenbei
+   etwas anderes bedienen, als gemeint ist. */
 async function tippeEnter(seite, sel, wert) {
   const el = seite.locator(sel).first();
-  /* Ein einzelner Klick, dann alles markieren. Ein Dreifachklick waere ein
-     Doppelklick — und der oeffnet in einer Monatszelle das Uebertragen-Fenster. */
-  await el.click();
+  await el.focus();
   await el.press('Control+a');
   await el.pressSequentially(String(wert));
   await el.press('Enter');
   await bisRuhe(seite);
 }
-async function anzahl(seite, sel) { return seite.locator(sel).count(); }
-async function zelleText(seite, sel) {
+async function feldWert(seite, sel) {
   return seite.evaluate((s) => {
     const el = document.querySelector(s);
     if (!el) return null;
@@ -71,25 +101,25 @@ async function zelleText(seite, sel) {
     return feld ? feld.value : el.textContent.trim();
   }, sel);
 }
+async function text(seite, sel) {
+  return seite.evaluate((s) => { const el = document.querySelector(s);
+    return el ? el.textContent.trim() : null; }, sel);
+}
 async function klasse(seite, sel) {
   return seite.evaluate((s) => { const el = document.querySelector(s); return el ? el.className : null; }, sel);
 }
-async function farbeVar(seite, name) {
-  return seite.evaluate((v) => {
-    const probe = document.createElement('span');
-    probe.style.color = 'var(' + v + ')';
-    document.body.appendChild(probe);
-    const wert = getComputedStyle(probe).color;
-    probe.remove();
-    return wert;
-  }, name);
+async function titel(seite, sel) {
+  return seite.evaluate((s) => { const el = document.querySelector(s);
+    return el ? el.getAttribute('title') : null; }, sel);
 }
-async function farbeVon(seite, sel, was) {
-  return seite.evaluate(([s, w]) => {
-    const el = document.querySelector(s);
-    return el ? getComputedStyle(el)[w || 'color'] : null;
-  }, [sel, was]);
+/* Die Klasse der Zelle (des <td>), in der ein Feld sitzt — dort sitzt im Neubau
+   die Marke «hak». */
+async function zellKlasse(seite, sel) {
+  return seite.evaluate((s) => { const el = document.querySelector(s);
+    if (!el) return null; const td = el.closest('td'); return td ? td.className : null; }, sel);
 }
+const hak = k => /\bhak\b/.test(String(k || ''));
+
 async function aktivesFeld(seite) {
   return seite.evaluate(() => {
     const el = document.activeElement;
@@ -108,7 +138,30 @@ async function frisch(seite) {
 async function gehJahr(seite, jahr) { await klick(seite, `[data-geh-jahr="${jahr}"]`); }
 async function gehAnsicht(seite, was) { await klick(seite, `[data-geh-ansicht="${was}"]`); }
 async function gehAlle(seite) { await klick(seite, '[data-geh-alle="1"]'); }
-async function allesAuf(seite) { await klick(seite, '[data-alle-um]'); }
+
+/* «Alles aufklappen» ist im Neubau die Taste z — und die schaltet um. Zweimal
+   gedrueckt waere alles wieder zu. Deshalb wird gemessen, ob ueberhaupt eine
+   Positionszeile dasteht, und nur dann gedrueckt. Die Taste wirkt nicht,
+   waehrend in einem Feld getippt wird; der Klick auf den Blatttitel bringt den
+   Fokus aus einem Feld heraus, ohne etwas zu bedienen. */
+async function allesAuf(seite) {
+  for (let i = 0; i < 3; i++) {
+    if (await seite.locator('#blatt tr.pos').count()) return true;
+    await seite.locator('.titel').first().click();
+    await seite.keyboard.press('z');
+    await bisRuhe(seite);
+  }
+  return (await seite.locator('#blatt tr.pos').count()) > 0;
+}
+async function allesZu(seite) {
+  for (let i = 0; i < 3; i++) {
+    if (!(await seite.locator('#blatt tr.pos').count())) return true;
+    await seite.locator('.titel').first().click();
+    await seite.keyboard.press('z');
+    await bisRuhe(seite);
+  }
+  return (await seite.locator('#blatt tr.pos').count()) === 0;
+}
 
 /* Zeile ueber ihren angezeigten Namen finden — nicht ueber eine mitgezaehlte
    Id. Mehr oder weniger als ein Treffer zaehlt als nicht gefunden. */
@@ -123,6 +176,7 @@ async function findeId(seite, name) {
 }
 async function id(seite, jahr, name) {
   await gehJahr(seite, jahr);
+  await allesAuf(seite);
   const x = await findeId(seite, name);
   pruef('Zeile gefunden: «' + name + '» ' + jahr, x !== null, x);
   return x;
@@ -138,23 +192,41 @@ async function klappeById(seite, id) {
   await bisRuhe(seite);
 }
 
-/* -------------------------------------------------------- Korrekturdialog */
+/* -------------------------------------------------------- Korrekturdialog
+   Neu: kein Schalter «plus/minus» mehr — das Vorzeichen steht im Betrag. Und
+   keine Vorschau «Gerechnet / Korrektur / Ergebnis» mehr, sondern ein Fuss, der
+   Basis und Rest so nennt, wie sie nach der Korrektur dastehen. Die Frage von
+   Befund 2 bleibt dieselbe: Gerechnet plus Korrektur muss das Ergebnis sein —
+   gemessen wird sie jetzt als Unterschied zwischen dem Fuss vor und nach dem
+   Eintragen. */
 async function korrOeffnenBasis(seite, pid) { await dbl(seite, `td[data-kb="${pid}"]`); }
 async function korrOeffnenRest(seite, pid) { await dbl(seite, `td[data-kr="${pid}"]`); }
-async function korrEintragen(seite, { pid, art, richtung, betrag, notiz }) {
+async function korrFuss(seite) {
+  const t = await text(seite, '.korrfuss .ergebnis');
+  const m = t && /Basis\s+(−?[\d']+)\s*·\s*Rest\s+(−?[\d']+)/.exec(t);
+  return m ? { roh: t, basis: lies(m[1]), rest: lies(m[2]) } : { roh: t, basis: null, rest: null };
+}
+async function korrEintragen(seite, { pid, art, betrag, notiz }) {
   if (art === 'basis') await korrOeffnenBasis(seite, pid); else await korrOeffnenRest(seite, pid);
-  if (richtung === 'minus') await klick(seite, '[data-korr-richt="minus"]');
+  const jetzt = await text(seite, '[data-korr-art="1"]');
+  if ((art === 'basis' && jetzt !== 'Basis') || (art === 'rest' && jetzt !== 'Rest'))
+    await klick(seite, '[data-korr-art="1"]');
   await tippe(seite, '[data-korr-betrag]', betrag);
   if (notiz) await tippe(seite, '[data-korr-notiz]', notiz);
   await klick(seite, '[data-korr-add]');
 }
 async function korrSchliessen(seite) { await klick(seite, '[data-zu="korr"]'); }
 
+/* Eine Kachel des Kennzahlenbandes. Der erklaerende Satz steht im Titel der
+   Kachel, nicht mehr in der Meta-Zeile — deshalb wird er mitgelesen. */
 const kachel = async (seite, label) => seite.evaluate((lbl) => {
   const s = Array.from(document.querySelectorAll('.band > span'))
     .find(x => x.querySelector('.k') && x.querySelector('.k').textContent.trim() === lbl);
-  return s ? { v: s.querySelector('.v').textContent.trim(), m: s.querySelector('.m').textContent.trim(),
-    vStyle: s.querySelector('.v').getAttribute('style') || '' } : null;
+  if (!s) return null;
+  return { v: s.querySelector('.v').textContent.trim(),
+           m: s.querySelector('.m').textContent.trim(),
+           t: s.getAttribute('title'),
+           farbe: getComputedStyle(s.querySelector('.v')).color };
 }, label);
 
 /* Ein CSV-Feld, so wie index.html es schreibt (Semikolon getrennt, Anfuehrung
@@ -172,216 +244,345 @@ function csvFelder(zeile) {
   return out;
 }
 
-/* WCAG-Kontrast — eine oeffentliche Formel, unabhaengig von index.html nachgebaut,
-   angewendet auf die vom Browser TATSAECHLICH berechneten Farben (nicht auf von
-   Hand aus dem Quelltext abgelesene Hexwerte). */
-function parseRgb(s) { const m = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(s || ''); return m ? [+m[1], +m[2], +m[3]] : null; }
+/* WCAG-Kontrast — eine oeffentliche Formel, unabhaengig von index.html
+   nachgebaut, angewendet auf die vom Browser TATSAECHLICH berechneten Farben. */
+function parseRgb(s) { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(s || ''); return m ? [+m[1], +m[2], +m[3]] : null; }
 function linKanal(c) { const s = c / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); }
 function luminanz([r, g, b]) { return 0.2126 * linKanal(r) + 0.7152 * linKanal(g) + 0.0722 * linKanal(b); }
 function kontrast(rgb1, rgb2) {
   const l1 = luminanz(rgb1), l2 = luminanz(rgb2);
-  const hell = Math.max(l1, l2), dunkel = Math.min(l1, l2);
-  return (hell + 0.05) / (dunkel + 0.05);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
+
+/* Sucht bunte Toene und meldet zugleich, wie viele Knoten und Farbwerte sie
+   angesehen hat — sonst liesse sich «nichts gefunden» nicht von «nichts
+   gesucht» unterscheiden. Ein Ton gilt als bunt, wenn seine Kanaele um mehr als
+   10 auseinanderliegen; die ganze Palette des Entwurfs liegt darunter. */
+const farbstich = (ziel) => ziel.evaluate(() => {
+  const felder = ['color', 'backgroundColor', 'borderTopColor', 'borderRightColor',
+    'borderBottomColor', 'borderLeftColor', 'outlineColor'];
+  const treffer = []; let knoten = 0, werte = 0;
+  document.querySelectorAll('*').forEach(e => {
+    const c = getComputedStyle(e); knoten++;
+    felder.forEach(p => {
+      const v = c[p];
+      const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(v || '');
+      if (!m) return;
+      if (m[4] !== undefined && +m[4] === 0) return;
+      if (p.indexOf('border') === 0) {
+        const s = p.replace('Color', '');
+        if (parseFloat(c[s + 'Width']) === 0 || c[s + 'Style'] === 'none') return;
+      }
+      if (p === 'outlineColor' && (c.outlineStyle === 'none' || parseFloat(c.outlineWidth) === 0)) return;
+      werte++;
+      const r = +m[1], g = +m[2], bl = +m[3];
+      if (Math.max(r, g, bl) - Math.min(r, g, bl) > 10)
+        treffer.push(e.tagName.toLowerCase() + '.' + String(e.className || '').split(' ')[0] + ' ' + p + ' ' + v);
+    });
+  });
+  return { treffer, knoten, werte };
+});
 
 /* ---------------------------------------------------------------- Fahrt */
 
 const server = await serve(PORT);
-const { b, seite, fehler } = await browser(PORT);
+const { b, kontext, seite, fehler } = await browser(PORT);
 
 try {
 
 /* ====================================================================
-   Befund 1 + 2 — Rest/Basis unter Null werden NICHT gekappt, und das
-   Korrekturfenster geht auf (Gerechnet + Korrektur = Ergebnis), auch dann
+   Befund 1 + 2 — Rest und Basis unter Null werden NICHT gekappt, und das
+   Korrekturfenster rechnet auch dort auf: Gerechnet + Korrektur = Ergebnis.
    ====================================================================
-   Darlehen Blumberg 2026: Rest = 6000 (9000 − 12×250, aus vorrat.mjs). Eine
-   Reduktion von 6500 ist groesser als der Rest -> neuer Rest = 6000−6500 = −500.
-   Dieselbe Zahl muss als Basis 2027 erscheinen (Vererbung), und in der Ansicht
-   "Alle" muss die Zeile "Restschuld am 31.12." die UNGEKAPPTE Summe zeigen:
-   Steuerplan 7200 + Darlehen(−500) + Kredit 0 + Ratenkauf 0 = 6700 — nicht 7200,
-   was sie waere, wenn die Reduktion irgendwo stillschweigend auf 0 gekappt wuerde. */
-console.log('\n1+2. Rest/Basis unter Null werden nicht gekappt; Korrekturfenster geht auf');
+   Von Hand aus vorrat.mjs hergeleitet. «Darlehen Blumberg» (Gruppe Schulden
+   Privat) beginnt 2024 mit 18000 bei 150 im Monat:
+     2024: 18000 − 1800 = 16200 -> Basis 2025
+     2025: 16200 − 1800 = 14400 -> Basis 2026
+     2026: 14400 − 1800 = 12600 -> Basis 2027
+   Eine Reduktion von 13000 auf den Rest 2026 ist groesser als der Rest:
+     Rest 2026 = 12600 − 13000 = −400, und DIESELBE Zahl ist Basis 2027.
+   Gegenprobe in der Ansicht «Alle Jahre», Zeile «Restschuld am 31.12.»,
+   Spalte 2026. Die Reste der fuenf Schulden 2026:
+     Steueramt Nord  12000 − 6000 = 6000
+     Steueramt Sued  (2025 auf null gelaufen)  0
+     Blumberg        12600 − 13000 = −400
+     Kreditkasse Tremont 6720 − 1440 = 5280
+     Velohaus Kern   360 − 720, klemmt bei 0
+   zusammen 10880. Wuerde die Reduktion still auf 0 gekappt, stuenden dort
+   11280 — die beiden Zahlen sind gerade deshalb verschieden gewaehlt. */
+console.log('\n1+2. Rest und Basis unter Null werden nicht gekappt; das Korrekturfenster rechnet auf');
 await frisch(seite);
-await allesAuf(seite);
 
-const pidDarlehen26 = await id(seite, 2026, 'Darlehen Blumberg');
+const pidDarlehen26 = await id(seite, ARBEITSJAHR, 'Darlehen Blumberg');
 if (pidDarlehen26) {
-  const restVor = await zelleText(seite, `td[data-kr="${pidDarlehen26}"]`);
-  gleich('Darlehen 2026, Rest vor der Korrektur', lies(restVor), 6000);
+  const restVor = await text(seite, `td[data-kr="${pidDarlehen26}"]`);
+  gleich('Darlehen 2026, Rest vor der Korrektur', lies(restVor), 12600);
 
+  /* Befund 2 — das Fenster geht auf und nennt den gerechneten Stand. */
   await korrOeffnenRest(seite, pidDarlehen26);
-  await klick(seite, '[data-korr-richt="minus"]');
-  await tippe(seite, '[data-korr-betrag]', '6500');
+  const offenDa = await seite.locator('[data-schleier="korr"]').count();
+  pruef('Doppelklick auf «Jahr / Rest» oeffnet das Korrekturfenster', offenDa === 1, offenDa);
+  const vorher = await korrFuss(seite);
+  pruef('das Fenster nennt Basis und Rest', vorher.basis !== null && vorher.rest !== null, vorher.roh);
+  gleich('Gerechnet: Rest vor der Korrektur', vorher.rest, 12600);
+  gleich('Gerechnet: Basis vor der Korrektur', vorher.basis, 14400);
+
+  await tippe(seite, '[data-korr-betrag]', '-13000');
   await tippe(seite, '[data-korr-notiz]', 'Testkorrektur ueber den Rest hinaus');
   await klick(seite, '[data-korr-add]');
 
-  /* Befund 2 — das Korrekturfenster: Gerechnet + Korrektur = Ergebnis. */
-  const vorschau = await seite.evaluate(() => {
-    const el = document.querySelector('.vorschau'); return el ? el.textContent : null;
-  });
-  pruef('Korrekturfenster zeigt eine Vorschau', vorschau !== null, vorschau);
-  const m = vorschau && /Gerechnet\s+([−-]?[\d']+).*?Korrektur\s+([−+][\d']+).*?Ergebnis\s+([−-]?[\d']+)/s.exec(vorschau);
-  pruef('Vorschau nennt Gerechnet, Korrektur und Ergebnis', m !== null, vorschau);
-  if (m) {
-    const gerechnet = lies(m[1]), korrektur = lies(m[2].replace('+', '')), ergebnis = lies(m[3]);
-    gleich('Gerechnet (vor der Korrektur)', gerechnet, 6000);
-    gleich('Korrektur', korrektur, -6500);
-    gleich('Ergebnis', ergebnis, -500);
-    gleich('Gerechnet + Korrektur = Ergebnis, auch unter Null', gerechnet + korrektur, ergebnis);
-  }
+  const nachher = await korrFuss(seite);
+  gleich('Ergebnis: Rest nach der Korrektur, ungekappt', nachher.rest, -400);
+  gleich('Gerechnet + Korrektur = Ergebnis, auch unter Null',
+    vorher.rest + (-13000), nachher.rest);
+  gleich('die Korrektur am Rest laesst die Basis unberuehrt', nachher.basis, 14400);
+  const zeileBetrag = await feldWert(seite, '.korrliste .korrzeile:not(.leer) input.betrag');
+  gleich('die eingetragene Zeile traegt den Betrag mit Vorzeichen', zeileBetrag, fmt(-13000));
+  const zeileWirkt = await text(seite, '.korrliste .korrzeile:not(.leer) .wirkt');
+  gleich('und sie steht als Restkorrektur da', zeileWirkt, 'Rest');
   await korrSchliessen(seite);
 
-  /* Befund 1 — Rest 2026 und Basis 2027 zeigen dieselbe negative Zahl, beide
-     als Befund gekennzeichnet (Klasse unstimmig, Teil von Befund 3). */
-  const restNach = await zelleText(seite, `td[data-kr="${pidDarlehen26}"]`);
-  gleich('Darlehen 2026, Rest NICHT auf 0 gekappt', lies(restNach), -500);
-  const restKlasse = await klasse(seite, `td[data-kr="${pidDarlehen26}"]`);
-  pruef('Rest 2026 traegt die Klasse "unstimmig"', /\bunstimmig\b/.test(restKlasse), restKlasse);
+  /* Befund 1 — Rest 2026 und Basis 2027 zeigen dieselbe negative Zahl. */
+  const restNach = await text(seite, `td[data-kr="${pidDarlehen26}"]`);
+  gleich('Darlehen 2026, Rest NICHT auf 0 gekappt', lies(restNach), -400);
+  /* Die Klasse «unstimmig» und die Warnfarbe gibt es nicht mehr — Farbe traegt
+     im Neubau keine Bedeutung. Den Befund traegt jetzt der Titel der Zelle. */
+  const restTitel = await titel(seite, `td[data-kr="${pidDarlehen26}"]`);
+  pruef('der Rest unter Null nennt den Befund in seinem Titel',
+    /unter null/i.test(String(restTitel)), restTitel);
+  const pidNord26 = await findeId(seite, 'Steueramt Nord');
+  pruef('Gegenprobe-Zeile «Steueramt Nord» gefunden', !!pidNord26, pidNord26);
+  if (pidNord26) {
+    const nordTitel = await titel(seite, `td[data-kr="${pidNord26}"]`);
+    pruef('Gegenprobe: ein Rest ueber Null nennt den Befund NICHT',
+      !/unter null/i.test(String(nordTitel)), nordTitel);
+  }
 
-  const pidDarlehen27 = await id(seite, 2027, 'Darlehen Blumberg');
+  const pidDarlehen27 = await id(seite, ARBEITSJAHR + 1, 'Darlehen Blumberg');
   if (pidDarlehen27) {
-    const basis27 = await zelleText(seite, `td[data-kb="${pidDarlehen27}"]`);
-    gleich('Basis 2027 zeigt DIESELBE negative Zahl (Vererbung, keine zweite Rechnung)', lies(basis27), -500);
+    const basis27 = await text(seite, `td[data-kb="${pidDarlehen27}"]`);
+    gleich('Basis 2027 zeigt DIESELBE negative Zahl (Vererbung, keine zweite Rechnung)',
+      lies(basis27), -400);
     const basisKlasse = await klasse(seite, `td[data-kb="${pidDarlehen27}"]`);
-    pruef('Basis 2027 traegt ebenfalls die Klasse "unstimmig"', /\bunstimmig\b/.test(basisKlasse), basisKlasse);
+    pruef('Basis 2027 steht als geerbte Basis da', /\bgeerbt\b/.test(String(basisKlasse)), basisKlasse);
     const hatFeld27 = await seite.evaluate((pid) =>
       !!document.querySelector(`td[data-kb="${pid}"] input`), pidDarlehen27);
     pruef('Basis 2027 bleibt gesperrt (geerbt, nicht neu getippt)', !hatFeld27);
   }
 
-  /* Befund 1, Gegenprobe in der Ansicht "Alle": die ungekappte Summe steht da,
-     nicht die (falsche) gekappte 7200. */
+  /* Befund 1, Gegenprobe in der Ansicht «Alle Jahre». */
   await gehAlle(seite);
   const alleZeile = await seite.evaluate(() => {
-    const trs = Array.from(document.querySelectorAll('#blatt tbody tr'));
-    const tr = trs.find(t => { const td = t.querySelector('td.name'); return td && td.textContent.trim() === 'Restschuld am 31.12.'; });
-    if (!tr) return null;
-    return Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim());
+    const tr = Array.from(document.querySelectorAll('#blatt tbody tr'))
+      .find(t => { const td = t.querySelector('td.c-name');
+        return td && td.textContent.trim() === 'Restschuld am 31.12.'; });
+    return tr ? Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim()) : null;
   });
-  pruef('Zeile "Restschuld am 31.12." in der Ansicht "Alle" gefunden', alleZeile !== null, alleZeile);
+  pruef('Zeile «Restschuld am 31.12.» in der Ansicht «Alle Jahre» gefunden', alleZeile !== null, alleZeile);
   if (alleZeile) {
-    /* Spalten: Name, 2025, 2026, 2027, Total (Total = letztes Jahr, "letzte:1"). */
-    gleich('Ansicht "Alle" — Spalte 2026 zeigt die ungekappte Summe (7200−500+0+0=6700), nicht 7200',
-      lies(alleZeile[2]), 6700);
+    gleich('Spalte 2026 zeigt die ungekappte Summe (6000 + 0 − 400 + 5280 + 0)',
+      lies(alleZeile[ALLE_SP]), 10880);
+    pruef('und eben NICHT die Summe, die eine stille Kappung ergaebe',
+      lies(alleZeile[ALLE_SP]) !== 11280, alleZeile[ALLE_SP]);
   }
 }
 
 /* ====================================================================
-   Befund 3, zweiter Teil — Kennzahlenband: «der Plan geht nicht auf»
+   Befund 3 — Das Kennzahlenband meldet den unstimmigen Plan, statt eine
+   gekappte Zahl zu zeigen.
    ====================================================================
-   Der Kennzahlenband-Wert "Restschuld heute" ist NUR dann kappungsfrei, wenn
-   der Stichmonat Dezember ist (eine Korrektur ist dort "am 31.12. gebucht" —
-   so der Text im Handbuch). Deshalb wird der Stichmonat hier direkt auf den
-   31.12.2026 gesetzt (das kann die App selbst nicht ueber die Oberflaeche,
-   der Stichmonat kommt nur aus der geladenen Datei — ein direkter Eingriff in
-   S ist deshalb der einzige Weg, um diesen Ast wirklich zu erreichen, im
-   selben Stil wie andere Laeufe hier S.auf/S.ansicht direkt setzen).
-   Reduktion −14000 auf Darlehen-Rest: Gesamtrest Dezember = 7200+6000+0+0 =
-   13200, davon −14000 -> 13200−14000 = −800. */
-console.log('\n3. Kennzahlenband bei unstimmigem Saldo (Stichmonat 31.12.2026)');
+   Frueher brauchte es dafuer den Stichmonat Dezember, weil nur dort eine
+   Restkorrektur in «Restschuld heute» zaehlt. Im Neubau geht es ohne Eingriff
+   in den Zustand: eine Korrektur an der BASIS des laufenden Jahrgangs zaehlt in
+   jedem Stichmonat mit. Der Stichmonat bleibt also, wie er in der Datei steht.
+
+   Von Hand hergeleitet. Stand am Stichmonat (August 2026, acht Raten bezahlt):
+     Steueramt Nord  12000 − 8×500 = 8000
+     Steueramt Sued  0 (2025 durch)
+     Blumberg        14400 − 8×150 = 13200
+     Tremont          6720 − 8×120 = 5760
+     Velohaus Kern     360 − 8×60, klemmt bei 0
+   zusammen 26960. Eine Basiskorrektur von −40000 auf Blumberg 2026 ergibt dort
+   14400 − 40000 = −25600; eine Rate darf einen Befund nicht wegrechnen, also
+   bleibt der Stand −25600. Neue Summe: 8000 + 0 − 25600 + 5760 + 0 = −11840.
+   Anfangsstand aller Schulden (jede in ihrem ersten Jahrgang, 2024):
+     24000 + 7200 + 18000 + 9600 + 1800 = 60600.
+   Getilgt = 60600 − (−11840) = 72440, Quote = 120 Prozent — mehr als hundert,
+   also muss das Band auch das benennen. */
+console.log('\n3. Das Kennzahlenband meldet den unstimmigen Plan');
 await frisch(seite);
-await allesAuf(seite);
-const pidDarlehenB = await id(seite, 2026, 'Darlehen Blumberg');
+const pidDarlehenB = await id(seite, ARBEITSJAHR, 'Darlehen Blumberg');
 if (pidDarlehenB) {
-  await korrEintragen(seite, { pid: pidDarlehenB, art: 'rest', richtung: 'minus', betrag: '14000', notiz: 'Testkorrektur Band' });
+  /* Ausgangsstand — die Gegenprobe zu allem, was danach kommt. */
+  const restVorher = await kachel(seite, 'Restschuld heute');
+  pruef('Kachel «Restschuld heute» gefunden', restVorher !== null, restVorher);
+  if (restVorher) {
+    gleich('Ausgangsstand: 8000 + 0 + 13200 + 5760 + 0', lies(restVorher.v), 26960);
+    pruef('Ausgangsstand: der Titel nennt kein Unterschreiten',
+      !/unter null/i.test(String(restVorher.t)), restVorher.t);
+  }
+
+  await korrEintragen(seite, { pid: pidDarlehenB, art: 'basis',
+    betrag: '-40000', notiz: 'Testkorrektur Band' });
   await korrSchliessen(seite);
-  await seite.evaluate(() => { S.stichmonat = '2026-12'; zeichne(); });
-  await bisRuhe(seite);
 
   const restheute = await kachel(seite, 'Restschuld heute');
-  pruef('Kachel "Restschuld heute" gefunden', restheute !== null, restheute);
+  pruef('Kachel «Restschuld heute» weiterhin da', restheute !== null, restheute);
   if (restheute) {
-    gleich('Restschuld heute = 13200−14000 = −800, ungekappt', lies(restheute.v), -800);
-    pruef('Restschuld heute steht in der Warnfarbe', /--prot/.test(restheute.vStyle), restheute.vStyle);
-    const rot = await farbeVar(seite, '--prot');
-    const gemesseneFarbe = await farbeVon(seite, '.band > span:first-child .v');
-    gleich('die tatsaechlich berechnete Farbe ist --prot', gemesseneFarbe, rot);
-    gleich('Meta-Zeile nennt den Befund statt eines Datums',
-      restheute.m, 'unter null — eine Korrektur nimmt mehr weg, als da ist');
+    gleich('Restschuld heute = 8000 + 0 − 25600 + 5760 + 0, ungekappt', lies(restheute.v), -11840);
+    gleich('der Titel nennt den Befund',
+      restheute.t, 'Unter null — eine Korrektur nimmt mehr weg, als da ist.');
+    gleich('die Meta-Zeile bleibt der Stichmonat und wird nicht zur Fehlermeldung',
+      restheute.m, 'Aug ' + ARBEITSJAHR);
   }
   const frei = await kachel(seite, 'Schuldenfrei');
-  pruef('Kachel "Schuldenfrei" gefunden', frei !== null, frei);
+  pruef('Kachel «Schuldenfrei» gefunden', frei !== null, frei);
   if (frei) {
-    gleich('Schuldenfrei zeigt "der Plan geht nicht auf" statt eines Datums', frei.v, 'der Plan geht nicht auf');
-    gleich('Meta-Zeile: erst die Korrekturen richtigstellen', frei.m, 'erst die Korrekturen richtigstellen');
+    gleich('Schuldenfrei nennt kein Datum mehr', frei.v, '—');
+    gleich('sondern sagt, dass der Plan nicht aufgeht', frei.m, 'der Plan geht nicht auf');
+    gleich('und was zu tun ist', frei.t, 'Erst die Korrekturen richtigstellen.');
   }
+  /* Neu hinzugekommen: dieselbe Frage an die dritte Kachel. Wer «Restschuld
+     heute» unter null zeigt, muss auch eine Tilgungsquote ueber hundert Prozent
+     als Befund benennen — sonst steht dort eine Zahl, die niemand nachrechnen
+     kann. */
+  const getilgt = await kachel(seite, 'Getilgt bisher');
+  pruef('Kachel «Getilgt bisher» gefunden', getilgt !== null, getilgt);
+  if (getilgt) {
+    gleich('Getilgt = 60600 − (−11840)', lies(getilgt.v), 72440);
+    gleich('Quote 120 Prozent', getilgt.m, '120 %');
+    gleich('und der Titel sagt, dass das nicht aufgeht',
+      getilgt.t, 'Die Zahlen gehen nicht auf — 120 % von ' + fmt(60600));
+  }
+  /* Die Warnfarbe ist gestrichen — der Neubau kennt kein Rot. Gemessen wird
+     deshalb, dass die auffaellige Kachel dieselbe Schriftfarbe traegt wie eine
+     unauffaellige: der Befund steht im Wort, nicht in der Farbe. */
+  const offenK = await kachel(seite, 'Offen im August');
+  pruef('Kachel «Offen im August» gefunden (Gegenprobe zur Farbe)', offenK !== null, offenK);
+  if (offenK && restheute)
+    gleich('die Zahl unter null traegt dieselbe Farbe wie jede andere Kachel',
+      restheute.farbe, offenK.farbe);
 }
 
 /* ====================================================================
-   Befund 4 — Schuldenfrei rechnet mit Korrekturen am Anfangssaldo KUENFTIGER
-   Jahre (nicht nur am laufenden Jahr).
+   Befund 4 — «Schuldenfrei» rechnet mit Korrekturen am Anfangssaldo KUENFTIGER
+   Jahrgaenge, nicht nur am laufenden.
    ====================================================================
-   Von Hand hergeleitet aus vorrat.mjs. JEDE SCHULD LAEUFT FUER SICH — wer alle
-   Raten in einen Topf wirft, rechnet die Rate einer getilgten Schuld auf die
-   uebrigen an und wird zu frueh fertig. Stichmonat ist August 2026 (Index 7),
-   also sind acht Monatsraten bezahlt:
-     Steuerplan   12000 − 8×400 =  8800, Rate 400 -> 22 Monate -> Juni 2028
-     Darlehen      9000 − 8×250 =  7000, Rate 250 -> 28 Monate -> Dezember 2028
-     Kredit        3600 − 8×300 =  1200, Rate 300 -> vier Monate -> Dezember 2026
-     Ratenkauf     1200 − 8×100 =   400, Rate 100 -> vier Monate -> Dezember 2026
-   Die spaeteste dieser vier Zahlen zaehlt: Dezember 2028, in 28 Monaten.
+   Der Vorrat endet 2029, und 2028/2029 fuehren keine Raten mehr. Zwei Schulden
+   laufen deshalb ins Leere: der Plan geht ueberhaupt nicht auf, und die Kachel
+   sagt genau das. Damit die Frage dieses Befunds ueberhaupt eine Antwort haben
+   kann, werden die Raten von Blumberg und Tremont zuerst ueber «Uebertragen —
+   auch in die Folgejahre» fortgeschrieben; danach wiederholt die Rechnung die
+   Raten des letzten Jahrgangs.
 
-   Mit +2000 auf die Basis 2027 des Darlehens (der massgebenden Schuld):
-     Rest Darlehen Ende 2026 = 9000 − 12×250 = 6000, plus 2000 beim Eintritt in
-     2027 = 8000, Rate 250 -> 32 Monate ab Januar 2027 -> August 2029
-     (vier Monate bis Ende 2026 + 32 = 36 Monate gesamt).
-   Gegenprobe: nach Entfernen der Korrektur steht wieder das urspruengliche
-   Datum da (nicht neu hergeleitet, sondern derselbe Wert wie zu Beginn). */
-console.log('\n4. Schuldenfrei rechnet mit Korrekturen am Anfangssaldo kuenftiger Jahre');
+   Von Hand hergeleitet, Stand am Stichmonat August 2026 (siehe Abschnitt 3):
+     Nord      8000, Rate 500 -> 16 Monate -> Dezember 2027
+     Blumberg 13200, Rate 150 -> 88 Monate -> Dezember 2033
+     Tremont   5760, Rate 120 -> 48 Monate -> August 2030
+     Sued und Kern stehen auf null und laufen nicht mehr.
+   Die spaeteste Zahl zaehlt: Dezember 2033, in 88 Monaten.
+
+   Mit +2000 auf die BASIS 2027 des Darlehens (der massgebenden Schuld):
+     Sep bis Dez 2026 vier Raten -> 13200 − 600 = 12600, beim Eintritt in 2027
+     plus 2000 = 14600, davon 150 im Monat -> 98 weitere Monate.
+     Zusammen 4 + 98 = 102 Monate ab August 2026 -> Februar 2035.
+   Gegenprobe: nach dem Entfernen der Korrektur steht wieder derselbe Wert da
+   wie zu Beginn — nicht neu hergeleitet, sondern verglichen. */
+console.log('\n4. «Schuldenfrei» rechnet mit Korrekturen am Anfangssaldo kuenftiger Jahrgaenge');
 await frisch(seite);
 await allesAuf(seite);
 
-const freiVorher = await kachel(seite, 'Schuldenfrei');
-pruef('Kachel "Schuldenfrei" gefunden (Ausgangsstand)', freiVorher !== null, freiVorher);
-if (freiVorher) {
-  gleich('Ausgangsdatum: Dezember 2028 (von Hand hergeleitet)', freiVorher.v, 'Dezember 2028');
-  gleich('Ausgangsmeta: in 28 Monaten', freiVorher.m, 'in 28 Monaten, wenn die Raten so laufen');
+const freiRoh = await kachel(seite, 'Schuldenfrei');
+pruef('Kachel «Schuldenfrei» gefunden (Rohzustand)', freiRoh !== null, freiRoh);
+if (freiRoh) {
+  gleich('Rohzustand: ohne Raten in 2028/2029 geht der Plan nicht auf', freiRoh.v, '—');
+  gleich('und die Kachel sagt es mit den richtigen Worten', freiRoh.m, 'nicht nach diesem Plan');
 }
 
-const pidSteuerplan27 = await id(seite, 2027, 'Darlehen Blumberg');
-if (pidSteuerplan27) {
-  await korrEintragen(seite, { pid: pidSteuerplan27, art: 'basis', richtung: 'plus', betrag: '2000', notiz: 'Testkorrektur Schuldenfrei' });
-  await korrSchliessen(seite);
-  await gehJahr(seite, 2026);
+const pidBlum26 = await findeId(seite, 'Darlehen Blumberg');
+const pidTrem26 = await findeId(seite, 'Kreditkasse Tremont');
+pruef('Zeilen «Darlehen Blumberg» und «Kreditkasse Tremont» 2026 gefunden',
+  !!pidBlum26 && !!pidTrem26, { pidBlum26, pidTrem26 });
+if (pidBlum26 && pidTrem26) {
+  for (const pid of [pidBlum26, pidTrem26]) {
+    await dbl(seite, `input.zelle[data-z="${pid}"][data-m="0"]`);
+    const da = await seite.locator('[data-schleier="ueb"]').count();
+    pruef('Fenster «Uebertragen» geht auf', da === 1, da);
+    await klick(seite, '[data-ueb-folge="1"]');
+    await klick(seite, '[data-ueb-an="1"]');
+    await allesAuf(seite);
+  }
+  const raten29 = await seite.evaluate((j) => {
+    const blk = (S.daten[j] || []).find(x => x.art === 'schulden');
+    const out = {};
+    (blk.gruppen || []).forEach(g => (g.pos || []).forEach(p => { out[p.key] = p.reihe.slice(); }));
+    return out;
+  }, JAHRE[JAHRE.length - 1]);
+  pruef('die Raten stehen jetzt auch im letzten Jahrgang',
+    raten29.blumberg && raten29.blumberg[11] === 150 && raten29.tremont && raten29.tremont[11] === 120,
+    raten29);
+  pruef('Gegenprobe: die uebrigen Schulden wurden dabei NICHT angefasst',
+    raten29.steueramt_nord && raten29.steueramt_nord.every(x => x === 0), raten29.steueramt_nord);
 
-  const freiNachher = await kachel(seite, 'Schuldenfrei');
-  pruef('Kachel "Schuldenfrei" gefunden (nach Korrektur)', freiNachher !== null, freiNachher);
-  if (freiNachher) {
-    gleich('+2000 auf Basis 2027 verschiebt die Kachel auf August 2029 (hergeleitet)', freiNachher.v, 'August 2029');
-    gleich('Meta: in 36 Monaten', freiNachher.m, 'in 36 Monaten, wenn die Raten so laufen');
+  const freiVorher = await kachel(seite, 'Schuldenfrei');
+  pruef('Kachel «Schuldenfrei» gefunden (Ausgangsstand)', freiVorher !== null, freiVorher);
+  if (freiVorher) {
+    gleich('Ausgangsdatum: Dezember 2033 (von Hand hergeleitet)', freiVorher.v, 'Dez 2033');
+    gleich('Ausgangsmeta: in 88 Monaten', freiVorher.m, 'in 88 Monaten');
   }
 
-  /* Gegenprobe: Korrektur entfernen -> wieder das urspruengliche Datum.
-     Die Zeile mit td[data-kb=...] steht nur in der Ansicht des Jahrgangs 2027. */
-  await gehJahr(seite, 2027);
-  await korrOeffnenBasis(seite, pidSteuerplan27);
-  await klick(seite, '.korrliste button.weg');
-  await korrSchliessen(seite);
-  await gehJahr(seite, 2026);
-  const freiZurueck = await kachel(seite, 'Schuldenfrei');
-  pruef('Gegenprobe: ohne Korrektur steht wieder das urspruengliche Datum da',
-    freiZurueck && freiVorher && freiZurueck.v === freiVorher.v && freiZurueck.m === freiVorher.m,
-    freiZurueck);
+  const pidBlum27 = await id(seite, ARBEITSJAHR + 1, 'Darlehen Blumberg');
+  if (pidBlum27) {
+    await korrEintragen(seite, { pid: pidBlum27, art: 'basis', betrag: '2000',
+      notiz: 'Testkorrektur Schuldenfrei' });
+    await korrSchliessen(seite);
+    await gehJahr(seite, ARBEITSJAHR);
+
+    const freiNachher = await kachel(seite, 'Schuldenfrei');
+    pruef('Kachel «Schuldenfrei» gefunden (nach der Korrektur)', freiNachher !== null, freiNachher);
+    if (freiNachher) {
+      gleich('+2000 auf die Basis 2027 verschiebt die Kachel auf Februar 2035', freiNachher.v, 'Feb 2035');
+      gleich('Meta: in 102 Monaten', freiNachher.m, 'in 102 Monaten');
+    }
+
+    /* Gegenprobe: Korrektur entfernen -> wieder das urspruengliche Datum. */
+    await gehJahr(seite, ARBEITSJAHR + 1);
+    await allesAuf(seite);
+    await korrOeffnenBasis(seite, pidBlum27);
+    await klick(seite, '.korrliste .korrzeile:not(.leer) button.weg');
+    await korrSchliessen(seite);
+    await gehJahr(seite, ARBEITSJAHR);
+    const freiZurueck = await kachel(seite, 'Schuldenfrei');
+    pruef('Gegenprobe: ohne Korrektur steht wieder das urspruengliche Datum da',
+      freiZurueck && freiVorher && freiZurueck.v === freiVorher.v && freiZurueck.m === freiVorher.m,
+      freiZurueck);
+  }
 }
 
 /* ====================================================================
-   Befund 5 — Kein Rappen bleibt im Bild stehen: 1234.7 + Enter -> 1'235,
-   und der Sektionskopf darueber zeigt dieselbe Zahl mitgerechnet.
-   ==================================================================== */
-console.log('\n5. Kein Rappen bleibt im Bild stehen (1234.7 + Enter -> 1\'235)');
+   Befund 5 — Kein Rappen bleibt im Bild stehen: 1234.7 + Enter ergibt 1235,
+   und alles darueber rechnet mit derselben ganzen Zahl weiter.
+   ====================================================================
+   «Lohn» 2026 traegt in jedem Monat 5320. Nach der Eingabe:
+     Januar 1235, Jahressumme 1235 + 11×5320 = 59755.
+     Sektionskopf «Einkommen» im Januar: 1235 + 0 (Lohn 13.er) + 0 (Zulagen). */
+console.log('\n5. Kein Rappen bleibt im Bild stehen');
 await frisch(seite);
 const einkommenId = await blockId(seite, ARBEITSJAHR, 'Einkommen');
-pruef('Block "Einkommen" gefunden', !!einkommenId, einkommenId);
+pruef('Sektion «Einkommen» gefunden', !!einkommenId, einkommenId);
 if (einkommenId) {
   await klappeById(seite, einkommenId);
-  const pidLohn = await findeId(seite, 'Nettolohn');
-  pruef('Zeile "Nettolohn" gefunden', !!pidLohn, pidLohn);
+  const pidLohn = await findeId(seite, 'Lohn');
+  pruef('Zeile «Lohn» gefunden', !!pidLohn, pidLohn);
   if (pidLohn) {
     const sel = `input.zelle[data-z="${pidLohn}"][data-m="0"]`;
+    const vorher = await feldWert(seite, sel);
+    gleich('Ausgangswert Januar', vorher, fmt(5320));
     await tippeEnter(seite, sel, '1234.7');
-    const wertNach = await zelleText(seite, sel);
-    gleich('Zelle zeigt "1\'235" (Math.round(1234.7) = 1235, ganze Franken)', wertNach, fmt(1235, true));
+    const wertNach = await feldWert(seite, sel);
+    pruef('Enter allein uebernimmt den Wert — ohne die Zelle zu verlassen',
+      wertNach !== '1234.7', wertNach);
+    gleich('die Zelle zeigt 1235 (halbe Einheit aufwaerts, ganze Franken)', wertNach, fmt(1235));
 
     const modell = await seite.evaluate((pid) => {
       let treffer = null;
@@ -389,34 +590,37 @@ if (einkommenId) {
         if (p.id === pid) treffer = p.reihe[0]; })));
       return treffer;
     }, pidLohn);
-    gleich('der Datenstand traegt die ganze Zahl 1235, keine Rappen', modell, 1235);
+    gleich('der Datenstand traegt die ganze Zahl, keine Rappen', modell, 1235);
 
-    const kopfSel = `tr.kopf[data-k="${einkommenId}"] td:nth-child(3)`; /* Name, Basis, dann Jan */
-    const kopfWert = await zelleText(seite, kopfSel);
-    gleich('Sektionskopf "Einkommen" zeigt dieselbe Zahl mitgerechnet (Nebenerwerb bleibt 0)',
-      lies(kopfWert), 1235);
+    const jahrWert = await text(seite, `tr[data-id="${pidLohn}"] td.c-jahr`);
+    gleich('die Jahresspalte der Zeile rechnet mit derselben Zahl (1235 + 11 mal 5320)',
+      lies(jahrWert), 59755);
+
+    const kopfSel = `tr.kat[data-k="${einkommenId}"] td:nth-child(3)`; /* Name, Basis, dann Januar */
+    gleich('der Sektionskopf «Einkommen» zeigt dieselbe Zahl mitgerechnet',
+      lies(await text(seite, kopfSel)), 1235);
   }
 }
 
 /* ====================================================================
-   Befund 6 — "Alle Jahre" gliedert vollstaendig auf, auch eine Kategorie, die
-   frueher nicht in einer festen Liste stand ("Sparziele" — im Vorrat als leere
-   Kategorie vorhanden, hier ueber die Oberflaeche mit einer echten Zeile
-   gefuellt). Kategorien+Gruppen+Rechnungen muessen "Ausgaben" GENAU treffen.
+   Befund 6 — «Alle Jahre» gliedert vollstaendig auf, auch eine Kategorie, die
+   in keiner festen Liste steht. «Sparziele» liegt im Vorrat als leere Sektion;
+   hier bekommt sie ueber die Oberflaeche eine echte Zeile.
+   Kategorien + Gruppen + Rechnungen muessen «Ausgaben» GENAU treffen.
    ==================================================================== */
-console.log('\n6. "Alle Jahre" gliedert vollstaendig auf, auch eine neue Kategorie (Sparziele)');
+console.log('\n6. «Alle Jahre» gliedert vollstaendig auf, auch eine neu gefuellte Kategorie');
 await frisch(seite);
 const sparzieleId = await blockId(seite, ARBEITSJAHR, 'Sparziele');
-pruef('Block "Sparziele" gefunden (leer im Vorrat)', !!sparzieleId, sparzieleId);
+pruef('Sektion «Sparziele» gefunden (im Vorrat leer)', !!sparzieleId, sparzieleId);
 if (sparzieleId) {
-  await seite.locator(`tr.kopf[data-k="${sparzieleId}"]`).hover();
+  await schwebe(seite, `tr.kat[data-k="${sparzieleId}"]`);
   await klick(seite, `[data-neu-pos="${sparzieleId}"]`);
   const neuPid = await seite.evaluate((jahr) => {
     const b = (S.daten[jahr] || []).find(x => x.name === 'Sparziele');
     const p = (b.pos || [])[b.pos.length - 1];
     return p ? p.id : null;
   }, ARBEITSJAHR);
-  pruef('eine neue Zeile in "Sparziele" wurde angelegt', !!neuPid, neuPid);
+  pruef('eine neue Zeile in «Sparziele» wurde angelegt', !!neuPid, neuPid);
   if (neuPid) {
     await tippe(seite, `input.zelle[data-z="${neuPid}"][data-m="0"]`, '250');
 
@@ -424,566 +628,776 @@ if (sparzieleId) {
       const js = S.jahre.slice().sort((a, b) => a - b);
       const kategorien = [], gruppen = [];
       js.forEach(j => (S.daten[j] || []).forEach(bl => {
-        if (bl.art === 'schulden') (bl.gruppen || []).forEach(g => { if (gruppen.indexOf(g.name) < 0) gruppen.push(g.name); });
+        if (bl.art === 'schulden') (bl.gruppen || []).forEach(g => {
+          if (gruppen.indexOf(g.name) < 0) gruppen.push(g.name); });
         else if (bl.vz !== 1 && kategorien.indexOf(bl.name) < 0) kategorien.push(bl.name);
       }));
       return { kategorien, gruppen };
     });
-    pruef('"Sparziele" steht unter den Kategorien (nicht in einer festen Liste vergessen)',
+    pruef('«Sparziele» steht unter den Kategorien (nicht in einer festen Liste vergessen)',
       namenListe.kategorien.indexOf('Sparziele') >= 0, namenListe.kategorien);
+    pruef('die Probenliste ist nicht leer — sonst prueft die Summe unten nichts',
+      namenListe.kategorien.length > 1 && namenListe.gruppen.length > 0, namenListe);
 
     await gehAlle(seite);
-    const bild = await seite.evaluate(() => {
-      const zeilen = Array.from(document.querySelectorAll('#blatt table tbody tr'))
-        .map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim()));
-      return zeilen;
-    });
+    const bild = await seite.evaluate(() =>
+      Array.from(document.querySelectorAll('#blatt table tbody tr'))
+        .map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim())));
     const zeileVon = (name) => bild.find(z => z[0] === name);
-    const jahrIdx = 1 + 1; /* Name, 2025, 2026(hier), 2027, Total — 2026 ist die zweite Jahrspalte */
 
     const sparzieleZeile = zeileVon('Sparziele');
-    pruef('Zeile "Sparziele" steht in der Ansicht "Alle"', !!sparzieleZeile, sparzieleZeile);
-    if (sparzieleZeile) gleich('Sparziele 2026 zeigt die eingetragenen 250', lies(sparzieleZeile[jahrIdx]), 250);
+    pruef('Zeile «Sparziele» steht in der Ansicht «Alle Jahre»', !!sparzieleZeile, sparzieleZeile);
+    if (sparzieleZeile)
+      gleich('Sparziele 2026 zeigt die eingetragenen 250', lies(sparzieleZeile[ALLE_SP]), 250);
 
-    let summeKategorienUndGruppen = 0, fehltEineZeile = false;
-    namenListe.kategorien.concat(namenListe.gruppen).forEach(name => {
-      const z = zeileVon(name);
-      if (!z) { fehltEineZeile = true; return; }
-      summeKategorienUndGruppen += lies(z[jahrIdx]);
-    });
-    pruef('jede Kategorie und jede Gruppe steht als eigene Zeile da', !fehltEineZeile);
+    let summeKategorien = 0, summeGruppen = 0, fehltEineZeile = [];
+    namenListe.kategorien.forEach(n => { const z = zeileVon(n);
+      if (!z) fehltEineZeile.push(n); else summeKategorien += lies(z[ALLE_SP]); });
+    namenListe.gruppen.forEach(n => { const z = zeileVon(n);
+      if (!z) fehltEineZeile.push(n); else summeGruppen += lies(z[ALLE_SP]); });
+    pruef('jede Kategorie und jede Gruppe steht als eigene Zeile da',
+      fehltEineZeile.length === 0, fehltEineZeile);
+
     const rechnungenZeile = zeileVon('Rechnungen');
     const ausgabenZeile = zeileVon('Ausgaben');
-    pruef('Zeilen "Rechnungen" und "Ausgaben" gefunden', !!rechnungenZeile && !!ausgabenZeile,
-      { rechnungenZeile, ausgabenZeile });
-    if (rechnungenZeile && ausgabenZeile) {
-      const summeAusgabezeilen = summeKategorienUndGruppen + lies(rechnungenZeile[jahrIdx]);
-      gleich('Summe aus Kategorien + Gruppen + Rechnungen trifft "Ausgaben" genau (inkl. Sparziele)',
-        summeAusgabezeilen, lies(ausgabenZeile[jahrIdx]));
-    }
+    const ratenZeile = zeileVon('Raten zusammen');
+    pruef('Zeilen «Rechnungen», «Ausgaben» und «Raten zusammen» gefunden',
+      !!rechnungenZeile && !!ausgabenZeile && !!ratenZeile,
+      { rechnungenZeile, ausgabenZeile, ratenZeile });
+    if (rechnungenZeile && ausgabenZeile)
+      gleich('Kategorien + Gruppen + Rechnungen treffen «Ausgaben» genau (inkl. Sparziele)',
+        summeKategorien + summeGruppen + lies(rechnungenZeile[ALLE_SP]), lies(ausgabenZeile[ALLE_SP]));
+    if (ratenZeile)
+      gleich('Gegenprobe: «Raten zusammen» ist genau die Summe der Gruppen — nichts doppelt gezaehlt',
+        lies(ratenZeile[ALLE_SP]), summeGruppen);
   }
 }
 
 /* ====================================================================
-   Befund 7 — "Rechnungen" heisst nicht zweimal Verschiedenes: "auf Monate
-   verteilt" (Ansicht Alle/Rechnungen) muss GENAU der Zeile "Rechnungen" in
-   der Ansicht Alle/Budget entsprechen — auch wenn eine Rechnung nicht
-   vollstaendig verteilt ist (Rechnungsbetrag != verteilter Betrag).
-   ==================================================================== */
-console.log('\n7. "Rechnungen" heisst nicht zweimal Verschiedenes (unvollstaendig verteilte Rechnung)');
+   Befund 7 — «Rechnungen» heisst nicht zweimal Verschiedenes: «auf Monate
+   verteilt» in «Alle Jahre · Rechnungen» muss GENAU die Zeile «Rechnungen» in
+   «Alle Jahre» (Budget) sein — auch wenn eine Rechnung nicht vollstaendig
+   verteilt ist.
+   ====================================================================
+   Von Hand aus vorrat.mjs, Jahrgang 2026:
+     Rechnungsbetraege 180 + 940 + 365 + 1240 + 95 = 2820, alle vollstaendig
+     verteilt. Eine neue Rechnung mit Betrag 500, davon nur 300 im Januar:
+     Betraege zusammen 3320, verteilt 3120. */
+console.log('\n7. «Rechnungen» heisst nicht zweimal Verschiedenes');
 await frisch(seite);
 await gehAnsicht(seite, 'rechnung');
-await seite.locator('tr.kopf[data-k="r-nordmann"]').hover();
-await klick(seite, '[data-neu-rech="r-nordmann"]');
-const neueRechId = await seite.evaluate((jahr) => {
-  const g = (S.rechnungen[jahr] || []).find(x => x.id === 'r-nordmann');
-  const r = g && (g.rechnungen || []).find(x => x.zweck === 'Neue Rechnung');
-  return r ? r.id : null;
-}, ARBEITSJAHR);
-pruef('frische, unvollstaendig verteilte Rechnung angelegt', !!neueRechId, neueRechId);
-if (neueRechId) {
-  await tippe(seite, `input.zelle[data-r="${neueRechId}"][data-f="betrag"]`, '500');
-  await tippe(seite, `input.zelle[data-rm="${neueRechId}"][data-m="0"]`, '300'); /* 500 Betrag, nur 300 verteilt */
+const stellerNordmann = await seite.evaluate((j) => {
+  const g = (S.rechnungen[j] || []).find(x => x.name === 'nordmann'); return g ? g.id : null; }, ARBEITSJAHR);
+pruef('Rechnungssteller «nordmann» gefunden', !!stellerNordmann, stellerNordmann);
+if (stellerNordmann) {
+  await schwebe(seite, `tr.kat[data-k="${stellerNordmann}"]`);
+  await klick(seite, `[data-neu-rech="${stellerNordmann}"]`);
+  const neueRechId = await seite.evaluate(([j, gid]) => {
+    const g = (S.rechnungen[j] || []).find(x => x.id === gid);
+    const r = g && (g.rechnungen || []).find(x => x.zweck === 'Neue Rechnung');
+    return r ? r.id : null;
+  }, [ARBEITSJAHR, stellerNordmann]);
+  pruef('frische, unvollstaendig verteilte Rechnung angelegt', !!neueRechId, neueRechId);
+  if (neueRechId) {
+    await tippe(seite, `input.zelle[data-r="${neueRechId}"][data-f="betrag"]`, '500');
+    await tippe(seite, `input.zelle[data-rm="${neueRechId}"][data-m="0"]`, '300');
 
-  const erw = await seite.evaluate((jahr) => {
-    let betrag = 0, verteilt = 0;
-    (S.rechnungen[jahr] || []).forEach(g => (g.rechnungen || []).forEach(r => {
-      betrag += r.betrag || 0;
-      verteilt += (r.reihe || []).reduce((s, x) => s + (x || 0), 0);
-    }));
-    return { betrag, verteilt };
-  }, ARBEITSJAHR);
-  pruef('Rechnungsbetrag und verteilter Betrag unterscheiden sich (Voraussetzung des Befunds)',
-    erw.betrag !== erw.verteilt, erw);
+    await gehAlle(seite);
+    await gehAnsicht(seite, 'rechnung');
+    const bildRech = await seite.evaluate(() =>
+      Array.from(document.querySelectorAll('#blatt table tbody tr'))
+        .map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim())));
+    const zusammen = bildRech.find(z => z[0] === 'Rechnungsbeträge zusammen');
+    const verteiltZeile = bildRech.find(z => z[0] === 'auf Monate verteilt');
+    pruef('Zeilen «Rechnungsbeträge zusammen» und «auf Monate verteilt» gefunden',
+      !!zusammen && !!verteiltZeile, { zusammen, verteiltZeile });
 
-  await gehAlle(seite);
-  await gehAnsicht(seite, 'rechnung');
-  const bildRech = await seite.evaluate(() => Array.from(document.querySelectorAll('#blatt table tbody tr'))
-    .map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim())));
-  const zusammen = bildRech.find(z => z[0] === 'Rechnungsbeträge zusammen');
-  const verteiltZeile = bildRech.find(z => z[0] === 'auf Monate verteilt');
-  pruef('Zeilen "Rechnungsbeträge zusammen" und "auf Monate verteilt" gefunden',
-    !!zusammen && !!verteiltZeile, { zusammen, verteiltZeile });
+    await gehAnsicht(seite, 'budget');
+    const bildBudget = await seite.evaluate(() =>
+      Array.from(document.querySelectorAll('#blatt table tbody tr'))
+        .map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim())));
+    const rechnungenBudget = bildBudget.find(z => z[0] === 'Rechnungen');
+    pruef('Zeile «Rechnungen» in «Alle Jahre» (Budget) gefunden', !!rechnungenBudget, rechnungenBudget);
 
-  await gehAnsicht(seite, 'budget');
-  const bildBudget = await seite.evaluate(() => Array.from(document.querySelectorAll('#blatt table tbody tr'))
-    .map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim())));
-  const rechnungenBudget = bildBudget.find(z => z[0] === 'Rechnungen');
-  pruef('Zeile "Rechnungen" in Ansicht Alle/Budget gefunden', !!rechnungenBudget, rechnungenBudget);
-
-  const jahrIdx = 2; /* Name, 2025, 2026(hier), 2027, Total */
-  if (zusammen) gleich('"Rechnungsbeträge zusammen" 2026 = Summe aller Rechnungsbetraege', lies(zusammen[jahrIdx]), erw.betrag);
-  if (verteiltZeile) gleich('"auf Monate verteilt" 2026 = Summe der verteilten Betraege', lies(verteiltZeile[jahrIdx]), erw.verteilt);
-  if (verteiltZeile && zusammen)
-    pruef('"Rechnungsbeträge zusammen" != "auf Monate verteilt" (die Rechnung ist ja nicht vollstaendig verteilt)',
-      lies(zusammen[jahrIdx]) !== lies(verteiltZeile[jahrIdx]));
-  if (verteiltZeile && rechnungenBudget)
-    gleich('"auf Monate verteilt" (Alle/Rechnungen) entspricht GENAU "Rechnungen" (Alle/Budget) — dieselbe Zahl',
-      lies(verteiltZeile[jahrIdx]), lies(rechnungenBudget[jahrIdx]));
+    if (zusammen) gleich('«Rechnungsbeträge zusammen» 2026 = 2820 + 500', lies(zusammen[ALLE_SP]), 3320);
+    if (verteiltZeile) gleich('«auf Monate verteilt» 2026 = 2820 + 300', lies(verteiltZeile[ALLE_SP]), 3120);
+    if (verteiltZeile && zusammen)
+      pruef('die beiden Zahlen sind verschieden — die Rechnung ist ja nicht vollstaendig verteilt',
+        lies(zusammen[ALLE_SP]) !== lies(verteiltZeile[ALLE_SP]));
+    if (verteiltZeile && rechnungenBudget)
+      gleich('«auf Monate verteilt» ist GENAU die Zeile «Rechnungen» im Budget',
+        lies(verteiltZeile[ALLE_SP]), lies(rechnungenBudget[ALLE_SP]));
+  }
 }
 
 /* ====================================================================
-   Befund 8 — Rechtsklick nimmt zurueck, auch wenn Stand = "Bezahlt" ist
-   (dann steht kein einziger Haken): der angeklickte Monat verliert sein
-   Gruen, die anderen behalten es, der Stand faellt auf "Offen".
-   ==================================================================== */
-console.log('\n8. Rechtsklick nimmt zurueck, auch wenn Stand "Bezahlt" ist (ohne Haken)');
+   Befund 8 — Rechtsklick nimmt zurueck, auch wenn der Stand «Bezahlt» ist
+   (dann steht kein einziger Haken): der angeklickte Monat verliert seine
+   Marke, die anderen behalten sie, der Stand faellt auf «Offen».
+   ====================================================================
+   «Behandlung» (Oechsli Zahnpraxis) traegt August und September je 470. Damit
+   drei Monate zu vergleichen sind, bekommt der Juli hier 300 dazu — die
+   Rechnung muss dafuer nicht aufgehen.
+   Die Marke heisst im Neubau «hak» und sitzt an der Zelle, nicht am Feld. */
+console.log('\n8. Rechtsklick nimmt zurueck, auch wenn der Stand «Bezahlt» ist');
 await frisch(seite);
 await gehAnsicht(seite, 'rechnung');
-await klappeById(seite, 'r-oechsli');
-/* r-oe-2 ("Behandlung"): 900, verteilt auf Mai/Jun/Jul (m=4,5,6). */
-await seite.locator('select.stand[data-r="r-oe-2"]').selectOption({ label: 'Bezahlt' });
-await bisRuhe(seite);
+const rBehandlung = await seite.evaluate((j) => {
+  let out = null;
+  (S.rechnungen[j] || []).forEach(g => (g.rechnungen || []).forEach(r => {
+    if (r.zweck === 'Behandlung') out = { id: r.id, gid: g.id }; }));
+  return out;
+}, ARBEITSJAHR);
+pruef('Rechnung «Behandlung» gefunden', !!rBehandlung, rBehandlung);
+if (rBehandlung) {
+  await klappeById(seite, rBehandlung.gid);
+  await tippe(seite, `input.zelle[data-rm="${rBehandlung.id}"][data-m="6"]`, '300');
 
-const hakenVorher = await seite.evaluate(() =>
-  Object.keys(S.haken).filter(k => k.indexOf('r-oe-2:') === 0).length);
-gleich('Stand ueber die Auswahl auf "Bezahlt" gesetzt — kein einziger Haken', hakenVorher, 0);
+  await seite.locator(`select.standwahl[data-r="${rBehandlung.id}"][data-f="stand"]`)
+    .first().selectOption({ label: 'Bezahlt' });
+  await bisRuhe(seite);
 
-const mSel = (m) => `input.zelle[data-rm="r-oe-2"][data-m="${m}"]`;
-const abgehakt = async (m) => /\babgehakt\b/.test(
-  await seite.evaluate((s) => document.querySelector(s).closest('td').className, mSel(m)));
-pruef('Mai steht (ueber den Stand-Fallback) gruen/abgehakt da', await abgehakt(4));
-pruef('Juni steht (ueber den Stand-Fallback) gruen/abgehakt da', await abgehakt(5));
-pruef('Juli steht (ueber den Stand-Fallback) gruen/abgehakt da', await abgehakt(6));
+  const hakenVorher = await seite.evaluate((rid) =>
+    Object.keys(S.haken).filter(k => k.indexOf(rid + ':') === 0).length, rBehandlung.id);
+  gleich('Stand ueber die Auswahl auf «Bezahlt» gesetzt — kein einziger Haken', hakenVorher, 0);
 
-await rklick(seite, mSel(4)); /* Rechtsklick auf Mai */
+  const mSel = (m) => `input.zelle[data-rm="${rBehandlung.id}"][data-m="${m}"]`;
+  const markiert = async (m) => hak(await zellKlasse(seite, mSel(m)));
+  pruef('Juli steht ueber den Stand als abgehakt da', await markiert(6));
+  pruef('August steht ueber den Stand als abgehakt da', await markiert(7));
+  pruef('September steht ueber den Stand als abgehakt da', await markiert(8));
+  pruef('Gegenprobe: ein Monat ohne Betrag traegt keine Marke', !(await markiert(0)));
 
-pruef('Mai verliert sein Gruen nach dem Rechtsklick', !(await abgehakt(4)));
-pruef('Juni behaelt sein Gruen', await abgehakt(5));
-pruef('Juli behaelt sein Gruen', await abgehakt(6));
-const standNach = await zelleText(seite, 'select.stand[data-r="r-oe-2"]');
-gleich('der Stand faellt auf "Offen"', standNach, 'Offen');
-const hakenNachher = await seite.evaluate(() => ({
-  mai: !!S.haken['r-oe-2:4'], jun: !!S.haken['r-oe-2:5'], jul: !!S.haken['r-oe-2:6']
-}));
-pruef('im Datenstand: Mai kein Haken, Juni und Juli haben jetzt einen echten Haken',
-  !hakenNachher.mai && hakenNachher.jun && hakenNachher.jul, hakenNachher);
+  await rklick(seite, mSel(6));   /* Rechtsklick auf Juli */
+
+  pruef('Juli verliert seine Marke nach dem Rechtsklick', !(await markiert(6)));
+  pruef('August behaelt seine Marke', await markiert(7));
+  pruef('September behaelt seine Marke', await markiert(8));
+  const standNach = await feldWert(seite, `select.standwahl[data-r="${rBehandlung.id}"][data-f="stand"]`);
+  gleich('der Stand faellt auf «Offen»', standNach, 'Offen');
+  const hakenNachher = await seite.evaluate((rid) => ({
+    jul: !!S.haken[rid + ':6'], aug: !!S.haken[rid + ':7'], sep: !!S.haken[rid + ':8']
+  }), rBehandlung.id);
+  pruef('im Datenstand: Juli ohne Haken, August und September mit einem echten Haken',
+    !hakenNachher.jul && hakenNachher.aug && hakenNachher.sep, hakenNachher);
+}
 
 /* ====================================================================
-   Befund 9 — Der Fokus ueberlebt einen Klassenwechsel der Zelle. Beim Wiederfinden
-   nach dem Neuzeichnen wird nur der ERSTE Klassenteil verglichen; sonst faellt der
-   Fokus auf body, sobald aus "zelle" ein "zelle gruen" wird oder umgekehrt.
-   Gefahren wird der Wechsel in beide Richtungen und in beiden Tafeln.
+   Befund 9 — Der Fokus ueberlebt das Neuzeichnen, das auf eine Eingabe folgt.
+   ====================================================================
+   Frueher wechselte die Zelle dabei ihre eigene Klasse («zelle» -> «zelle
+   gruen»), und das Wiederfinden nach dem Neuzeichnen verglich die ganze Klasse
+   — der Fokus fiel auf body. Im Neubau sitzt die Marke am <td>, das Feld
+   behaelt seine Klasse. Die Frage bleibt dieselbe und wird weiter gefahren:
+   Wechselt das Aussehen der Zelle durch die eigene Eingabe, muss der Fokus in
+   derselben Zelle stehen bleiben. Damit die Pruefung nichts Leeres misst, wird
+   zusaetzlich belegt, dass das Aussehen wirklich gewechselt hat.
 
-   Eine leere Zelle laesst sich nicht abhaken (das waere eine unsichtbare Marke) —
-   deshalb beginnt der Versuch mit einer Zelle, die einen Wert traegt. */
-console.log('\n9. Fokus ueberlebt einen Klassenwechsel der Zelle (in beiden Tafeln)');
+   Eine leere Zelle laesst sich nicht abhaken (das waere eine unsichtbare
+   Marke) — deshalb beginnt der Versuch mit einer Zelle, die einen Wert traegt. */
+console.log('\n9. Der Fokus ueberlebt das Neuzeichnen nach der eigenen Eingabe');
 
 console.log('  9a. Budget-Tafel');
 await frisch(seite);
 const einkommenId9 = await blockId(seite, ARBEITSJAHR, 'Einkommen');
 if (einkommenId9) {
   await klappeById(seite, einkommenId9);
-  const pidLohn9 = await findeId(seite, 'Nettolohn'); /* traegt 5200 in jedem Monat */
-  pruef('Zeile "Nettolohn" gefunden (traegt einen Wert)', !!pidLohn9, pidLohn9);
-  if (pidLohn9) {
-    const selB = `input.zelle[data-z="${pidLohn9}"][data-m="0"]`;
-    /* Gegenprobe zuerst: eine leere Zelle bekommt keinen Haken. */
-    const pidNeben = await findeId(seite, 'Nebenerwerb');
-    if (pidNeben) {
-      const selLeer = `input.zelle[data-z="${pidNeben}"][data-m="0"]`;
-      await rklick(seite, selLeer);
-      const leerHaken = await seite.evaluate((pid) => !!S.haken[pid + ':0'], pidNeben);
-      pruef('Rechtsklick auf eine leere Zelle setzt keine unsichtbare Marke', !leerHaken, leerHaken);
-    }
+  const pidLohn9 = await findeId(seite, 'Lohn');
+  const pidZulagen = await findeId(seite, 'Zulagen');
+  pruef('Zeilen «Lohn» (mit Wert) und «Zulagen» (Januar leer) gefunden',
+    !!pidLohn9 && !!pidZulagen, { pidLohn9, pidZulagen });
+  if (pidLohn9 && pidZulagen) {
+    const selLeer = `input.zelle[data-z="${pidZulagen}"][data-m="0"]`;
+    gleich('Gegenprobe-Zelle ist wirklich leer', await feldWert(seite, selLeer), '');
+    await rklick(seite, selLeer);
+    const leerHaken = await seite.evaluate((pid) => !!S.haken[pid + ':0'], pidZulagen);
+    pruef('Rechtsklick auf eine leere Zelle setzt keine unsichtbare Marke', !leerHaken, leerHaken);
+    pruef('und die leere Zelle bleibt ohne Marke', !hak(await zellKlasse(seite, selLeer)));
 
+    /* September: der Vorrat setzt seine Marken nur bis Juli — diese Zelle traegt
+       also einen Wert und noch keine Marke. Beides wird zuerst gemessen, sonst
+       naehme der Rechtsklick unten eine Marke weg, statt eine zu setzen. */
+    const selB = `input.zelle[data-z="${pidLohn9}"][data-m="8"]`;
+    pruef('die Versuchszelle traegt einen Wert', lies(await feldWert(seite, selB)) > 0,
+      await feldWert(seite, selB));
+    pruef('und noch keine Marke', !hak(await zellKlasse(seite, selB)),
+      await zellKlasse(seite, selB));
     await rklick(seite, selB);
-    const vorKlasse = await klasse(seite, selB);
-    gleich('abgehakte Zelle mit Wert traegt "zelle gruen"', vorKlasse, 'zelle gruen');
+    pruef('abgehakte Zelle mit Wert traegt die Marke «hak»', hak(await zellKlasse(seite, selB)),
+      await zellKlasse(seite, selB));
 
-    /* gruen -> nicht gruen: der Wert wird 0, der Haken bleibt, die Klasse wechselt. */
+    /* Marke da -> Marke weg: der Wert wird 0, damit faellt auch die Marke, und
+       das Aussehen der Zelle wechselt. */
     await tippeEnter(seite, selB, '0');
     const akt = await aktivesFeld(seite);
-    pruef('Fokus liegt nach dem Klassenwechsel (zelle gruen -> zelle) auf derselben Zelle',
-      akt && akt.data.z === pidLohn9 && akt.data.m === '0', akt);
+    pruef('Fokus liegt nach dem Neuzeichnen auf derselben Zelle',
+      akt && akt.data.z === pidLohn9 && akt.data.m === '8', akt);
     pruef('Fokus liegt NICHT auf body', akt && akt.tag !== 'BODY', akt);
-    gleich('die Klasse ist jetzt tatsaechlich "zelle"', await klasse(seite, selB), 'zelle');
-
-    /* Mit dem Betrag faellt auch die Marke — eine Marke ohne Betrag waere
-       unsichtbar und wuerde spaeter wieder wirken. */
-    const hakenWeg = await seite.evaluate((pid) => !!S.haken[pid + ':0'], pidLohn9);
-    pruef('mit dem Betrag faellt auch die Marke', !hakenWeg, hakenWeg);
+    pruef('das Aussehen der Zelle hat wirklich gewechselt — die Marke ist weg',
+      !hak(await zellKlasse(seite, selB)), await zellKlasse(seite, selB));
+    const hakenWeg = await seite.evaluate((pid) => !!S.haken[pid + ':8'], pidLohn9);
+    pruef('mit dem Betrag faellt auch die Marke im Datenstand', !hakenWeg, hakenWeg);
 
     /* und zurueck: ein neuer Betrag steht wieder ohne Marke da. */
     await tippeEnter(seite, selB, '300');
     const akt2 = await aktivesFeld(seite);
     pruef('Fokus liegt auch beim naechsten Neuzeichnen auf derselben Zelle',
-      akt2 && akt2.data.z === pidLohn9 && akt2.data.m === '0', akt2);
-    gleich('die Klasse ist "zelle" — die Marke kommt nicht von selbst zurueck',
-      await klasse(seite, selB), 'zelle');
+      akt2 && akt2.data.z === pidLohn9 && akt2.data.m === '8', akt2);
+    gleich('der neue Betrag steht da', await feldWert(seite, selB), fmt(300));
+    pruef('die Marke kommt nicht von selbst zurueck', !hak(await zellKlasse(seite, selB)));
   }
 }
 
 console.log('  9b. Rechnungen-Tafel');
 await frisch(seite);
 await gehAnsicht(seite, 'rechnung');
-await klappeById(seite, 'r-oechsli');
-/* r-oe-1 ("Kontrolle"): Maerz (m=2) traegt 240, Januar (m=0) ist leer. */
-const selRleer = 'input.zelle[data-rm="r-oe-1"][data-m="0"]';
-await rklick(seite, selRleer);
-const leerHakenR = await seite.evaluate(() => !!S.haken['r-oe-1:0']);
-pruef('Rechnungen: Rechtsklick auf eine leere Zelle setzt keine unsichtbare Marke', !leerHakenR, leerHakenR);
+const rMoebel = await seite.evaluate((j) => {
+  let out = null;
+  (S.rechnungen[j] || []).forEach(g => (g.rechnungen || []).forEach(r => {
+    if (r.zweck === 'Möbel') out = { id: r.id, gid: g.id }; }));
+  return out;
+}, ARBEITSJAHR);
+pruef('Rechnung «Möbel» gefunden', !!rMoebel, rMoebel);
+if (rMoebel) {
+  await klappeById(seite, rMoebel.gid);
+  const selRleer = `input.zelle[data-rm="${rMoebel.id}"][data-m="0"]`;
+  gleich('Gegenprobe-Zelle ist wirklich leer', await feldWert(seite, selRleer), '');
+  await rklick(seite, selRleer);
+  const leerHakenR = await seite.evaluate((rid) => !!S.haken[rid + ':0'], rMoebel.id);
+  pruef('Rechnungen: Rechtsklick auf eine leere Zelle setzt keine unsichtbare Marke',
+    !leerHakenR, leerHakenR);
 
-const selR = 'input.zelle[data-rm="r-oe-1"][data-m="2"]';
-await rklick(seite, selR);
-gleich('Rechnungen: abgehakte Zelle mit Wert traegt "zelle gruen"',
-  await klasse(seite, selR), 'zelle gruen');
+  const selR = `input.zelle[data-rm="${rMoebel.id}"][data-m="8"]`;   /* September, 620 */
+  await rklick(seite, selR);
+  pruef('Rechnungen: abgehakte Zelle mit Wert traegt die Marke «hak»',
+    hak(await zellKlasse(seite, selR)), await zellKlasse(seite, selR));
 
-await tippeEnter(seite, selR, '0');
-const aktR = await aktivesFeld(seite);
-pruef('Rechnungen-Tafel: Fokus liegt nach dem Klassenwechsel auf derselben Zelle',
-  aktR && aktR.data.rm === 'r-oe-1' && aktR.data.m === '2', aktR);
-pruef('Rechnungen-Tafel: Fokus liegt NICHT auf body', aktR && aktR.tag !== 'BODY', aktR);
-gleich('Rechnungen-Tafel: die Klasse ist jetzt "zelle"', await klasse(seite, selR), 'zelle');
+  await tippeEnter(seite, selR, '0');
+  const aktR = await aktivesFeld(seite);
+  pruef('Rechnungen-Tafel: Fokus liegt nach dem Neuzeichnen auf derselben Zelle',
+    aktR && aktR.data.rm === rMoebel.id && aktR.data.m === '8', aktR);
+  pruef('Rechnungen-Tafel: Fokus liegt NICHT auf body', aktR && aktR.tag !== 'BODY', aktR);
+  pruef('Rechnungen-Tafel: das Aussehen der Zelle hat wirklich gewechselt',
+    !hak(await zellKlasse(seite, selR)), await zellKlasse(seite, selR));
+}
 
 /* ====================================================================
-   Befund 10 — Der Zaehler sagt, was er zaehlt: "Verbindlichkeiten" traegt
-   den Titel "Gruppen in dieser Sektion", eine gewoehnliche Kategorie
-   "Zeilen in dieser Sektion" — und die Zahl stimmt jeweils.
+   Befund 10 — Der Zaehler sagt, was er zaehlt: «Verbindlichkeiten» traegt den
+   Titel «Gruppen in dieser Sektion», eine gewoehnliche Kategorie «Zeilen in
+   dieser Sektion», ein Rechnungssteller «Rechnungen dieses Stellers» — und die
+   Zahl stimmt jeweils.
    ==================================================================== */
-console.log('\n10. Der Zaehler sagt, was er zaehlt (Titel-Attribut)');
-await frisch(seite); /* zugeklappter Ausgangsstand */
+console.log('\n10. Der Zaehler sagt, was er zaehlt');
+await frisch(seite);
+await allesZu(seite);
 
 const verbId = await blockId(seite, ARBEITSJAHR, 'Verbindlichkeiten');
 const fixId10 = await blockId(seite, ARBEITSJAHR, 'Fixkosten');
-pruef('Bloecke "Verbindlichkeiten" und "Fixkosten" gefunden', !!verbId && !!fixId10, { verbId, fixId10 });
+pruef('Sektionen «Verbindlichkeiten» und «Fixkosten» gefunden', !!verbId && !!fixId10, { verbId, fixId10 });
 if (verbId && fixId10) {
-  const gruppenZahl = await seite.evaluate((jahr) => {
-    const b = (S.daten[jahr] || []).find(x => x.name === 'Verbindlichkeiten');
-    return (b.gruppen || []).length;
-  }, ARBEITSJAHR);
-  const fixZahl = await seite.evaluate((jahr) => {
-    const b = (S.daten[jahr] || []).find(x => x.name === 'Fixkosten');
-    return (b.pos || []).length;
+  const zahlen = await seite.evaluate((jahr) => {
+    const b = (S.daten[jahr] || []);
+    const v = b.find(x => x.name === 'Verbindlichkeiten'), f = b.find(x => x.name === 'Fixkosten');
+    return { gruppen: (v.gruppen || []).length, zeilen: (f.pos || []).length };
   }, ARBEITSJAHR);
 
-  const verbSpan = await seite.evaluate((id) => {
-    const tr = document.querySelector('tr.kopf[data-k="' + id + '"]');
+  const zaehler = (id) => seite.evaluate((k) => {
+    const tr = document.querySelector('tr.kat[data-k="' + k + '"]');
     const sp = tr ? tr.querySelector('.anzahl') : null;
     return sp ? { titel: sp.getAttribute('title'), text: sp.textContent.trim() } : null;
-  }, verbId);
-  pruef('Zaehler bei "Verbindlichkeiten" gefunden', verbSpan !== null, verbSpan);
+  }, id);
+
+  const verbSpan = await zaehler(verbId);
+  pruef('Zaehler bei «Verbindlichkeiten» gefunden', verbSpan !== null, verbSpan);
   if (verbSpan) {
-    gleich('Titel bei "Verbindlichkeiten"', verbSpan.titel, 'Gruppen in dieser Sektion');
-    gleich('Zahl bei "Verbindlichkeiten" = Anzahl Gruppen', verbSpan.text, String(gruppenZahl));
+    gleich('Titel bei «Verbindlichkeiten»', verbSpan.titel, 'Gruppen in dieser Sektion');
+    gleich('Zahl bei «Verbindlichkeiten» = Anzahl Gruppen', verbSpan.text, String(zahlen.gruppen));
   }
-
-  const fixSpan = await seite.evaluate((id) => {
-    const tr = document.querySelector('tr.kopf[data-k="' + id + '"]');
-    const sp = tr ? tr.querySelector('.anzahl') : null;
-    return sp ? { titel: sp.getAttribute('title'), text: sp.textContent.trim() } : null;
-  }, fixId10);
-  pruef('Zaehler bei "Fixkosten" gefunden', fixSpan !== null, fixSpan);
+  const fixSpan = await zaehler(fixId10);
+  pruef('Zaehler bei «Fixkosten» gefunden', fixSpan !== null, fixSpan);
   if (fixSpan) {
-    gleich('Titel bei "Fixkosten" (gewoehnliche Kategorie)', fixSpan.titel, 'Zeilen in dieser Sektion');
-    gleich('Zahl bei "Fixkosten" = Anzahl Zeilen', fixSpan.text, String(fixZahl));
+    gleich('Titel bei «Fixkosten» (gewoehnliche Kategorie)', fixSpan.titel, 'Zeilen in dieser Sektion');
+    gleich('Zahl bei «Fixkosten» = Anzahl Zeilen', fixSpan.text, String(zahlen.zeilen));
+  }
+  /* Neu hinzugekommen: dieselbe Frage in der Rechnungstafel — dort zaehlt der
+     Zaehler wieder etwas Drittes und muss es auch sagen. */
+  await gehAnsicht(seite, 'rechnung');
+  await allesZu(seite);
+  const oechsli = await seite.evaluate((j) => {
+    const g = (S.rechnungen[j] || []).find(x => x.name === 'Öchsli Zahnpraxis');
+    return g ? { id: g.id, n: (g.rechnungen || []).length } : null; }, ARBEITSJAHR);
+  pruef('Rechnungssteller «Öchsli Zahnpraxis» gefunden', !!oechsli, oechsli);
+  if (oechsli) {
+    const stSpan = await zaehler(oechsli.id);
+    pruef('Zaehler beim Rechnungssteller gefunden', stSpan !== null, stSpan);
+    if (stSpan) {
+      gleich('Titel beim Rechnungssteller', stSpan.titel, 'Rechnungen dieses Stellers');
+      gleich('Zahl beim Rechnungssteller = Anzahl Rechnungen', stSpan.text, String(oechsli.n));
+    }
+    /* Gegenprobe: der Zaehler steht nur, solange die Sektion zu ist — sonst
+       zaehlte er, was ohnehin dasteht. */
+    await klappeById(seite, oechsli.id);
+    const nachAuf = await zaehler(oechsli.id);
+    pruef('Gegenprobe: aufgeklappt verschwindet der Zaehler', nachAuf === null, nachAuf);
   }
 }
 
 /* ====================================================================
-   Befund 11 — Das CSV traegt die Monatshaken der Rechnungen: Kopfzeile mit
-   Spalte "Erledigt", eine Rechnung mit zwei abgehakten Monaten fuehrt sie
-   auf, die Zeile "Total" traegt den Saldo. gib() wird abgefangen.
-   ==================================================================== */
-console.log('\n11. Das CSV traegt die Monatshaken der Rechnungen (gib() abgefangen)');
+   Befund 11 — Das CSV traegt die Monatshaken der Rechnungen: eine Spalte
+   «Erledigt», die genau die abgehakten Monate nennt, und eine Zeile «Total»
+   mit dem Saldo ueber alle Rechnungen. gib() wird abgefangen.
+   ====================================================================
+   Neu: die Monate heissen im CSV 01 bis 12 (wie im Blatt), nicht mehr Jan bis
+   Dez; und das CSV kommt je Jahrgang als eigene Datei.
+   Saldo von Hand: alle Rechnungen des Vorrats sind vollstaendig verteilt
+   (Saldo 0). Die hier angelegte Rechnung traegt 500 und verteilt 300 — Saldo
+   ueber alle Rechnungen also 200. */
+console.log('\n11. Das CSV traegt die Monatshaken der Rechnungen');
 await frisch(seite);
 await gehAnsicht(seite, 'rechnung');
-await klappeById(seite, 'r-oechsli');
-await rklick(seite, 'input.zelle[data-rm="r-oe-2"][data-m="4"]'); /* Mai */
-await rklick(seite, 'input.zelle[data-rm="r-oe-2"][data-m="5"]'); /* Juni */
-
-/* Eine unvollstaendig verteilte Rechnung, damit der Saldo in der Total-Zeile
-   nicht trivial 0 ist. */
-await seite.locator('tr.kopf[data-k="r-nordmann"]').hover();
-await klick(seite, '[data-neu-rech="r-nordmann"]');
-const neuRechId11 = await seite.evaluate((jahr) => {
-  const g = (S.rechnungen[jahr] || []).find(x => x.id === 'r-nordmann');
-  const r = g && (g.rechnungen || []).find(x => x.zweck === 'Neue Rechnung');
-  return r ? r.id : null;
+const r11 = await seite.evaluate((j) => {
+  let beh = null, nord = null;
+  (S.rechnungen[j] || []).forEach(g => {
+    if (g.name === 'nordmann') nord = g.id;
+    (g.rechnungen || []).forEach(r => { if (r.zweck === 'Behandlung') beh = { id: r.id, gid: g.id }; });
+  });
+  return { beh, nord };
 }, ARBEITSJAHR);
-if (neuRechId11) {
-  await tippe(seite, `input.zelle[data-r="${neuRechId11}"][data-f="betrag"]`, '500');
-  await tippe(seite, `input.zelle[data-rm="${neuRechId11}"][data-m="0"]`, '300');
-}
-const erwSaldo = await seite.evaluate((jahr) => {
-  let ts = 0;
-  (S.rechnungen[jahr] || []).forEach(g => (g.rechnungen || []).forEach(r => {
-    ts += (r.betrag || 0) - (r.reihe || []).reduce((s, x) => s + (x || 0), 0);
-  }));
-  return ts;
-}, ARBEITSJAHR);
-pruef('Saldo ueber alle Rechnungen ist nicht 0 (sonst waere die Saldo-Probe trivial)', erwSaldo !== 0, erwSaldo);
+pruef('«Behandlung» und Steller «nordmann» gefunden', !!r11.beh && !!r11.nord, r11);
+if (r11.beh && r11.nord) {
+  await klappeById(seite, r11.beh.gid);
+  await rklick(seite, `input.zelle[data-rm="${r11.beh.id}"][data-m="7"]`);   /* August */
+  await rklick(seite, `input.zelle[data-rm="${r11.beh.id}"][data-m="8"]`);   /* September */
+  const gesetzt = await seite.evaluate((rid) =>
+    Object.keys(S.haken).filter(k => k.indexOf(rid + ':') === 0).sort(), r11.beh.id);
+  pruef('zwei echte Monatshaken gesetzt', gesetzt.length === 2, gesetzt);
 
-await seite.evaluate(() => { window.__export = null; window.gib = (name, text, typ) => { window.__export = { name, text, typ }; }; });
-await klick(seite, '[data-exp="1"]');
-await klick(seite, '[data-exp-csv="1"]');
-const exp11 = await seite.evaluate(() => window.__export);
-pruef('CSV-Datei wurde erzeugt (gib() abgefangen)', exp11 !== null, exp11);
-if (exp11) {
-  const roh = exp11.text.replace(/^﻿/, '');
-  const zeilen = roh.split('\r\n').map(csvFelder);
-  const startIdx = zeilen.findIndex(f => f[0] === 'Rechnungen ' + ARBEITSJAHR);
-  pruef('Abschnitt "Rechnungen ' + ARBEITSJAHR + '" im CSV gefunden', startIdx >= 0, startIdx);
-  if (startIdx >= 0) {
-    const header = zeilen[startIdx + 1];
-    gleich('Kopfzeile traegt die Spalte "Erledigt" als letzte Spalte',
-      header[header.length - 1], 'Erledigt');
-    gleich('Kopfzeile vollstaendig',
-      header.join('|'),
-      ['Ebene', 'Rechnungssteller / Zweck', 'Datum', 'Betrag'].concat(
-        ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'])
-        .concat(['Saldo', 'Stand', 'Erledigt']).join('|'));
-    const erledigtIdx = header.indexOf('Erledigt'), saldoIdx = header.indexOf('Saldo');
+  /* Eine unvollstaendig verteilte Rechnung, damit der Saldo nicht trivial 0 ist. */
+  await schwebe(seite, `tr.kat[data-k="${r11.nord}"]`);
+  await klick(seite, `[data-neu-rech="${r11.nord}"]`);
+  const neuRechId11 = await seite.evaluate(([j, gid]) => {
+    const g = (S.rechnungen[j] || []).find(x => x.id === gid);
+    const r = g && (g.rechnungen || []).find(x => x.zweck === 'Neue Rechnung');
+    return r ? r.id : null;
+  }, [ARBEITSJAHR, r11.nord]);
+  if (neuRechId11) {
+    await tippe(seite, `input.zelle[data-r="${neuRechId11}"][data-f="betrag"]`, '500');
+    await tippe(seite, `input.zelle[data-rm="${neuRechId11}"][data-m="0"]`, '300');
+  }
 
-    const rest = zeilen.slice(startIdx + 2);
-    const totalIdx = rest.findIndex(f => f[0] === 'Total');
-    const zeilenBisTotal = rest.slice(0, totalIdx >= 0 ? totalIdx : rest.length);
-    const behandlung = zeilenBisTotal.find(f => f[0] === 'Rechnung' && f[1] === 'Behandlung');
-    pruef('Zeile fuer "Behandlung" (r-oe-2) im CSV gefunden', !!behandlung, behandlung);
-    if (behandlung) gleich('Spalte "Erledigt" nennt genau die zwei abgehakten Monate, in Kalenderreihenfolge',
-      behandlung[erledigtIdx], 'Mai Jun');
+  await seite.evaluate(() => { window.__aus = [];
+    window.gib = (name, text, typ) => { window.__aus.push({ name, text, typ }); }; });
+  await klick(seite, '[data-exp="1"]');
+  await klick(seite, '[data-exp-csv="1"]');
+  const aus11 = await seite.evaluate(() => window.__aus);
+  pruef('genau eine CSV-Datei fuer den gezeigten Jahrgang (gib() abgefangen)',
+    aus11.length === 1, aus11.map(a => a.name));
+  if (aus11.length) {
+    gleich('sie heisst nach dem Jahrgang', aus11[0].name, 'GAEPP-' + ARBEITSJAHR + '.csv');
+    const roh = aus11[0].text.replace(/^﻿/, '');
+    const zeilen = roh.split('\r\n').map(csvFelder);
 
-    pruef('Zeile "Total" im CSV gefunden', totalIdx >= 0, totalIdx);
-    if (totalIdx >= 0) {
-      const totalZeile = rest[totalIdx];
-      gleich('Zeile "Total" traegt den Saldo ueber alle Rechnungen', +totalZeile[saldoIdx], erwSaldo);
+    /* Der Budgetteil traegt seine eigene Erledigt-Spalte — Gegenprobe dazu,
+       dass die Spalte nicht nur bei den Rechnungen auftaucht. */
+    const budgetKopf = zeilen.find(f => f[0] === 'Ebene' && f[1] === 'Position');
+    pruef('Budget-Kopfzeile im CSV gefunden', !!budgetKopf, budgetKopf);
+    if (budgetKopf)
+      pruef('auch der Budgetteil fuehrt eine Spalte «Erledigt»',
+        budgetKopf.indexOf('Erledigt') > 0, budgetKopf);
+
+    const startIdx = zeilen.findIndex(f => f[0] === 'Rechnungen ' + ARBEITSJAHR);
+    pruef('Abschnitt «Rechnungen ' + ARBEITSJAHR + '» im CSV gefunden', startIdx >= 0, startIdx);
+    if (startIdx >= 0) {
+      const header = zeilen[startIdx + 1];
+      gleich('Kopfzeile traegt «Erledigt» als letzte Spalte', header[header.length - 1], 'Erledigt');
+      gleich('Kopfzeile vollstaendig, Monate als Zahl',
+        header.join('|'),
+        ['Ebene', 'Rechnungssteller / Zweck', 'Datum', 'Betrag']
+          .concat(['01','02','03','04','05','06','07','08','09','10','11','12'])
+          .concat(['Saldo', 'Stand', 'Erledigt']).join('|'));
+      const erledigtIdx = header.indexOf('Erledigt'), saldoIdx = header.indexOf('Saldo');
+
+      const rest = zeilen.slice(startIdx + 2);
+      const totalIdx = rest.findIndex(f => f[0] === 'Total');
+      const bisTotal = rest.slice(0, totalIdx >= 0 ? totalIdx : rest.length);
+      const behandlung = bisTotal.find(f => f[0] === 'Rechnung' && f[1] === 'Behandlung');
+      pruef('Zeile «Behandlung» im CSV gefunden', !!behandlung, behandlung);
+      if (behandlung) gleich('«Erledigt» nennt genau die zwei abgehakten Monate, in Kalenderreihenfolge',
+        behandlung[erledigtIdx], '08 09');
+      /* Gegenprobe: eine Rechnung, die als «Bezahlt» gemeldet, aber nirgends
+         abgehakt ist, traegt keine Monate — die Spalte zeigt Haken und nicht
+         den Stand. */
+      const kontrolle = bisTotal.find(f => f[0] === 'Rechnung' && f[1] === 'Kontrolle');
+      pruef('Zeile «Kontrolle» im CSV gefunden', !!kontrolle, kontrolle);
+      if (kontrolle) {
+        gleich('«Kontrolle» ist als bezahlt gemeldet', kontrolle[header.indexOf('Stand')], 'Bezahlt');
+        gleich('traegt aber keinen Monat in «Erledigt» — die Spalte zeigt Haken, nicht den Stand',
+          kontrolle[erledigtIdx], '');
+      }
+
+      pruef('Zeile «Total» im CSV gefunden', totalIdx >= 0, totalIdx);
+      if (totalIdx >= 0)
+        gleich('«Total» traegt den Saldo ueber alle Rechnungen (500 minus 300)',
+          +rest[totalIdx][saldoIdx], 200);
     }
   }
 }
 
 /* ====================================================================
-   Befund 12 — Der Text im Fenster "Neues Jahr anlegen" stimmt in beiden
-   Faellen: mit und ohne Haken "Raten fortschreiben".
+   Befund 12 — Der Text im Fenster «Neuer Jahrgang» stimmt in beiden Faellen:
+   mit und ohne Haken «Raten fortschreiben».
    ==================================================================== */
-console.log('\n12. Text im Fenster "Neues Jahr anlegen" — mit und ohne "Raten fortschreiben"');
+console.log('\n12. Text im Fenster «Neuer Jahrgang» — mit und ohne «Raten fortschreiben»');
 await frisch(seite);
 const letztesJahr = await seite.evaluate(() => Math.max.apply(null, S.jahre));
+gleich('letzter Jahrgang aus dem Vorrat', letztesJahr, JAHRE[JAHRE.length - 1]);
 await klick(seite, 'button[data-neu-jahr="1"]');
-const textOhne = await zelleText(seite, 'div[data-schleier="neu"] p');
-pruef('Dialogtext gefunden (ohne "Raten fortschreiben", Ausgangsstand)', textOhne !== null, textOhne);
+const textOhne = await text(seite, 'div[data-schleier="neu"] p');
+pruef('Dialogtext gefunden (ohne «Raten fortschreiben», Ausgangsstand)', textOhne !== null, textOhne);
 if (textOhne) {
-  pruef('nennt "Restschuld am 31.12.' + letztesJahr + '" als gerechneten Anfangsstand',
+  pruef('nennt «Restschuld am 31.12.' + letztesJahr + '» als gerechneten Anfangsstand',
     textOhne.includes('Restschuld am 31.12.' + letztesJahr) && textOhne.includes('das ist gerechnet, keine Wahl'),
     textOhne);
-  pruef('ohne Haken: "Schulden, die dort auf null stehen, kommen nicht mit."',
+  pruef('ohne Haken: «Schulden, die dort auf null stehen, kommen nicht mit.»',
     textOhne.includes('Schulden, die dort auf null stehen, kommen nicht mit.'), textOhne);
-  pruef('ohne Haken: KEINE Erwaehnung des Fortschreibens', !textOhne.includes('fortgeschrieben'), textOhne);
+  pruef('ohne Haken: keine Erwaehnung des Fortschreibens', !textOhne.includes('fortgeschrieben'), textOhne);
 }
 await klick(seite, '[data-neu-raten="1"]');
-const textMit = await zelleText(seite, 'div[data-schleier="neu"] p');
-pruef('Dialogtext gefunden (mit "Raten fortschreiben")', textMit !== null, textMit);
+const textMit = await text(seite, 'div[data-schleier="neu"] p');
+pruef('Dialogtext gefunden (mit «Raten fortschreiben»)', textMit !== null, textMit);
 if (textMit) {
-  pruef('nennt weiterhin "Restschuld am 31.12.' + letztesJahr + '" — derselbe erste Satz',
+  pruef('nennt weiterhin «Restschuld am 31.12.' + letztesJahr + '» — derselbe erste Satz',
     textMit.includes('Restschuld am 31.12.' + letztesJahr) && textMit.includes('das ist gerechnet, keine Wahl'),
     textMit);
-  pruef('mit Haken: "Weil die Raten fortgeschrieben werden, kommen auch Schulden mit, die auf null stehen."',
+  pruef('mit Haken: «Weil die Raten fortgeschrieben werden, kommen auch Schulden mit, die auf null stehen.»',
     textMit.includes('Weil die Raten fortgeschrieben werden, kommen auch Schulden mit, die auf null stehen.'),
     textMit);
-  pruef('mit Haken: NICHT mehr "kommen nicht mit"', !textMit.includes('kommen nicht mit'), textMit);
+  pruef('mit Haken: nicht mehr «kommen nicht mit»', !textMit.includes('kommen nicht mit'), textMit);
 }
 /* Gegenprobe: Haken zurueck -> wieder der urspruengliche Text. */
 await klick(seite, '[data-neu-raten="1"]');
-const textZurueck = await zelleText(seite, 'div[data-schleier="neu"] p');
-gleich('Gegenprobe: Haken zurueck -> derselbe Text wie am Anfang', textZurueck, textOhne);
+gleich('Gegenprobe: Haken zurueck ergibt denselben Text wie am Anfang',
+  await text(seite, 'div[data-schleier="neu"] p'), textOhne);
 
 /* ====================================================================
-   Befund 13 — zahl() liest Schweizer Schreibweisen richtig.
+   Befund 13 — zahl() liest Schweizer und deutsche Schreibweisen richtig.
    ==================================================================== */
-console.log('\n13. zahl() liest Schweizer Schreibweisen richtig');
+console.log('\n13. zahl() liest die Schreibweisen richtig');
 await frisch(seite);
 const einkommenId13 = await blockId(seite, ARBEITSJAHR, 'Einkommen');
 if (einkommenId13) {
   await klappeById(seite, einkommenId13);
-  const pidLohn13 = await findeId(seite, 'Nettolohn');
+  const pidLohn13 = await findeId(seite, 'Lohn');
+  pruef('Zeile «Lohn» gefunden', !!pidLohn13, pidLohn13);
   if (pidLohn13) {
-    const sel = `input.zelle[data-z="${pidLohn13}"][data-m="1"]`; /* Februar, unberuehrt von Befund 5 */
+    const sel = `input.zelle[data-z="${pidLohn13}"][data-m="1"]`;   /* Februar */
     const proben = [
-      { text: "1'234", erwartet: 1234 },
-      { text: '1.234,50', erwartet: 1235 },  /* Komma = Dezimaltrenner, Punkt = Tausender: 1234.50 -> gerundet 1235 */
-      { text: '12.50', erwartet: 13 },       /* kein Komma da -> Punkt ist Dezimalpunkt: 12.5 -> gerundet 13 */
-      { text: '−500', erwartet: -500 },      /* echtes U+2212 */
-      { text: '-1 000', erwartet: -1000 }    /* Leerzeichen als Tausendertrenner */
+      { text: "1'234",     erwartet: 1234 },     /* Apostroph als Tausendertrenner */
+      { text: '1.234,50',  erwartet: 1235 },     /* Komma trennt Dezimale, Punkt Tausender */
+      { text: '12.50',     erwartet: 13 },       /* kein Komma da: der Punkt ist der Dezimalpunkt */
+      { text: '1.234.567', erwartet: 1234567 },  /* zwei Punkte koennen nur Tausender sein */
+      { text: '2.5',       erwartet: 3 },        /* halbe Einheit aufwaerts */
+      { text: '−500',      erwartet: -500 },     /* echtes Minuszeichen U+2212 */
+      { text: '-1 000',    erwartet: -1000 }     /* Leerzeichen als Tausendertrenner */
     ];
     for (const p of proben) {
       await tippe(seite, sel, p.text);
-      const wert = await zelleText(seite, sel);
-      gleich('zahl("' + p.text + '") -> ' + p.erwartet, wert, fmt(p.erwartet, true));
+      gleich('zahl("' + p.text + '") ergibt ' + p.erwartet, await feldWert(seite, sel), fmt(p.erwartet));
     }
+    /* Gegenprobe: was keine Zahl ist, wird 0 — und mit dem Betrag faellt die
+       Marke, sonst wirkte sie spaeter unsichtbar weiter. */
+    await tippe(seite, sel, 'kein Betrag');
+    gleich('Gegenprobe: was keine Zahl ist, wird 0 und steht leer da',
+      await feldWert(seite, sel), '');
+    const markeWeg = await seite.evaluate((pid) => !!S.haken[pid + ':1'], pidLohn13);
+    pruef('und die Marke des Monats faellt mit', !markeWeg, markeWeg);
   }
 }
 
 /* ====================================================================
-   Befund 14 — HTML-Export: der fett gesetzte Name des Rechnungsstellers
-   bleibt fett; der Korrekturpunkt traegt keinen Hinweis mehr auf einen
-   Doppelklick.
-   ==================================================================== */
-console.log('\n14. HTML-Export: Rechnungssteller bleibt fett, Korrekturpunkt ohne Doppelklick-Hinweis');
+   Befund 14 — HTML-Export: der Name des Rechnungsstellers bleibt im Rang, den
+   er im Werkzeug hat; und der Korrekturpunkt traegt keinen Hinweis mehr auf
+   einen Doppelklick — im eingefrorenen Blatt tut ein Doppelklick nichts.
+   ====================================================================
+   Neu: der Korrekturpunkt heisst nicht mehr «mkorr», sondern «korrmarke» und
+   traegt das Wort «korrigiert». Und der Rang steht nicht mehr in einem
+   Inline-Stil, sondern in Groesse und Gewicht — gemessen wird deshalb nicht
+   der Auszeichnungstext, sondern was der Browser am Element berechnet: der
+   Export wird dafuer wirklich geladen. */
+console.log('\n14. HTML-Export: Rang des Stellers und Korrekturpunkt ohne Doppelklick-Hinweis');
 await frisch(seite);
-await allesAuf(seite);
-const pidKredit14 = await id(seite, 2026, 'Kredit Talgut');
+const pidKredit14 = await id(seite, ARBEITSJAHR, 'Kreditkasse Tremont');
 if (pidKredit14) {
-  await korrEintragen(seite, { pid: pidKredit14, art: 'basis', richtung: 'plus', betrag: '100', notiz: 'Testkorrektur Export' });
+  await korrEintragen(seite, { pid: pidKredit14, art: 'basis', betrag: '100',
+    notiz: 'Testkorrektur Export' });
   await korrSchliessen(seite);
 }
-await gehJahr(seite, 2026);
-await seite.evaluate(() => { window.__export = null; window.gib = (name, text, typ) => { window.__export = { name, text, typ }; }; });
+const markeApp = await seite.evaluate(() => {
+  const el = document.querySelector('.korrmarke');
+  return el ? { text: el.textContent.trim(), titel: el.getAttribute('title') } : null; });
+pruef('im Werkzeug steht ein Korrekturpunkt', markeApp !== null, markeApp);
+const stellerApp = await seite.evaluate(() => {
+  const el = Array.from(document.querySelectorAll('tr.kat .namensfeld'))
+    .find(e => e.value === 'Öchsli Zahnpraxis');
+  if (!el) return null;
+  const c = getComputedStyle(el);
+  return { gewicht: c.fontWeight, groesse: c.fontSize };
+});
+await gehAnsicht(seite, 'rechnung');
+const stellerImWerkzeug = await seite.evaluate(() => {
+  const el = Array.from(document.querySelectorAll('tr.kat .namensfeld'))
+    .find(e => e.value === 'Öchsli Zahnpraxis');
+  if (!el) return null;
+  const c = getComputedStyle(el);
+  return { gewicht: c.fontWeight, groesse: c.fontSize };
+});
+pruef('der Name des Rechnungsstellers steht im Werkzeug', stellerImWerkzeug !== null, stellerImWerkzeug);
+await gehAnsicht(seite, 'budget');
+
+await seite.evaluate(() => { window.__aus = [];
+  window.gib = (name, text, typ) => { window.__aus.push({ name, text, typ }); }; });
 await klick(seite, '[data-exp="1"]');
 await klick(seite, '[data-exp-html="1"]');
-const exp14 = await seite.evaluate(() => window.__export);
-pruef('HTML-Export wurde erzeugt', exp14 !== null, exp14);
-if (exp14) {
-  const auswertung = await seite.evaluate((html) => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const steller = Array.from(doc.querySelectorAll('span.namensfeld'))
-      .find(el => el.textContent.trim() === 'Öchsli Zahnpraxis');
-    const mkorr = doc.querySelector('.mkorr');
+const aus14 = await seite.evaluate(() => window.__aus);
+pruef('HTML-Export wurde erzeugt', aus14.length === 1, aus14.map(a => a.name));
+let expSeite = null;
+if (aus14.length) {
+  expSeite = await kontext.newPage();
+  await expSeite.setContent(aus14[0].text);
+  await expSeite.evaluate(() => document.fonts.ready);
+
+  const gemessen = await expSeite.evaluate(() => {
+    const kat = Array.from(document.querySelectorAll('tr.kat .namensfeld'))
+      .find(e => e.textContent.trim() === 'Öchsli Zahnpraxis');
+    const pos = Array.from(document.querySelectorAll('tr.pos .namensfeld'))
+      .find(e => e.textContent.trim() === 'Behandlung');
+    const marken = Array.from(document.querySelectorAll('.korrmarke'))
+      .map(e => ({ text: e.textContent.trim(), titel: e.getAttribute('title') }));
+    const st = e => { const c = getComputedStyle(e); return { gewicht: c.fontWeight, groesse: c.fontSize }; };
+    return { kat: kat ? st(kat) : null, pos: pos ? st(pos) : null, marken };
+  });
+  pruef('Name des Rechnungsstellers «Öchsli Zahnpraxis» im Export gefunden',
+    gemessen.kat !== null, gemessen);
+  if (gemessen.kat && stellerImWerkzeug) {
+    gleich('sein Gewicht ist im Export dasselbe wie im Werkzeug',
+      gemessen.kat.gewicht, stellerImWerkzeug.gewicht);
+    gleich('seine Groesse ebenso', gemessen.kat.groesse, stellerImWerkzeug.groesse);
+    pruef('und er steht wirklich halbfett oder staerker da — sonst pruefte der Vergleich nichts',
+      parseInt(gemessen.kat.gewicht, 10) >= 500, gemessen.kat);
+  }
+  if (gemessen.kat && gemessen.pos)
+    pruef('Gegenprobe: die Rechnung darunter bleibt leichter als ihr Steller',
+      parseInt(gemessen.pos.gewicht, 10) < parseInt(gemessen.kat.gewicht, 10), gemessen);
+
+  pruef('ein Korrekturpunkt steht im Export', gemessen.marken.length > 0, gemessen.marken);
+  if (gemessen.marken.length) {
+    gleich('er traegt weiterhin sein Wort', gemessen.marken[0].text, 'korrigiert');
+    pruef('kein Korrekturpunkt im Export nennt noch «Doppelklick» — im eingefrorenen '
+      + 'Blatt tut ein Doppelklick nichts',
+      gemessen.marken.every(m => !/Doppelklick/.test(String(m.titel || ''))),
+      gemessen.marken.map(m => m.titel));
+  }
+  /* Gegenprobe zum selben Griff: die Titel an Basis und Rest, die im Werkzeug
+     ebenfalls einen Doppelklick versprechen, sind im Export bereits entfernt.
+     Der Punkt ist also nicht vergessen worden, weil niemand daran dachte —
+     sondern uebersehen worden, als er umbenannt wurde. */
+  const restTitelExport = await expSeite.evaluate(() =>
+    Array.from(document.querySelectorAll('td.c-jahr[title]')).map(e => e.getAttribute('title')));
+  pruef('Gegenprobe: an den Rest-Zellen steht im Export kein Doppelklick-Versprechen mehr',
+    restTitelExport.every(t => !/Doppelklick/.test(String(t))), restTitelExport);
+}
+
+/* ====================================================================
+   Befund 15 — GESTRICHEN in seiner alten Form.
+   ====================================================================
+   Der alte Punkt hiess «Excel-Layout, helles Schema»: Datenzeilen auf dem
+   Zeilengrund, Kopf-, Gruppen- und Summenzeilen als dunkler Balken mit heller
+   Schrift, weisse Gitterlinien, dazu der Kontrast Balken gegen Balkenschrift.
+   Gemessen wurde an den Rollen --zeile, --balken, --balken2, --aufbalken und
+   --gitter und an der Startvorgabe data-theme="hell".
+
+   Nichts davon gibt es im Neubau noch: Das helle Schema ist gestrichen — hell
+   ist nur noch das Papier. Die genannten Farbrollen existieren nicht mehr, und
+   Flaechen als Rangmittel sind ausdruecklich aufgegeben; Rang entsteht aus
+   Groesse und Gewicht. Eine Pruefung auf einen dunklen Balken mit heller
+   Schrift wuerde deshalb nicht einen Fehler finden, sondern den Entwurf
+   bestreiten.
+
+   Die Frage dahinter bleibt und wird hier in ihrer neuen Gestalt gefahren:
+   Traegt das Blatt ausserhalb des Werkzeugs — im HTML-Export und auf dem
+   Papier — dieselbe Ordnung wie im Werkzeug, und ist es dort lesbar? */
+console.log('\n15. Das Blatt ausserhalb des Werkzeugs (Ersatz fuer das gestrichene helle Schema)');
+console.log('  15a. HTML-Export');
+if (expSeite) {
+  const bau15 = await expSeite.evaluate(() => {
+    const st = s => { const e = document.querySelector(s); if (!e) return null;
+      const c = getComputedStyle(e);
+      return { gewicht: +c.fontWeight, groesse: parseFloat(c.fontSize), flaeche: c.backgroundColor }; };
     return {
-      stellerGefunden: !!steller,
-      stellerFett: steller ? /font-weight\s*:\s*700/.test(steller.getAttribute('style') || '') : null,
-      mkorrGefunden: !!mkorr,
-      mkorrTitel: mkorr ? mkorr.getAttribute('title') : null
+      sichten: Array.from(document.querySelectorAll('[data-view]')).map(v => v.id),
+      kopf: (document.querySelector('.expkopf') || {}).textContent,
+      fuss: (document.querySelector('.expfuss') || {}).textContent,
+      knopf: !!document.querySelector('[data-alle-um]'),
+      grund: getComputedStyle(document.body).backgroundColor,
+      /* Eine abgehakte Monatszelle steht halbfett — das ist der Haken und nicht
+         der Rang. Gemessen wird deshalb an Zellen ohne Marke. */
+      kat: st('tr.kat td.c-mon:not(.hak)'), grp: st('tr.grp td.c-mon:not(.hak)'),
+      pos: st('tr.pos td.c-mon:not(.hak)'),
+      hakZelle: st('tr.pos td.c-mon.hak'),
+      /* Die Namensspalte klebt am linken Rand; sie traegt den Grund des Blattes,
+         damit nichts durchscheint. Das ist kein Balken — gemessen wird deshalb,
+         dass sie genau den Grund traegt und keine eigene Flaeche. */
+      name: st('tr.kat td.c-name'),
+      zellen: document.querySelectorAll('#blatt input, [data-view] input').length
     };
-  }, exp14.text);
-  pruef('Name des Rechnungsstellers "Öchsli Zahnpraxis" im Export gefunden', auswertung.stellerGefunden, auswertung);
-  pruef('sein Name bleibt fett (font-weight:700 aus dem Original-Inline-Stil)', auswertung.stellerFett === true, auswertung);
-  pruef('ein Korrekturpunkt (.mkorr) steht im Export', auswertung.mkorrGefunden, auswertung);
-  gleich('sein Titel ist nur noch "Manuell angepasst"', auswertung.mkorrTitel, 'Manuell angepasst');
-  /* Befund 14 ist auf den Korrekturpunkt (.mkorr) beschraenkt — andere Titel im
-     eingefrorenen Blatt (z. B. auf den Basis-/Rest-Zellen selbst) sind nicht
-     Teil dieses Befunds und werden von htmlSichern() bewusst nicht angefasst.
-     Die richtige, engere Probe: KEIN .mkorr im Export nennt "Doppelklick". */
-  pruef('kein .mkorr im Export nennt noch "Doppelklick" (auch bei mehreren Korrekturpunkten)',
-    !/Doppelklick/.test(auswertung.mkorrTitel || ''));
+  });
+  pruef('der Export traegt fuer jede Ansicht ein eigenes Blatt',
+    bau15.sichten.length >= 2, bau15.sichten);
+  pruef('er traegt denselben Kopf wie das Papier — Wortmarke, Titel, Stichmonat',
+    /GÄPP/.test(String(bau15.kopf)) && /Stichmonat 08 · 2026/.test(String(bau15.kopf)), bau15.kopf);
+  pruef('und denselben Fuss', /Beträge in CHF, ohne Rappen/.test(String(bau15.fuss)), bau15.fuss);
+  pruef('«Alles zuklappen» lebt im Export als Knopf weiter — im Werkzeug ist es die Taste z',
+    bau15.knopf === true, bau15.knopf);
+  pruef('kein einziges Eingabefeld ist mitgekommen — das Blatt ist eingefroren',
+    bau15.zellen === 0, bau15.zellen);
+  pruef('Rang aus Groesse: Kategorie groesser als Gruppe, Gruppe groesser als Position',
+    bau15.kat && bau15.grp && bau15.pos
+    && bau15.kat.groesse > bau15.grp.groesse && bau15.grp.groesse > bau15.pos.groesse,
+    [bau15.kat, bau15.grp, bau15.pos]);
+  pruef('Rang aus Gewicht: dieselbe Reihenfolge',
+    bau15.kat && bau15.grp && bau15.pos
+    && bau15.kat.gewicht > bau15.grp.gewicht && bau15.grp.gewicht > bau15.pos.gewicht,
+    [bau15.kat, bau15.grp, bau15.pos].map(x => x && x.gewicht));
+  pruef('und die Marke reist mit: eine abgehakte Zelle steht auch im Export halbfett',
+    bau15.hakZelle && bau15.hakZelle.gewicht === 500
+    && bau15.hakZelle.gewicht > bau15.pos.gewicht, bau15.hakZelle);
+  const durchsichtig = f => /rgba\(0, 0, 0, 0\)/.test(String(f));
+  pruef('keine Zeile traegt eine Flaeche — der Rang steht nicht im Balken',
+    bau15.kat && bau15.grp && bau15.pos && durchsichtig(bau15.kat.flaeche)
+    && durchsichtig(bau15.grp.flaeche) && durchsichtig(bau15.pos.flaeche),
+    [bau15.kat, bau15.grp, bau15.pos].map(x => x && x.flaeche));
+  pruef('auch die klebende Namensspalte traegt nur den Grund des Blattes, keinen Balken',
+    bau15.name && bau15.name.flaeche === bau15.grund, [bau15.name, bau15.grund]);
+
+  const bunt = await farbstich(expSeite);
+  pruef('der Export hat ueberhaupt Farbwerte zu pruefen (' + bunt.knoten + ' Knoten, '
+    + bunt.werte + ' Werte)', bunt.knoten > 50 && bunt.werte > 50, bunt);
+  pruef('und kein einziger davon ist bunt — kein Akzent, kein Rot, kein Gruen',
+    bunt.treffer.length === 0, bunt.treffer.slice(0, 5));
 }
 
-/* ====================================================================
-   Befund 15 — Excel-Layout: helles Schema. Datenzeilen tragen den
-   Zeilengrund, Kopf-/Gruppen-/Summenzeilen einen dunklen Balken mit heller
-   Schrift, Gitterlinien sind weiss, die Schrift hebt sich vom Balken ab
-   (Kontrast), und in der Ansicht "Alle" tragen die Detailzeilen keinen
-   Balken. Gemessen werden die tatsaechlich vom Browser berechneten Farben
-   (ueber die CSS-Variablen selbst), nicht von Hand aus dem Quelltext
-   abgeschriebene Hexwerte.
-   ==================================================================== */
-console.log('\n15. Excel-Layout — helles Schema (gemessene Farben, aus den CSS-Variablen)');
+console.log('  15b. Papier');
 await frisch(seite);
-const themeAttr = await seite.evaluate(() => document.documentElement.getAttribute('data-theme'));
-gleich('die App startet im hellen Schema (Vorgabe)', themeAttr, 'hell');
-
 await allesAuf(seite);
-const gehalt = await seite.evaluate(() => {
-  const zeileFarbe = varname => {
-    const probe = document.createElement('span'); probe.style.color = 'var(' + varname + ')';
-    document.body.appendChild(probe); const w = getComputedStyle(probe).color; probe.remove(); return w;
-  };
-  const bgUnd = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : null; };
-  const fgUnd = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).color : null; };
-  const posZellen = Array.from(document.querySelectorAll('#blatt tbody tr.pos:not(.zebra) td:not(.name)'));
-  const kopfZellen = Array.from(document.querySelectorAll('#blatt tbody tr.kopf td:not(.name)'));
-  const gkopfZellen = Array.from(document.querySelectorAll('#blatt tbody tr.gkopf td:not(.name)'));
-  const summeZellen = Array.from(document.querySelectorAll('#blatt tbody tr.summe td:not(.name)'));
-  const irgendeineDatenzelle = posZellen[0];
-  const irgendeinKopf = kopfZellen[0];
-  const irgendeinGkopf = gkopfZellen[0];
-  const irgendeineSumme = summeZellen[0];
+await seite.emulateMedia({ media: 'print' });
+await bisRuhe(seite);
+const papier = await seite.evaluate(() => {
+  const zeig = s => { const e = document.querySelector(s); return e ? getComputedStyle(e).display : null; };
+  const pos = document.querySelector('#blatt tr.pos td');
   return {
-    varZeile: zeileFarbe('--zeile'), varBalken: zeileFarbe('--balken'), varBalken2: zeileFarbe('--balken2'),
-    varAufbalken: zeileFarbe('--aufbalken'), varGitter: zeileFarbe('--gitter'),
-    datenzelleBg: irgendeineDatenzelle ? getComputedStyle(irgendeineDatenzelle).backgroundColor : null,
-    datenzelleGitterOben: irgendeineDatenzelle ? getComputedStyle(irgendeineDatenzelle).borderTopColor : null,
-    datenzelleGitterRechts: irgendeineDatenzelle ? getComputedStyle(irgendeineDatenzelle).borderRightColor : null,
-    kopfBg: irgendeinKopf ? getComputedStyle(irgendeinKopf).backgroundColor : null,
-    kopfFg: irgendeinKopf ? getComputedStyle(irgendeinKopf).color : null,
-    gkopfBg: irgendeinGkopf ? getComputedStyle(irgendeinGkopf).backgroundColor : null,
-    gkopfFg: irgendeinGkopf ? getComputedStyle(irgendeinGkopf).color : null,
-    summeBg: irgendeineSumme ? getComputedStyle(irgendeineSumme).backgroundColor : null,
-    summeFg: irgendeineSumme ? getComputedStyle(irgendeineSumme).color : null,
-    zaehlerDaten: posZellen.length, zaehlerKopf: kopfZellen.length,
-    zaehlerGkopf: gkopfZellen.length, zaehlerSumme: summeZellen.length
+    band: zeig('.band'), kopf1: zeig('.kopf1'), kopf2: zeig('.kopf2'), kopf3: zeig('.kopf3'),
+    fuss: zeig('.fusszeile'),
+    druckkopf: zeig('.druckkopf'), druckfuss: zeig('.druckfuss'),
+    druckkopfText: (document.getElementById('druckkopf') || {}).textContent,
+    grund: getComputedStyle(document.body).backgroundColor,
+    tinte: pos ? getComputedStyle(pos).color : null,
+    klappzeichen: zeig('.chev')
   };
 });
-pruef('Datenzeilen, Kopf-, Gruppen- und Summenzeilen im Bild gefunden',
-  gehalt.zaehlerDaten > 0 && gehalt.zaehlerKopf > 0 && gehalt.zaehlerGkopf > 0 && gehalt.zaehlerSumme > 0, gehalt);
-gleich('Datenzeile traegt den Zeilengrund (--zeile)', gehalt.datenzelleBg, gehalt.varZeile);
-gleich('Kopfzeile traegt den dunklen Balken (--balken)', gehalt.kopfBg, gehalt.varBalken);
-gleich('Kopfzeile-Schrift ist die helle Balkenschrift (--aufbalken)', gehalt.kopfFg, gehalt.varAufbalken);
-gleich('Gruppenkopf traegt den zweiten Balken (--balken2)', gehalt.gkopfBg, gehalt.varBalken2);
-gleich('Gruppenkopf-Schrift ist die helle Balkenschrift (--aufbalken)', gehalt.gkopfFg, gehalt.varAufbalken);
-gleich('Summenzeile traegt den dunklen Balken (--balken)', gehalt.summeBg, gehalt.varBalken);
-gleich('Summenzeile-Schrift ist die helle Balkenschrift (--aufbalken)', gehalt.summeFg, gehalt.varAufbalken);
-gleich('Gitterlinie oben ist weiss (--gitter)', gehalt.datenzelleGitterOben, gehalt.varGitter);
-gleich('Gitterlinie rechts ist weiss (--gitter)', gehalt.datenzelleGitterRechts, gehalt.varGitter);
+pruef('auf Papier verschwindet das Fenster: Kopfzeilen, Kennzahlenband und Fusszeile',
+  papier.band === 'none' && papier.kopf1 === 'none' && papier.kopf2 === 'none'
+  && papier.kopf3 === 'none' && papier.fuss === 'none', papier);
+pruef('dafuer stehen Druckkopf und Druckfuss da',
+  papier.druckkopf === 'flex' && papier.druckfuss === 'flex', papier);
+pruef('der Druckkopf nennt Wortmarke, Blatt und Stichmonat',
+  /GÄPP/.test(String(papier.druckkopfText)) && /Stichmonat 08 · 2026/.test(String(papier.druckkopfText)),
+  papier.druckkopfText);
+pruef('die Bedienhilfe «Klappzeichen» wird nicht gedruckt',
+  papier.klappzeichen === 'none', papier.klappzeichen);
 
-const rgbBalken = parseRgb(gehalt.varBalken), rgbBalken2 = parseRgb(gehalt.varBalken2), rgbAuf = parseRgb(gehalt.varAufbalken);
-if (rgbBalken && rgbAuf) {
-  const k1 = kontrast(rgbBalken, rgbAuf);
-  pruef('Kontrast Balken/Balkenschrift ist deutlich lesbar (WCAG-Formel, >= 4.5:1), gemessen: ' + k1.toFixed(2),
-    k1 >= 4.5, k1);
+/* Das helle Schema ist nicht verschwunden, sondern auf das Papier gewandert.
+   Also wird dort gemessen, was frueher am hellen Schema gemessen wurde: heller
+   Grund, dunkle Schrift, und ein Kontrast, der nach der WCAG-Formel traegt. */
+const grundP = parseRgb(papier.grund), tinteP = parseRgb(papier.tinte);
+pruef('Papier ist hell und Schrift ist dunkel — gemessen, nicht abgelesen',
+  grundP && tinteP && luminanz(grundP) > 0.8 && luminanz(tinteP) < 0.1, papier);
+if (grundP && tinteP) {
+  const k = kontrast(grundP, tinteP);
+  pruef('Kontrast Papier gegen Schrift traegt (WCAG-Formel, mindestens 4.5 zu 1), gemessen: '
+    + k.toFixed(2), k >= 4.5, k);
 }
-if (rgbBalken2 && rgbAuf) {
-  const k2 = kontrast(rgbBalken2, rgbAuf);
-  pruef('Kontrast Gruppenbalken/Balkenschrift ist deutlich lesbar (WCAG-Formel, >= 3:1), gemessen: ' + k2.toFixed(2),
-    k2 >= 3, k2);
-}
+const buntP = await farbstich(seite);
+pruef('auch auf Papier gibt es Farbwerte zu pruefen (' + buntP.knoten + ' Knoten, '
+  + buntP.werte + ' Werte)', buntP.knoten > 50 && buntP.werte > 50, buntP);
+pruef('und keiner davon ist bunt', buntP.treffer.length === 0, buntP.treffer.slice(0, 5));
 
-/* In der Ansicht "Alle" tragen die Detailzeilen (tr.hoch) KEINEN Balken —
-   Gegenprobe: die starken Summenzeilen (Einnahmen/Ausgaben/Saldo) tragen ihn. */
-await gehAlle(seite);
-const alleFarben = await seite.evaluate(() => {
-  const varBg = () => { const probe = document.createElement('span'); probe.style.color = 'var(--zeile)';
-    document.body.appendChild(probe); const w = getComputedStyle(probe).color; probe.remove(); return w; };
-  const varBalkenBg = () => { const probe = document.createElement('span'); probe.style.color = 'var(--balken)';
-    document.body.appendChild(probe); const w = getComputedStyle(probe).color; probe.remove(); return w; };
-  const hoch = document.querySelector('#blatt tbody tr.hoch td:not(.name)');
-  const stark = document.querySelector('#blatt tbody tr.kopf.stark td:not(.name)');
-  return {
-    varZeile: varBg(), varBalken: varBalkenBg(),
-    hochBg: hoch ? getComputedStyle(hoch).backgroundColor : null,
-    starkBg: stark ? getComputedStyle(stark).backgroundColor : null,
-    hochDa: !!hoch, starkDa: !!stark
-  };
+/* Der Zaehler steht nur an einer zugeklappten Sektion. Zugeklappt wird am
+   Bildschirm — auf Papier gibt es den Blatttitel nicht, ueber den der Fokus aus
+   einem Eingabefeld herauskommt. Auf Papier bedient niemand: auch der Zaehler
+   gehoert nicht aufs Blatt. */
+await seite.emulateMedia({ media: 'screen' });
+await allesZu(seite);
+await seite.emulateMedia({ media: 'print' });
+await bisRuhe(seite);
+const papierZu = await seite.evaluate(() => {
+  const e = document.querySelector('.anzahl');
+  return { da: !!e, zeig: e ? getComputedStyle(e).display : null };
 });
-pruef('Detailzeile (tr.hoch) und starke Summenzeile in "Alle" gefunden',
-  alleFarben.hochDa && alleFarben.starkDa, alleFarben);
-gleich('Detailzeile in "Alle" traegt KEINEN Balken (nur den Zeilengrund)', alleFarben.hochBg, alleFarben.varZeile);
-gleich('Gegenprobe: die starke Summenzeile in "Alle" traegt weiterhin den Balken', alleFarben.starkBg, alleFarben.varBalken);
-pruef('Gegenprobe wirkt: Detailzeile und starke Zeile sind tatsaechlich verschieden gefaerbt',
-  alleFarben.hochBg !== alleFarben.starkBg, alleFarben);
+pruef('an einer zugeklappten Sektion steht ueberhaupt ein Zaehler', papierZu.da === true, papierZu);
+pruef('die Bedienhilfe «Zaehler» wird nicht gedruckt', papierZu.zeig === 'none', papierZu);
+
+await seite.emulateMedia({ media: 'screen' });
+await allesAuf(seite);
+await bisRuhe(seite);
+const schirm = await seite.evaluate(() => {
+  const pos = document.querySelector('#blatt tr.pos td');
+  return { band: getComputedStyle(document.querySelector('.band')).display,
+    grund: getComputedStyle(document.body).backgroundColor,
+    tinte: pos ? getComputedStyle(pos).color : null };
+});
+pruef('Gegenprobe: am Bildschirm steht das Band wieder da', schirm.band !== 'none', schirm);
+const grundS = parseRgb(schirm.grund), tinteS = parseRgb(schirm.tinte);
+pruef('Gegenprobe: am Bildschirm ist es umgekehrt — dunkler Grund, helle Schrift',
+  grundS && tinteS && luminanz(grundS) < 0.1 && luminanz(tinteS) > 0.5, schirm);
 
 /* ====================================================================
-   Befund 16 — Der Wechsel Alle <-> Jahr behaelt, worauf man schaut: aus den
-   Rechnungen nach "Alle" landet man in der Jahresansicht der Rechnungen und
-   ueber einen Jahresknopf zurueck wieder in den Rechnungen (nicht im Budget).
-   ==================================================================== */
-console.log('\n16. Der Wechsel Alle <-> Jahr behaelt, worauf man schaut');
+   Befund 16 — Der Wechsel «Alle Jahre» und Jahrgang behaelt, worauf man schaut:
+   aus den Rechnungen nach «Alle Jahre» landet man in der Jahresuebersicht der
+   Rechnungen und ueber einen Jahresknopf zurueck wieder in den Rechnungen.
+   ====================================================================
+   Die Tafelecke traegt keinen Text mehr (die Spaltenkoepfe sind leer). Gemessen
+   wird deshalb am Blatttitel — er sagt in einem Wort, worauf man schaut. */
+console.log('\n16. Der Wechsel «Alle Jahre» und Jahrgang behaelt, worauf man schaut');
 await frisch(seite);
 await gehAnsicht(seite, 'rechnung');
-const eckeRechnung = await zelleText(seite, '#blatt table thead th.ecke');
-gleich('Ausgangsstand: Ansicht Rechnungen', eckeRechnung, 'Rechnungssteller');
+gleich('Ausgangsstand: Ansicht Rechnungen', await text(seite, '.titel'), 'Rechnungen ' + ARBEITSJAHR);
 
 await gehAlle(seite);
-const eckeAlleRech = await zelleText(seite, '#blatt table thead th.ecke');
-gleich('"Alle" von den Rechnungen aus landet in der Jahresansicht der Rechnungen', eckeAlleRech, 'Alle Jahre · Rechnungen');
-const alleWasNach = await seite.evaluate(() => S.alleWas);
-gleich('S.alleWas merkt sich "rechnung"', alleWasNach, 'rechnung');
+gleich('«Alle Jahre» von den Rechnungen aus landet in der Jahresuebersicht der Rechnungen',
+  await text(seite, '.titel'), 'Alle Jahre · Rechnungen');
+gleich('S.alleWas merkt sich «rechnung»', await seite.evaluate(() => S.alleWas), 'rechnung');
 
-await gehJahr(seite, 2026);
+await gehJahr(seite, ARBEITSJAHR);
 const stateNach = await seite.evaluate(() => ({ ansicht: S.ansicht, jahr: S.jahr }));
-gleich('ein Jahresknopf aus "Alle" fuehrt zurueck in die Ansicht "Rechnungen" (nicht Budget)', stateNach.ansicht, 'rechnung');
-gleich('das richtige Jahr steht danach', stateNach.jahr, 2026);
-const eckeZurueck = await zelleText(seite, '#blatt table thead th.ecke');
-gleich('die Tafel zeigt wieder "Rechnungssteller"', eckeZurueck, 'Rechnungssteller');
+gleich('ein Jahresknopf aus «Alle Jahre» fuehrt zurueck in die Rechnungen, nicht ins Budget',
+  stateNach.ansicht, 'rechnung');
+gleich('und in den richtigen Jahrgang', stateNach.jahr, ARBEITSJAHR);
+gleich('die Tafel zeigt wieder die Rechnungen',
+  await text(seite, '.titel'), 'Rechnungen ' + ARBEITSJAHR);
 
-/* Gegenprobe in die andere Richtung: aus "Alle" den Reiter auf Budget
-   umschalten (bleibt in "Alle"), dann ueber einen Jahresknopf zurueck ins
-   Budget landen — nicht wieder in den Rechnungen. */
+/* Gegenprobe in die andere Richtung: aus «Alle Jahre» den Zweig auf Budget
+   umschalten (bleibt in «Alle Jahre»), dann ueber einen Jahresknopf zurueck —
+   und dort im Budget landen, nicht wieder in den Rechnungen. */
 await gehAlle(seite);
 await gehAnsicht(seite, 'budget');
-const eckeAlleBudget = await zelleText(seite, '#blatt table thead th.ecke');
-gleich('Gegenprobe: Reiter-Umschaltung innerhalb "Alle" zeigt jetzt "Alle Jahre" (Budget)', eckeAlleBudget, 'Alle Jahre');
-await gehJahr(seite, 2026);
-const stateZurueck2 = await seite.evaluate(() => S.ansicht);
-gleich('Gegenprobe: ein Jahresknopf fuehrt jetzt ins Budget (S.alleWas korrekt nachgefuehrt)', stateZurueck2, 'budget');
+gleich('Gegenprobe: die Umschaltung innerhalb «Alle Jahre» zeigt jetzt das Budget',
+  await text(seite, '.titel'), 'Alle Jahre');
+gleich('und bleibt dabei in «Alle Jahre»', await seite.evaluate(() => S.ansicht), 'alle');
+await gehJahr(seite, ARBEITSJAHR);
+gleich('Gegenprobe: ein Jahresknopf fuehrt jetzt ins Budget',
+  await seite.evaluate(() => S.ansicht), 'budget');
+gleich('und die Tafel zeigt das Budget',
+  await text(seite, '.titel'), 'Budget ' + ARBEITSJAHR);
 
 } catch (e) {
   pruef('Lauf ohne unerwarteten Abbruch', false, String(e && e.stack || e));
