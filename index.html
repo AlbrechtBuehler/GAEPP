@@ -2380,6 +2380,16 @@ function finger() {
   const d = nutzdaten(); delete d.meta;
   return JSON.stringify(d);
 }
+/* Derselbe Abdruck, aber fuer einen beliebigen Datenstand — den aus dem Repo
+   etwa. Die Meta-Angaben bleiben aussen vor, weil sie den Zeitstempel tragen:
+   beim Sichern wird er frisch gesetzt und ist darum immer ein paar
+   Millisekunden neuer als der im Browserspeicher. Wer danach verglichen
+   haette, holte bei jedem Start dieselben Zahlen noch einmal. */
+function abdruck(d) {
+  const k = Object.assign({}, d || {}); delete k.meta;
+  return JSON.stringify(k);
+}
+const zeitstempel = d => Date.parse((d && d.meta && d.meta.geaendert) || '') || 0;
 /* Anzeigezustand geht nie in den Fingerabdruck — sonst sichert GÄPP beim Klappen. */
 function merke() {
   try { localStorage.setItem(SCHLUESSEL, JSON.stringify(nutzdaten())); } catch(e) {}
@@ -2422,6 +2432,62 @@ async function repoLesen(still) {
   } catch(e) { melde('fehler', 'Holen misslungen: ' + e.message);
     if (still) zeichneRahmen(); else zeichne(); }
 }
+/* ------------------------------------------------------ Beim Start abgleichen
+   Bis zum 23.08.2026 sah GAEPP beim Oeffnen nie im Repo nach: war lokal etwas
+   da, nahm es das und meldete «Aus dem Browserspeicher» — auch dann, wenn ein
+   Repo verbunden war. Das Dreieck blieb Kontur, und wer es las, hielt sich fuer
+   nicht verbunden und trug Adresse und Schluessel neu ein, die laengst
+   dastanden. Albrechts Befund.
+
+   Was jetzt geschieht: ist ein Repo verbunden, wird nachgesehen. Entschieden
+   wird nach dem Zeitstempel, nicht danach, was zufaellig im Browser liegt.
+   Damit verliert keine Seite etwas — ist der Stand dort neuer, wird er geholt;
+   ist der hier neuer, bleibt er stehen und geht beim naechsten Anfassen von
+   selbst ins Repo. Sind die Zahlen gleich, geschieht gar nichts.
+
+   Der geholte Text wandert unveraendert in den Browserspeicher. Nur so tragen
+   beide Seiten danach denselben Zeitstempel; wuerde hier neu gestempelt, waere
+   der Browser bei jedem Start eine Spur «neuer» als das Repo. */
+async function beimStartAbgleichen(lokalDa) {
+  const c = syncConf();
+  if (!c.repo || !c.token) return false;
+  melde('sichert', 'Sehe im Repo nach …'); zeichneRahmen();
+  try {
+    const u = 'https://api.github.com/repos/' + c.repo + '/contents/' + c.pfad
+      + '?ref=' + encodeURIComponent(c.zweig);
+    const a = await fetch(u, { cache:'no-store', headers:{ Authorization:'Bearer ' + c.token,
+      Accept:'application/vnd.github+json' } });
+    if (!a.ok) throw new Error('HTTP ' + a.status);
+    const j = await a.json();
+    druck = j.sha;
+    const text = new TextDecoder().decode(
+      Uint8Array.from(atob(j.content.replace(/\n/g,'')), ch => ch.charCodeAt(0)));
+    const dort = JSON.parse(text);
+    let hier = null;
+    try { const roh = localStorage.getItem(SCHLUESSEL); if (roh) hier = JSON.parse(roh); } catch(err) {}
+
+    const gleich = lokalDa && hier && abdruck(hier) === abdruck(dort);
+    if (gleich) {
+      melde('gesichert', 'Verbunden mit ' + c.repo + ' — der Stand ist derselbe.');
+    } else if (!lokalDa || zeitstempel(dort) > zeitstempel(hier)) {
+      uebernimm(dort);
+      letzterFinger = finger();
+      try { localStorage.setItem(SCHLUESSEL, text); } catch(err) {}
+      melde('gesichert', 'Aus dem Repo geholt — ' + c.repo + '.');
+    } else {
+      melde('lokal', 'Verbunden mit ' + c.repo + '. Der Stand hier ist neuer und '
+        + 'noch nicht gesichert — er geht beim nächsten Ändern von selbst hinüber.');
+    }
+  } catch(e) {
+    /* Kein Netz, falscher Schluessel, Datei noch nicht da: der Stand im Browser
+       bleibt unangetastet. Gemeldet wird beides — dass verbunden ist, und dass
+       das Nachsehen misslang. Ein blosses «nicht verbunden» waere falsch. */
+    melde('fehler', 'Verbunden mit ' + c.repo + ', aber das Nachsehen misslang: ' + e.message);
+  }
+  zeichne();
+  return true;
+}
+
 async function insRepo(still) {
   const c = syncConf();
   if (!c.repo || !c.token) { melde('fehler', 'Repo und Zugangsschlüssel fehlen.');
@@ -3209,7 +3275,12 @@ function neu() { anzeigeMerken(); zeichneBald(); }
 
   zeichne();
 
-  if (!da) {
+  /* Ist ein Repo verbunden, entscheidet der Abgleich, was gilt — und meldet den
+     Zustand. Erst wenn keines verbunden ist, kommt der alte Weg zum Zug. */
+  const kanal = syncConf();
+  if (kanal.repo && kanal.token) {
+    beimStartAbgleichen(da);
+  } else if (!da) {
     /* Beim ersten Start die Datei neben der App holen — auf GitHub Pages klappt das. */
     fetch('gaepp-daten.json', { cache:'no-store' })
       .then(a => { if (!a.ok) throw new Error('HTTP ' + a.status); return a.json(); })
