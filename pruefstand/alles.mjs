@@ -13,9 +13,9 @@
    Regel 8: Die Gesamtzahl wird NACHGERECHNET, nie fortgeschrieben. Sie steht in
    keinem Dokument als Konstante — sie steht unten im Ergebnis.
 
-   Stand 23.08.2026, Neubau 3.0.0: rangordnung.mjs, ausgabe.mjs und mobil.mjs
-   sind neu; rechnen, bedienung, rahmen, eingabe, befunde und haerte sind aus
-   der Vorgaengerfassung auf den Neubau portiert. bau.mjs und handbuch.mjs
+   Stand 23.08.2026, Neubau 3.0.0: rangordnung.mjs, ausgabe.mjs, mobil.mjs und
+   kanal.mjs sind neu; rechnen, bedienung, rahmen, eingabe, befunde und haerte
+   sind aus der Vorgaengerfassung auf den Neubau portiert. bau.mjs und handbuch.mjs
    stehen nicht mehr in der Liste: sie pruefen die Kachelbauart der
    abgeloesten App, deren Selektoren es nicht mehr gibt. */
 
@@ -36,7 +36,8 @@ const LAEUFE = [
   { datei: 'ausgabe.mjs',     was: 'HTML-Export, CSV und Papier', browser: true },
   { datei: 'befunde.mjs',     was: 'Die Befunde der Nachkontrolle vom 22.08.2026, auf den Neubau nachgezogen', browser: true },
   { datei: 'haerte.mjs',      was: 'Ziehen und Ablegen, Escape je Fenster, Notausgang, Klick und Doppelklick, Grenzfaelle', browser: true },
-  { datei: 'mobil.mjs',       was: 'Das Telefon: 390 x 844, ein Monat untereinander', browser: true }
+  { datei: 'mobil.mjs',       was: 'Das Telefon: 390 x 844, ein Monat untereinander', browser: true },
+  { datei: 'kanal.mjs',       was: 'Der Datenkanal beim Start: nachsehen, abgleichen, melden', browser: true }
 ];
 
 /* Faehrt eine Datei als eigenen Prozess und liest ihre Bilanzzeile aus der

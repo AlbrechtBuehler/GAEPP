@@ -34,7 +34,7 @@ Danach, aus dem Ordner `pruefstand/`:
 npm test
 ```
 
-Das fährt alle zehn Läufe nacheinander und rechnet die Bilanz nach. **Ein Befehl** —
+Das fährt alle elf Läufe nacheinander und rechnet die Bilanz nach. **Ein Befehl** —
 das ist Absicht. Ein Prüfstand, den man zusammensuchen muss, wird nicht gefahren.
 
 `alles.mjs` startet **keinen eigenen Webserver**: Jeder Lauf, der einen Browser
@@ -45,7 +45,7 @@ wie derselbe Lauf innerhalb von `npm test`.
 Ist ein Chromium schon auf dem Rechner, nimmt ihn `GAEPP_CHROME=/pfad/zu/chrome`;
 ohne die Variable holt sich Playwright seinen eigenen.
 
-## Die zehn Läufe
+## Die elf Läufe
 
 | Datei | Was er prüft | Port | Browser |
 | --- | --- | ---: | --- |
@@ -59,6 +59,7 @@ ohne die Variable holt sich Playwright seinen eigenen.
 | `befunde.mjs` | Die Befunde der unabhängigen Nachkontrolle vom 22.08.2026, auf den Neubau nachgezogen — Rest und Basis unter null ohne Kappung, Korrekturfenster, Kennzahlenband bei unstimmigem Plan, Rappenrundung, die Aufgliederung in «Alle Jahre», der Zähler am Steller, `zahl()`, der HTML-Export. | 8744 | ja |
 | `haerte.mjs` | Grenzfälle: Ziehen und Ablegen über Sektionsgrenzen, Verschieben mit der Tastatur, Escape schliesst je Fenster nur das oberste, eine kaputte `gaepp-daten.json` legt die App nicht still, «Übertragen» fasst keine gleichnamige Zeile einer anderen Kategorie an, Quote ausserhalb 0–100 %, negative Rate bei Basis null, Einzahl und Mehrzahl. | 8745 | ja |
 | `mobil.mjs` | Das Telefon: 390 × 844, ein Monat untereinander statt zwölf nebeneinander. Eigene Fassung, eigene Fehler — einen hatte sie. | 8734 | ja |
+| `kanal.mjs` | Der Datenkanal beim Start: ob GÄPP im Repo nachsieht, wie es entscheidet, welcher Stand gilt, und ob es den Zustand ehrlich meldet. Fährt nie gegen ein echtes Repo — jede Anfrage an GitHub wird abgefangen, ein Zähler belegt, dass sie gestellt wurde. | 8747 | ja |
 
 **Die Gesamtzahl steht hier nicht.** Sie wird nachgerechnet und erscheint unten im
 Ergebnis des Sammellaufs (Hausregel 3). Wer sie in einem Dokument liest und hier eine
