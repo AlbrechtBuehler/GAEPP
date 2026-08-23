@@ -1,0 +1,13 @@
+{
+  "name": "gaepp-pruefstand",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pruefstand fuer GAEPP. Ein Befehl: npm test",
+  "scripts": {
+    "test": "node alles.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.56.0"
+  }
+}
