@@ -1,6 +1,6 @@
 # GÄPP — Prüfstand
 
-**Nachgeführt am 26.09.2026**, zu Fassung 3.2.0 (Stichmonat aus dem Kalender, Erlass getrennt von Tilgung). Was
+**Nachgeführt am 26.09.2026**, zu Fassung 3.3.0 (Stichmonat aus dem Kalender, Erlass getrennt von Tilgung, Anfangsstand im Band). Was
 hier steht, prüft die heutige `index.html` — Version, Stände und Farben werden dabei
 aus ihrem Quelltext gelesen, nie abgeschrieben (Hausregel 4).
 

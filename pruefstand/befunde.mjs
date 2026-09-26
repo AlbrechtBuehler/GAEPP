@@ -492,8 +492,16 @@ if (pidDarlehenB) {
     gleich('Restschuld heute = 8000 + 0 − 25600 + 5760 + 0, ungekappt', lies(restheute.v), -11840);
     gleich('der Titel nennt den Befund',
       restheute.t, 'Unter null — eine Korrektur nimmt mehr weg, als da ist.');
-    gleich('die Meta-Zeile bleibt der Stichmonat und wird nicht zur Fehlermeldung',
-      restheute.m, 'Aug ' + ARBEITSJAHR);
+    /* Umgedreht mit Fassung 3.3.0: die Kurzzeile traegt seither hinter dem
+       Stichmonat den Anfangsstand. Die Frage dieses Befundes bleibt dieselbe —
+       der Befund gehoert in den Titel und nicht in die Kurzzeile. Geprueft
+       wird darum, dass die Kurzzeile mit dem Stichmonat ANFAENGT und keine
+       Fehlermeldung traegt. */
+    pruef('die Meta-Zeile beginnt mit dem Stichmonat und wird nicht zur Fehlermeldung',
+      String(restheute.m).indexOf('Aug ' + ARBEITSJAHR) === 0
+        && !/null|Korrektur|nicht/.test(String(restheute.m)), restheute.m);
+    pruef('Gegenprobe: sie traegt dahinter den Anfangsstand',
+      / · von /.test(String(restheute.m)), restheute.m);
   }
   const frei = await kachel(seite, 'Schuldenfrei');
   pruef('Kachel «Schuldenfrei» gefunden', frei !== null, frei);

@@ -660,7 +660,7 @@ body[data-mobil="1"] .fusszeile .v{font:500 24px/1 'Jost',sans-serif;color:var(-
 
 /* Die Version steht genau hier. Fusszeile, Handbuch, HTML-Export und CSV lesen sie —
    abgeschrieben wird sie nirgends. */
-const VERSION = '3.2.0';
+const VERSION = '3.3.0';
 const RUNDE = 10;   /* Verteilen rundet auf volle Zehner, immer aufwaerts. */
 
 const MK = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
@@ -1349,10 +1349,18 @@ function band() {
   const monate = k.frei ? (k.frei.j - k.jahr) * 12 + (k.frei.m - k.monat) : null;
 
   const kach = [
+    /* Unter der Restschuld steht, wo es angefangen hat. Die Zahl wurde immer
+       schon gerechnet, stand aber nur im Titel der Nachbarkachel — sichtbar
+       erst, wer mit der Maus darauf zeigt. Der Abstand zwischen den beiden
+       Zahlen ist die eigentliche Auskunft; er gehoert ins Bild und nicht in
+       einen Tooltip. */
     ['Restschuld heute', fmt(k.rest, true),
-      MK[k.monat] + ' ' + k.jahr,
+      MK[k.monat] + ' ' + k.jahr
+        + (k.anfang > 0 ? ' · von ' + fmt(k.anfang, true) : ''),
       k.rest < 0 ? 'Unter null — eine Korrektur nimmt mehr weg, als da ist.'
-                 : 'Raten bis ' + MK[k.monat] + ' abgezogen'],
+                 : 'Raten bis ' + MK[k.monat] + ' abgezogen'
+                   + (k.anfang > 0 ? '. Angefangen hat es bei ' + fmt(k.anfang, true)
+                      + ' im Jahr ' + (k.erstJahr || jahre()[0]) + '.' : '')],
     ['Schuldenfrei',
       k.unstimmig ? '—' : (frei || '—'),
       k.unstimmig ? 'der Plan geht nicht auf'

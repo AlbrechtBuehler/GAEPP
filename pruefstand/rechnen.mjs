@@ -405,8 +405,18 @@ const kachel = lbl => seite.evaluate(l => {
 const restheute = await kachel('Restschuld heute');
 pruef('Kachel «Restschuld heute» gefunden', restheute !== null, restheute);
 gleich('Restschuld heute', restheute && lies(restheute.v), K.rest);
-gleich('Restschuld heute nennt den Stichmonat', restheute && restheute.m,
-  MK[STICHM] + ' ' + STICHJAHR);
+/* Umgedreht mit Fassung 3.3.0: die Kurzzeile trug bis dahin nur den
+   Stichmonat. Seither steht der Anfangsstand dahinter — die Zahl wurde immer
+   gerechnet, stand aber nur im Titel der Nachbarkachel und war damit nur zu
+   sehen, wer mit der Maus daraufzeigt. Geprueft werden beide Haelften
+   einzeln, damit ein Fehler sagt, welche von beiden fehlt. */
+const rhTeile = String((restheute || {}).m || '').split('·').map(x => x.trim());
+gleich('Restschuld heute nennt den Stichmonat', rhTeile[0], MK[STICHM] + ' ' + STICHJAHR);
+pruef('und dahinter den Anfangsstand',
+  /^von /.test(rhTeile[1] || '')
+    && lies(String(rhTeile[1]).replace(/^von\s*/, '')) === K.anfang, rhTeile[1]);
+pruef('Gegenprobe: der Anfangsstand ist nicht null, sonst prueft die Zeile nichts',
+  K.anfang > 0, K.anfang);
 
 const getilgt = await kachel('Getilgt bisher');
 pruef('Kachel «Getilgt bisher» gefunden', getilgt !== null, getilgt);
