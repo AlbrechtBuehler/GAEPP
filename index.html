@@ -419,7 +419,7 @@ tr.ziel td{box-shadow:inset 0 2px 0 var(--tinte)}
  border-bottom:1px solid var(--rStark);background:none}
 .vorschau td{padding:11px 0 0;text-align:right;font:300 13px/1 'Jost',sans-serif;color:var(--faint)}
 .vorschau td.belegt{font-weight:500;color:var(--tinte)}
-.korrkopf,.korrzeile{display:grid;grid-template-columns:120px 1fr 90px 18px;gap:0 16px;
+.korrkopf,.korrzeile{display:grid;grid-template-columns:120px 1fr 90px 104px 18px;gap:0 16px;
  align-items:baseline}
 .korrkopf{font:400 10px/1 'Jost',sans-serif;letter-spacing:.24em;text-transform:uppercase;
  color:var(--mC);padding-bottom:9px;border-bottom:1px solid var(--rStark)}
@@ -432,15 +432,23 @@ tr.ziel td{box-shadow:inset 0 2px 0 var(--tinte)}
 .korrzeile .notiz{font:300 14px/1.4 'Jost',sans-serif;color:var(--tinte);
  background:none;border:none;padding:0;width:100%}
 .korrzeile .betrag:focus,.korrzeile .notiz:focus{outline:none;box-shadow:inset 0 -1px 0 var(--tinte)}
-.korrzeile .wirkt{text-align:right;font:400 10px/1 'Jost',sans-serif;letter-spacing:.2em;
- text-transform:uppercase;color:var(--mC);background:none;border:none;padding:0}
+.korrzeile .wirkt,.korrzeile .art{text-align:right;font:400 10px/1 'Jost',sans-serif;
+ letter-spacing:.2em;text-transform:uppercase;color:var(--mC);background:none;border:none;
+ padding:0}
+/* Ein Erlass ist keine dritte Wirkung, sondern eine Eigenschaft der Zeile:
+   derselbe Betrag, aber nicht bezahlt. Darum eine eigene Spalte und nicht ein
+   dritter Zustand von «wirkt auf». */
+.korrzeile .art.erl{color:var(--tinte)}
 /* Nur der Umschalter der neuen Zeile ist ein Knopf; die Angabe an einer
    bestehenden Zeile ist Text. */
-.korrzeile .wirkt.umschalt{cursor:pointer;box-shadow:inset 0 -1px 0 var(--rMittel)}
-.korrzeile .wirkt.umschalt:hover{color:var(--tinte);box-shadow:inset 0 -1px 0 var(--tinte)}
+.korrzeile .wirkt.umschalt,.korrzeile .art.umschalt{cursor:pointer;
+ box-shadow:inset 0 -1px 0 var(--rMittel)}
+.korrzeile .wirkt.umschalt:hover,.korrzeile .art.umschalt:hover{color:var(--tinte);
+ box-shadow:inset 0 -1px 0 var(--tinte)}
 .korrzeile .weg{font:300 14px/1 'Jost',sans-serif;color:var(--mC);text-align:right}
 .korrzeile .weg:hover{color:var(--tinte)}
-.korrzeile.leer .betrag,.korrzeile.leer .notiz,.korrzeile.leer .wirkt{color:var(--faint)}
+.korrzeile.leer .betrag,.korrzeile.leer .notiz,.korrzeile.leer .wirkt,
+.korrzeile.leer .art{color:var(--faint)}
 .korrfuss{display:flex;justify-content:space-between;align-items:baseline;padding-top:20px}
 .korrfuss .ergebnis{font:300 14px/1 'Jost',sans-serif;color:var(--tinte)}
 .korrfuss .ergebnis b{font-weight:500}
@@ -652,7 +660,7 @@ body[data-mobil="1"] .fusszeile .v{font:500 24px/1 'Jost',sans-serif;color:var(-
 
 /* Die Version steht genau hier. Fusszeile, Handbuch, HTML-Export und CSV lesen sie —
    abgeschrieben wird sie nirgends. */
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 const RUNDE = 10;   /* Verteilen rundet auf volle Zehner, immer aufwaerts. */
 
 const MK = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
@@ -1033,6 +1041,28 @@ function kennzahlen() {
      im Band eine Quote, die niemand nachrechnen kann. */
   const getilgt = anfang - rest;
 
+  /* Was erlassen wurde, ist verschwunden, aber nicht bezahlt: eine verjaehrte
+     Forderung, ein Vergleich, ein Nachlass. In «Anfang minus Rest» steckt es
+     drin und sieht aus wie Tilgung. Eine Korrektur, die als Erlass
+     gekennzeichnet ist, wird darum eigens gezaehlt und von der Tilgung
+     abgezogen — die Zahl im Band soll das sein, was wirklich geflossen ist.
+     Gezaehlt wird nach derselben Regel wie der Stand: eine Basiskorrektur
+     wirkt am Jahresanfang, eine Restkorrektur am Jahresende. */
+  const erlassSum = (p, art) => korrListe(p, art)
+    .reduce((s, x) => s + (x.erlass ? (x.betrag || 0) : 0), 0);
+  let erlassRoh = 0;
+  if (blk) (blk.gruppen||[]).forEach(g => (g.pos||[]).forEach(p0 => {
+    js.forEach(j => {
+      if (j > hj) return;
+      const p = posVon(j, g.key, p0.key); if (!p) return;
+      erlassRoh += erlassSum(p, 'basis');
+      if (j < hj || hm === 11) erlassRoh += erlassSum(p, 'rest');
+    });
+  }));
+  /* Erlasse sind negative Korrekturen; ausgewiesen wird der Betrag. */
+  const erlassen = -erlassRoh;
+  const bezahlt = getilgt - erlassen;
+
   /* Schuldenfrei: jede Schuld laeuft fuer sich. Wer alle Raten in einen Topf
      wirft, rechnet die Rate einer getilgten Schuld auf die uebrigen an und wird
      zu frueh fertig. Nach dem letzten erfassten Jahr wiederholt sich dessen Rate. */
@@ -1083,8 +1113,10 @@ function kennzahlen() {
   (S.rechnungen[hj]||[]).forEach(g => (g.rechnungen||[]).forEach(r => {
     if (r.stand !== 'Bezahlt' && !hakenAn(r.id, hm)) off += (r.reihe||[])[hm] || 0; }));
 
-  return { jahr:hj, monat:hm, rest, getilgt, anfang, offen:off, erstJahr,
-    quote: anfang ? Math.round(getilgt/anfang*100) : 0, frei,
+  return { jahr:hj, monat:hm, rest, getilgt, erlassen, bezahlt, anfang, offen:off, erstJahr,
+    /* Die Quote misst, was bezahlt wurde — nicht, was verschwunden ist. Ohne
+       einen einzigen Erlass ist das dieselbe Zahl wie zuvor. */
+    quote: anfang ? Math.round(bezahlt/anfang*100) : 0, frei,
     /* Ein Saldo unter null heisst: eine Korrektur nimmt mehr weg, als da ist.
        Das ist ein Befund, keine Zahl, mit der weitergerechnet wird. */
     unstimmig: unstimmig || rest < 0 };
@@ -1329,12 +1361,15 @@ function band() {
                 : 'nicht nach diesem Plan'),
       k.unstimmig ? 'Erst die Korrekturen richtigstellen.'
                   : 'Jede Schuld für sich gerechnet'],
-    ['Getilgt bisher', fmt(k.getilgt, true),
-      k.anfang <= 0 ? 'kein Anfangsstand' : k.quote + ' %',
+    ['Getilgt bisher', fmt(k.bezahlt, true),
+      k.anfang <= 0 ? 'kein Anfangsstand'
+        : k.quote + ' %' + (k.erlassen ? ' · ' + fmt(k.erlassen, true) + ' erlassen' : ''),
       k.anfang <= 0 ? 'Keine Schuld mit Anfangsstand erfasst.'
         : (k.quote < 0 || k.quote > 100)
           ? 'Die Zahlen gehen nicht auf — ' + k.quote + ' % von ' + fmt(k.anfang, true)
-          : 'von ' + fmt(k.anfang, true) + ' seit ' + (k.erstJahr || js[0])],
+          : 'von ' + fmt(k.anfang, true) + ' seit ' + (k.erstJahr || js[0])
+            + (k.erlassen ? '. Dazu ' + fmt(k.erlassen, true)
+               + ' erlassen — verjährt, verglichen oder nachgelassen, nicht bezahlt.' : '')],
     ['Offen im ' + ML[k.monat], fmt(k.offen, true),
       k.offen > 0 ? 'noch offen' : 'erledigt', '']
   ];
@@ -1920,6 +1955,10 @@ function korrDialog() {
     + '<input class="notiz" data-korr-n="' + esc(x.id) + '" value="' + esc(x.notiz || '')
     + '" placeholder="Notiz">'
     + '<span class="wirkt">' + (art === 'basis' ? 'Basis' : 'Rest') + '</span>'
+    + '<button class="art umschalt' + (x.erlass ? ' erl' : '') + '" data-korr-erl="'
+    + esc(x.id) + '" title="Umschalten: Berichtigung oder Erlass. Ein Erlass senkt '
+    + 'den Saldo, zählt aber nicht als getilgt.">'
+    + (x.erlass ? 'Erlass' : 'Berichtigung') + '</button>'
     + '<button class="weg" data-korr-weg="' + esc(x.id)
     + '" title="Diese Korrektur entfernen">×</button>'
     + '</div>';
@@ -1931,13 +1970,16 @@ function korrDialog() {
   return dialogRahmen('korr',
     dtitel('Korrekturen', p.name + ' · ' + k.jahr)
     + '<div class="korrkopf"><span>Betrag</span><span>Notiz</span><span>wirkt auf</span>'
-    + '<span></span></div>'
+    + '<span>Art</span><span></span></div>'
     + '<div class="korrliste">' + alle
     + '<div class="korrzeile leer">'
     + '<input class="betrag" data-korr-betrag="1" value="' + esc(k.betrag) + '" placeholder="0">'
     + '<input class="notiz" data-korr-notiz="1" value="' + esc(k.notiz) + '" placeholder="neue Zeile">'
     + '<button class="wirkt umschalt" data-korr-art="1" title="Umschalten: wirkt auf die Basis oder auf den Rest">'
     + (k.art === 'basis' ? 'Basis' : 'Rest') + '</button>'
+    + '<button class="art umschalt' + (k.erlass ? ' erl' : '') + '" data-korr-erlneu="1" '
+    + 'title="Umschalten: Berichtigung oder Erlass">'
+    + (k.erlass ? 'Erlass' : 'Berichtigung') + '</button>'
     + '<span></span></div>'
     + '</div>'
     + '<div class="korrfuss"><button class="ab" data-korr-add="1">Zeile hinzufügen</button>'
@@ -2332,7 +2374,7 @@ function korrOeffnen(id, art) {
       if (p.id === id) treffer = { gKey:g.key, pKey:p.key, name:p.name }; })); });
   if (!treffer) return;
   S.korr = { id, art, jahr:S.jahr, gKey:treffer.gKey, pKey:treffer.pKey,
-    name:treffer.name, betrag:'', notiz:'' };
+    name:treffer.name, betrag:'', notiz:'', erlass:false };
   zeichne();
 }
 
@@ -2358,8 +2400,12 @@ function korrHinzu() {
   korrAnwenden(() => {
     if (!p.korr) p.korr = {};
     if (!p.korr[k.art]) p.korr[k.art] = [];
-    p.korr[k.art].push({ id:neueId(), betrag, notiz });
-    S.korr.betrag = ''; S.korr.notiz = '';
+    /* Die Marke steht nur an einer Zeile, die eine ist — eine Datei ohne einen
+       einzigen Erlass sieht aus wie vorher und rechnet wie vorher. */
+    const zeile = { id:neueId(), betrag, notiz };
+    if (k.erlass) zeile.erlass = true;
+    p.korr[k.art].push(zeile);
+    S.korr.betrag = ''; S.korr.notiz = ''; S.korr.erlass = false;
   });
 }
 /* Die Liste im Fenster zeigt Basis- und Restkorrekturen untereinander. Eine
@@ -2382,6 +2428,15 @@ function korrNotiz(eid, wert) {
   const k = S.korr; const p = posVon(k.jahr, k.gKey, k.pKey); if (!p) return;
   const art = korrArtVon(p, eid); if (!art) return;
   korrAnwenden(() => { korrListe(p, art).forEach(x => { if (x.id === eid) x.notiz = String(wert||''); }); });
+}
+/* Eine bestehende Zeile laesst sich nachtraeglich umwidmen: was als
+   Berichtigung eingetragen wurde, war vielleicht ein Nachlass. */
+function korrErlass(eid) {
+  const k = S.korr; const p = posVon(k.jahr, k.gKey, k.pKey); if (!p) return;
+  const art = korrArtVon(p, eid); if (!art) return;
+  korrAnwenden(() => { korrListe(p, art).forEach(x => {
+    if (x.id !== eid) return;
+    if (x.erlass) delete x.erlass; else x.erlass = true; }); });
 }
 function korrWeg(eid) {
   const k = S.korr; const p = posVon(k.jahr, k.gKey, k.pKey); if (!p) return;
@@ -2842,6 +2897,9 @@ document.addEventListener('click', e => {
                                      sonst verschwaende die Antwort ihren Gegenstand. */
                                   if (!S.korrWarn) { S.korr = null; zeichne(); }
                                   return; }
+  if ((x = tref('korrErl')))    { return korrErlass(x.dataset.korrErl); }
+  if ((x = tref('korrErlneu')))  { if (S.korr) S.korr.erlass = !S.korr.erlass;
+                                  return zeichne(); }
   if ((x = tref('korrWeg')))    { return korrWeg(x.dataset.korrWeg); }
   if ((x = tref('korrWarn')))   { return korrWarnAntwort(x.dataset.korrWarn); }
   if ((x = tref('gehAlle')))    { if (S.ansicht !== 'alle') S.alleWas = S.ansicht;

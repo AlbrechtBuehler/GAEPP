@@ -1,6 +1,6 @@
 # GÄPP — Prüfstand
 
-**Nachgeführt am 26.09.2026**, zu Fassung 3.1.0 (Stichmonat aus dem Kalender). Was
+**Nachgeführt am 26.09.2026**, zu Fassung 3.2.0 (Stichmonat aus dem Kalender, Erlass getrennt von Tilgung). Was
 hier steht, prüft die heutige `index.html` — Version, Stände und Farben werden dabei
 aus ihrem Quelltext gelesen, nie abgeschrieben (Hausregel 4).
 
@@ -57,7 +57,7 @@ ohne die Variable holt sich Playwright seinen eigenen.
 | --- | --- | ---: | --- |
 | `huelle.mjs` | **A-78** — keine Beträge, keine Kontonummern, keine Belege, keine IBAN, keine E-Mail in der ausgelieferten Datei; auch nicht in einer Kommentarzeile. Mit fünf Gegenproben. | — | nein |
 | `rangordnung.mjs` | Die ganze Gestaltung als messbare Aussage: Schriftgrösse, Gewicht, Sperrung, Versalien, Regelstärke, Zeilenhöhe, Spaltenbreite, jede Farbrolle — dass **kein Ton der Tafel bunt** ist, und dass es im Blatt genau **eine** senkrechte Linie gibt (vor der Summenspalte) und sonst keine. | 8731 | ja |
-| `rechnen.mjs` | Der Rechenkern: Saldo-Übertrag über die Jahrgänge, Basis und Rest, geerbte Basis, Korrekturen (die nicht klemmen), Verteilen in drei Wegen mit Vorschau, Aufrunden. Jeder Erwartungswert ist aus `vorrat.mjs` hergeleitet, nicht aus einem Lauf abgeschrieben. | 8741 | ja |
+| `rechnen.mjs` | Der Rechenkern: Saldo-Übertrag über die Jahrgänge, Basis und Rest, geerbte Basis, Korrekturen (die nicht klemmen), Verteilen in drei Wegen mit Vorschau, Aufrunden. Dazu der **Erlass**: eine markierte Korrektur senkt den Saldo, zählt aber nicht als getilgt — mit Gegenprobe, Umwidmen in beide Richtungen und der Frage, was davon in die Datendatei gerät. Jeder Erwartungswert ist aus `vorrat.mjs` hergeleitet, nicht aus einem Lauf abgeschrieben. | 8741 | ja |
 | `bedienung.mjs` | Klappen und Zähler, Pfeiltasten, Ziehen und Ablegen am Griff, **der Rechtsklick als einziger Hakengriff** — in beiden Ansichten —, die Tasten `z` und `n`, die **Kreuzpeilung**, der Notausgang. | 8732 | ja |
 | `rahmen.mjs` | Kopf, Kennzahlenband, Fusszeile, Version, Handbuch, das Zustands-Dreieck, **das Rollfeld** (was beim Rollen stehen bleibt und was wegfährt), die **eingebettete Schrift ohne Netz**, Druck und Export. | 8742 | ja |
 | `eingabe.mjs` | Eingabe in allen Feldarten: Betrag, Zweck, Name, Datum, Stand. Fokus nach echtem Mausklick, **der Fokusring an der Zelle** (nicht am Feld), stilles Sichern zerstört keine Eingabe, **kein linker Klick setzt je einen Haken**. | 8746 | ja |

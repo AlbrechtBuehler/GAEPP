@@ -1125,5 +1125,139 @@ if (S1 && spaeter.length >= 2) {
   }
 }
 
+/* ================================================ 7. Erlass statt Tilgung = */
+/* Neu mit Fassung 3.2.0. Anlass, 26.09.2026: Albrecht bildet seine Schulden-
+   History ab. Zwei der groessten Posten sind nie bezahlt worden — eine
+   verjaehrte Inkassoforderung und der nachgelassene Teil eines Vergleichs.
+   Beides senkt den Saldo, und «Anfang minus Rest» zaehlte es darum als
+   getilgt. Eine Korrektur traegt jetzt eine Marke: ist sie ein Erlass, sinkt
+   der Saldo wie zuvor, aber die Zahl im Band bleibt das, was geflossen ist.
+
+   Gemessen wird als Unterschied vorher/nachher — so haengt der Abschnitt nicht
+   daran, was die Abschnitte davor im Vorrat schon veraendert haben. */
+console.log('\n7. Ein Erlass senkt den Saldo, zaehlt aber nicht als getilgt');
+
+const kachelZahlen = async () => {
+  const r = await kachel('Restschuld heute');
+  const g = await kachel('Getilgt bisher');
+  const m = /^von\s+([\d'\u2019]+)\s+seit\s+(\d{4})/.exec(String((g || {}).t || ''));
+  return { rest: r ? lies(r.v) : null, getilgt: g ? lies(g.v) : null,
+           kurz: g ? g.m : null, titel: g ? g.t : null,
+           anfang: m ? lies(m[1]) : null };
+};
+/* Die Marke wird am gerenderten Knopf gelesen, nicht aus dem Zustand
+   geschlossen — Hausregel 1. */
+const korrArten = () => seite.evaluate(() =>
+  Array.from(document.querySelectorAll('.korrliste .korrzeile:not(.leer)')).map(z => ({
+    eid: z.querySelector('[data-korr-b]').getAttribute('data-korr-b'),
+    betrag: z.querySelector('[data-korr-b]').value,
+    art: z.querySelector('.art') ? z.querySelector('.art').textContent.trim() : null,
+    markiert: z.querySelector('.art') ? z.querySelector('.art').classList.contains('erl') : null
+  })));
+const erlassUm = () => klick('[data-korr-erlneu]');
+
+/* Eine Schuld, die im Stichjahr laeuft, dort genug Stand hat und ihr erstes
+   Jahr frueher hatte — sonst veraenderte die Basiskorrektur den Anfangsstand
+   und der Vergleich vorher/nachher truege. */
+const ERL = 500;
+const kandidat = schulden(STICHJAHR).find(s => {
+  const x = posVon(STICHJAHR, s.gKey, s.pKey); if (!x) return false;
+  const stand = nachRaten(basisE(STICHJAHR, s.gKey, s.pKey),
+    su((x.reihe || []).slice(0, STICHM + 1)));
+  return stand > ERL * 3 && !!posVon(vorjahr(STICHJAHR), s.gKey, s.pKey);
+});
+pruef('Gegenprobe: im Vorrat gibt es eine brauchbare Schuld dafuer',
+  !!kandidat, kandidat && kandidat.name);
+
+if (kandidat) {
+  const vorher = await kachelZahlen();
+  const pidE = await id(STICHJAHR, kandidat.name);
+
+  /* --- a) Als Erlass eingetragen --- */
+  await korrAufBasis(pidE);
+  gleich('die neue Zeile steht auf «Berichtigung»',
+    (await seite.evaluate(() =>
+      document.querySelector('.korrzeile.leer .art').textContent.trim())), 'Berichtigung');
+  await erlassUm();
+  gleich('nach dem Umschalten steht dort «Erlass»',
+    (await seite.evaluate(() =>
+      document.querySelector('.korrzeile.leer .art').textContent.trim())), 'Erlass');
+  await korrEintragen('-' + ERL, 'verjährt');
+  const zeilen = await korrArten();
+  const meine = zeilen.filter(z => z.art === 'Erlass');
+  gleich('die eingetragene Zeile traegt die Marke', meine.length, 1);
+  gleich('und ist auch im Auszeichnungstext markiert', meine[0] && meine[0].markiert, true);
+  gleich('die neue Zeile steht danach wieder auf «Berichtigung»',
+    (await seite.evaluate(() =>
+      document.querySelector('.korrzeile.leer .art').textContent.trim())), 'Berichtigung');
+  await korrZu();
+
+  const nachher = await kachelZahlen();
+  gleich('die Restschuld sinkt um den Erlass', vorher.rest - nachher.rest, ERL);
+  gleich('«Getilgt bisher» bleibt, wie es war', nachher.getilgt, vorher.getilgt);
+  gleich('der Anfangsstand bleibt unangetastet (Gegenprobe)', nachher.anfang, vorher.anfang);
+  pruef('die Kurzzeile nennt den erlassenen Betrag',
+    /erlassen/.test(String(nachher.kurz)) && lies(String(nachher.kurz).split('·')[1]) === ERL,
+    nachher.kurz);
+  pruef('der Titel sagt, dass es nicht bezahlt wurde',
+    /Dazu\s+[\d'\u2019]+\s+erlassen/.test(String(nachher.titel))
+      && /nicht bezahlt/.test(String(nachher.titel)), nachher.titel);
+  pruef('die drei Zahlen gehen weiterhin auf: Anfang − Getilgt − Erlassen = Restschuld',
+    nachher.anfang - nachher.getilgt - ERL === nachher.rest,
+    nachher.anfang + ' − ' + nachher.getilgt + ' − ' + ERL + ' vs ' + nachher.rest);
+
+  /* --- b) Gegenprobe: dieselbe Korrektur ohne Marke --- */
+  await korrAufBasis(pidE);
+  await korrEintragen('-' + ERL, 'Berichtigung');
+  await korrZu();
+  const gegen = await kachelZahlen();
+  gleich('eine gewoehnliche Korrektur senkt die Restschuld genauso',
+    nachher.rest - gegen.rest, ERL);
+  gleich('sie zaehlt aber sehr wohl als getilgt (Gegenprobe)',
+    gegen.getilgt - nachher.getilgt, ERL);
+
+  /* --- c) Eine bestehende Zeile nachtraeglich umwidmen --- */
+  await korrAufBasis(pidE);
+  const vorUm = (await korrArten()).find(z => z.art === 'Berichtigung');
+  pruef('Gegenprobe: es liegt eine Zeile ohne Marke vor', !!vorUm, vorUm && vorUm.betrag);
+  if (vorUm) {
+    await klick('[data-korr-erl="' + vorUm.eid + '"]');
+    const jetzt = (await korrArten()).find(z => z.eid === vorUm.eid);
+    gleich('die Zeile heisst danach «Erlass»', jetzt && jetzt.art, 'Erlass');
+    await korrZu();
+    const um = await kachelZahlen();
+    gleich('und «Getilgt bisher» faellt um genau diesen Betrag zurueck',
+      gegen.getilgt - um.getilgt, ERL);
+    gleich('die Restschuld bleibt dabei unveraendert', um.rest, gegen.rest);
+
+    /* --- d) Zurueckschalten fuehrt zurueck --- */
+    await korrAufBasis(pidE);
+    await klick('[data-korr-erl="' + vorUm.eid + '"]');
+    gleich('zurueckgeschaltet heisst die Zeile wieder «Berichtigung»',
+      ((await korrArten()).find(z => z.eid === vorUm.eid) || {}).art, 'Berichtigung');
+    await korrZu();
+    gleich('und die Zahl ist wieder die alte', (await kachelZahlen()).getilgt, gegen.getilgt);
+  }
+
+  /* --- e) Was in die Datendatei geschrieben wird --- */
+  const marken = await seite.evaluate(() => {
+    const d = nutzdaten();
+    let mit = 0, ohne = 0, feldDa = 0;
+    Object.keys(d.daten).forEach(j => (d.daten[j] || []).forEach(b => {
+      if (b.art !== 'schulden') return;
+      (b.gruppen || []).forEach(g => (g.pos || []).forEach(p => {
+        ['basis', 'rest'].forEach(a => (((p.korr || {})[a]) || []).forEach(x => {
+          if ('erlass' in x) feldDa++;
+          if (x.erlass) mit++; else ohne++;
+        }));
+      }));
+    }));
+    return { mit, ohne, feldDa };
+  });
+  gleich('in der Datendatei steht genau ein Erlass', marken.mit, 1);
+  pruef('Gegenprobe: es gibt dort auch Korrekturen ohne Marke', marken.ohne > 0, marken.ohne);
+  gleich('und keine einzige von ihnen traegt das Feld ueberhaupt', marken.feldDa, marken.mit);
+}
+
 await b.close(); server.close();
 ende(fehler);
