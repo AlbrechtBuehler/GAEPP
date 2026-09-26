@@ -10,6 +10,7 @@
    baut sich den Kontext deshalb selbst — nach derselben Vorlage, nur mit
    anderem Mass. serve() und bilanzbuch() sind unveraendert uebernommen. */
 
+import { readFileSync } from 'fs';
 import { chromium } from 'playwright';
 import { serve, bilanzbuch } from './hilfe.mjs';
 import { daten, STICHMONAT, STICHJAHR, STICHM, JAHRE } from './vorrat.mjs';
@@ -23,6 +24,11 @@ const BREIT = 1440, SCHMAL = 390, HOCH = 844;
    Rechnung, und sie ist keine Abschrift der App, sondern die Summe der Reihen. */
 const D = daten();
 const MZ = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+const ML = ['Januar','Februar','März','April','Mai','Juni','Juli','August',
+            'September','Oktober','November','Dezember'];
+const zaehl = w => seite.evaluate(x => document.querySelectorAll(x).length, w);
+const text  = w => seite.evaluate(x => { const e = document.querySelector(x);
+  return e ? (e.textContent || '').trim() : null; }, w);
 const sektionen = j => D.daten[j] || [];
 const posWert  = (p, m) => (p.reihe || [])[m] || 0;
 const grpWert  = (g, m) => (g.pos || []).reduce((a, p) => a + posWert(p, m), 0);
@@ -164,7 +170,13 @@ const schiene = await seite.evaluate(() => {
     masse: kn.map(x => ({ t: x.textContent.trim(),
       gr: parseFloat(getComputedStyle(x).fontSize),
       gw: getComputedStyle(x).fontWeight })),
-    monateRechts: Math.max(...kn.map(x => Math.round(x.getBoundingClientRect().right))),
+    /* Gemessen wird der rechte Rand der ROLLENDEN SCHIENE, nicht der der
+       einzelnen Knoepfe: bei zwoelf Monaten auf 390 Punkten ragen die hinteren
+       ueber den Container hinaus, und ihr Rand sagt nichts darueber, wo die
+       Schiene aufhoert. Bis 3.4.0 stand hier das Maximum der Knopfraender und
+       war nur zufaellig gruen — aufgefallen, als der Ansichtsumschalter in
+       dieselbe Zeile kam und die Schiene schmaler wurde. */
+    monateRechts: Math.round(s.querySelector('.mMonate').getBoundingClientRect().right),
     jahr: j.textContent.trim(),
     jl: Math.round(jr.left), jr: Math.round(jr.right), jw: Math.round(jr.width),
     fenster: window.innerWidth };
@@ -336,7 +348,15 @@ const fuss = await seite.evaluate(() => {
     unten: Math.round(r.bottom), hoch: Math.round(r.height),
     fenster: window.innerHeight, pos: getComputedStyle(f).position };
 });
-gleich('der Fuss zeigt «Saldo MM»', fuss.k, 'Saldo ' + MZ[STICHM]);
+/* Umgedreht mit Fassung 3.4.0: der Fuss trug «Saldo 08». Jetzt nennt er den
+   Monat ausgeschrieben und sagt, was die Zahl bedeutet — sie ist die Auskunft,
+   auf die es im Alltag ankommt, und traegt darum auch ein Wort. */
+gleich('der Fuss nennt den gewaehlten Monat ausgeschrieben',
+  String(fuss.k).split('·')[0].trim(), ML[STICHM]);
+pruef('und sagt, ob etwas bleibt oder fehlt',
+  /· (bleibt|fehlt)$/.test(String(fuss.k)), fuss.k);
+pruef('Gegenprobe: das Wort passt zum Vorzeichen der Zahl',
+  (lies(fuss.v) < 0) === /fehlt$/.test(String(fuss.k)), fuss.k + ' / ' + fuss.v);
 gleich('er zeigt den Saldo des gewaehlten Monats',
   fuss.v, schreib(saldoVon(STICHJAHR, STICHM), true));
 pruef('er steht fest am unteren Rand',
@@ -373,7 +393,7 @@ gleich('nach dem Wechsel: die Kategorie «' + FIX.name + '» ebenso',
 pruef('die gezeigte Spalte hat sich wirklich geaendert',
   vorher !== nachWert && katVorher !== katNachher,
   '«' + vorher + '» -> «' + nachWert + '», «' + katVorher + '» -> «' + katNachher + '»');
-gleich('der Fuss folgt dem Monat', nachher.fuss, 'Saldo ' + MZ[ZIEL]);
+gleich('der Fuss folgt dem Monat', String(nachher.fuss).split('·')[0].trim(), ML[ZIEL]);
 gleich('und zeigt dessen Saldo aus dem Datenstand', nachher.fussV,
   schreib(saldoVon(STICHJAHR, ZIEL), true));
 
@@ -381,26 +401,45 @@ gleich('und zeigt dessen Saldo aus dem Datenstand', nachher.fussV,
 console.log('\nJahrgang und Ansicht');
 const ANDERS = JAHRE.find(j => j !== STICHJAHR && (D.rechnungen[j] || []).length === 0)
   || JAHRE[0];
-await seite.click('[data-geh-jahr="' + ANDERS + '"]');
+/* Umgebaut mit Fassung 3.4.0. Die Jahrgaenge standen in einer eigenen Zeile
+   unter den Monaten; zusammen mit der Monatsschiene war das ein Fuenftel der
+   Hoehe fuer etwas, das man selten braucht. Jetzt oeffnet die Jahreszahl die
+   Wahl. Geprueft wird der ganze Weg — oeffnen, waehlen, und dass die Wahl
+   sich danach von selbst schliesst. */
+gleich('die Jahrgangswahl ist zu, bevor man sie oeffnet',
+  await zaehl('[data-schleier="mjahr"]'), 0);
+await seite.click('[data-m-jahr-auf]');
+await ruhe();
+gleich('die Jahreszahl oeffnet die Wahl', await zaehl('[data-schleier="mjahr"]'), 1);
+gleich('sie fuehrt jeden Jahrgang',
+  await zaehl('[data-schleier="mjahr"] [data-geh-jahr]'), JAHRE.length);
+await seite.click('[data-schleier="mjahr"] [data-geh-jahr="' + ANDERS + '"]');
 await ruhe();
 const nachJahr = await seite.evaluate(() => ({
   jahr: document.querySelector('.mJahr').textContent.trim(),
-  hell: [...document.querySelectorAll('.mJgs .jg')].filter(x => x.classList.contains('an'))
-    .map(x => x.textContent.trim()).join(',') }));
+  offen: document.querySelectorAll('[data-schleier="mjahr"]').length }));
 gleich('der Jahrgang laesst sich wechseln', nachJahr.jahr, String(ANDERS));
-gleich('der gewechselte Jahrgang steht hell', nachJahr.hell, String(ANDERS));
-await seite.click('[data-geh-jahr="' + STICHJAHR + '"]');
+gleich('und die Wahl schliesst sich danach von selbst', nachJahr.offen, 0);
+await seite.click('[data-m-jahr-auf]');
+await ruhe();
+await seite.click('[data-schleier="mjahr"] [data-geh-jahr="' + STICHJAHR + '"]');
 await ruhe();
 
-await seite.click('[data-geh-ansicht="rechnung"]');
+/* Die Ansicht ist ein Umschalter geworden: ein Wort, das nennt, worauf man
+   schaut, und beim Tippen wechselt. Zwei Knoepfe nebeneinander passten neben
+   Monate und Jahreszahl nicht mehr in eine Zeile. */
+gleich('der Umschalter nennt die laufende Ansicht',
+  await text('.mSchiene .ans'), 'Budget');
+await seite.click('[data-m-ans]');
 await ruhe();
 const rech = await seite.evaluate(() => ({
-  hell: [...document.querySelectorAll('.mAns .ans')].filter(x => x.classList.contains('an'))
-    .map(x => x.textContent.trim()).join(','),
+  hell: document.querySelector('.mSchiene .ans').textContent.trim(),
   kats: [...document.querySelectorAll('.mListe .mKat .n')].map(x => x.textContent.trim()),
   summe: (document.querySelector('.mListe .mSum.stark .n') || {}).textContent,
   zeilen: document.querySelectorAll('.mListe .mZeile').length }));
 gleich('die Ansicht laesst sich wechseln', rech.hell, 'Rechnungen');
+pruef('Gegenprobe: die alte zweite Kopfzeile gibt es nicht mehr',
+  (await zaehl('.mNav')) === 0, await zaehl('.mNav'));
 const stellerSoll = (D.rechnungen[STICHJAHR] || []).map(g => g.name);
 /* Verglichen wird die Menge, nicht die Folge: welche Folge die App waehlt, ist
    ihre Sache — dass es genau diese Steller sind, ist der Datenstand. */
@@ -416,7 +455,7 @@ gleich('und schliesst mit der Monatssumme der Rechnungen',
 pruef('Gegenprobe: so viele Zeilen hat die Rechnungsansicht gezeigt',
   rech.zeilen === stellerSoll.length + 1,
   rech.zeilen + ' Zeilen bei ' + stellerSoll.length + ' Stellern');
-await seite.click('[data-geh-ansicht="budget"]');
+await seite.click('[data-m-ans]');   /* zurueck ins Budget — derselbe Umschalter */
 await ruhe();
 
 /* ============================================================= Breite ====== */
@@ -441,6 +480,55 @@ const schmalWieder = await was();
 pruef('und zurueck bei 390 px wieder die Liste',
   schmalWieder.mobil === '1' && schmalWieder.listen === 1 && schmalWieder.tabellen === 0,
   JSON.stringify(schmalWieder));
+
+/* ===================================== Der Fuss unter der Browserleiste ==== */
+/* Albrechts Befund vom 26.09.2026: auf dem iPhone in Safari war die Zeile mit
+   dem Saldo nicht zu sehen — die wichtigste Zahl des Blatts. Ursache war
+   `height:100vh`: auf dem Telefon rechnet vh die Adressleiste NICHT mit, die
+   Seite wird hoeher als das Sichtbare, und das Unterste faellt dahinter.
+
+   Dieser Lauf hatte es nicht finden koennen, weil ein Browser ohne
+   Bedienleisten das Problem nicht hat. Nachgestellt wird es darum mit einem
+   kuerzeren Fenster: so viel bleibt uebrig, wenn Safari oben und unten seine
+   Leisten stellt. Gemessen wird, ob die Zeile ganz im Fenster liegt. */
+console.log('\nDer Fuss bleibt sichtbar, auch wenn der Browser Platz nimmt');
+const HOCH_GEKAPPT = 664;
+for (const h of [HOCH, HOCH_GEKAPPT, 560]) {
+  await seite.setViewportSize({ width: SCHMAL, height: h });
+  await seite.waitForTimeout(250);
+  const f = await seite.evaluate(() => {
+    const e = document.querySelector('.fusszeile');
+    if (!e) return null;
+    const r = e.getBoundingClientRect();
+    return { unten: Math.round(r.bottom), oben: Math.round(r.top),
+      fenster: window.innerHeight, hoehe: Math.round(r.height),
+      zahl: (e.querySelector('.v') || {}).textContent };
+  });
+  pruef('bei ' + h + ' px Fensterhoehe steht der Fuss ganz im Bild',
+    f !== null && f.unten <= f.fenster + 1 && f.oben >= 0 && f.hoehe > 0,
+    f && (f.oben + '–' + f.unten + ' in ' + f.fenster));
+  pruef('und traegt dabei eine Zahl (Gegenprobe: er ist nicht bloss leer da)',
+    !!(f && String(f.zahl || '').trim()), f && f.zahl);
+}
+await seite.setViewportSize({ width: SCHMAL, height: HOCH });
+await seite.waitForTimeout(200);
+
+/* Die Messung oben haelt das Layout fest, aber NICHT die Ursache: in einem
+   Browser ohne Bedienleisten sind vh und dvh dasselbe, der alte Fehler waere
+   hier gruen durchgelaufen. Was sich pruefen laesst, ist die Regel selbst —
+   darum wird sie aus dem Quelltext gelesen und nicht aus der Wirkung
+   geschlossen. Dass es auf dem Telefon stimmt, hat nur ein Telefon gezeigt;
+   dieser Satz steht hier, damit niemand die Messung oben fuer mehr haelt,
+   als sie ist. */
+const quelle = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const hoehenRegel = /body\{[^}]*?height:100vh;height:100dvh;/.test(quelle);
+pruef('der Koerper misst 100dvh, mit 100vh als Rueckfall davor',
+  hoehenRegel, (/height:100[a-z]+/.exec(quelle) || [])[0]);
+pruef('Gegenprobe: 100vh allein steht nirgends mehr am Koerper',
+  !/body\{[^}]*?height:100vh;(?!height:100dvh)/.test(quelle), 'geprueft');
+pruef('der Fuss haelt Abstand zur Home-Anzeige (safe-area)',
+  /\.fusszeile\{[^}]*safe-area-inset-bottom/.test(quelle.replace(/\s+/g, ' ')),
+  'geprueft');
 
 await b.close(); server.close();
 ende(fehler);

@@ -51,8 +51,15 @@
    zweite Zahl daneben waere eine, die man von Hand nachfuehren muesste. */
 :root{--klebeoben:50px}
 html,body{margin:0;background:var(--grund)}
+/* Die Hoehe ist 100dvh und nicht 100vh. Auf dem Telefon rechnet 100vh die
+   Adressleiste des Browsers NICHT mit: die Seite wird hoeher als das, was zu
+   sehen ist, und das Unterste faellt hinter die Leiste — bei GÄPP genau die
+   Zeile mit dem Saldo, also die Zahl, die im Alltag zaehlt. Albrechts Befund
+   vom 26.09.2026, auf einem iPhone in Safari. Der Prueflauf konnte es nicht
+   zeigen: ein Browser ohne Bedienleisten hat das Problem nicht.
+   100vh steht als Rueckfall davor, fuer Browser ohne dvh. */
 body{font-family:'Jost',system-ui,sans-serif;color:var(--tinte);
- -webkit-font-smoothing:antialiased;height:100vh;overflow:hidden;
+ -webkit-font-smoothing:antialiased;height:100vh;height:100dvh;overflow:hidden;
  display:flex;flex-direction:column}
 input,select,button{font-family:inherit}
 /* Sichtbarer Ring in Tinte statt der Browservorgabe. */
@@ -489,8 +496,25 @@ tr.ziel td{box-shadow:inset 0 2px 0 var(--tinte)}
 .mSchiene button.an{font:500 22px/1 'Jost',sans-serif;color:var(--tinte);
  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 .mSchiene .mJahr{margin-left:auto;font:200 15px/1 'Jost',sans-serif;color:var(--faint);
- font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;padding-left:14px}
-.mBand{display:flex;padding:22px 20px 20px;border-bottom:1px solid var(--rStark);flex:none}
+ font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;padding-left:14px;
+ background:none;border:none;cursor:pointer;
+ box-shadow:inset 0 -1px 0 var(--rMittel)}
+.mSchiene .mAns{flex:none;padding-left:14px}
+.mSchiene .ans{font:400 10px/1 'Jost',sans-serif;letter-spacing:.2em;text-transform:uppercase;
+ color:var(--mC);background:none;border:none;cursor:pointer;
+ box-shadow:inset 0 -1px 0 var(--rMittel)}
+/* Die Jahrgangswahl, die die gestrichene zweite Zeile ersetzt. */
+.mJgs.gross{display:flex;flex-wrap:wrap;gap:18px 24px;padding-top:6px}
+.mJgs.gross .jg{font:200 22px/1 'Jost',sans-serif;color:var(--faint);
+ background:none;border:none;cursor:pointer;
+ font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mJgs.gross .jg.an{font-weight:500;color:var(--tinte)}
+.mBandBox{border-bottom:1px solid var(--rStark);flex:none}
+.mBand{display:flex;padding:22px 20px 14px}
+/* Die Zahlen, die den Weg zeigen: leiser als die beiden grossen, aber da. */
+.mBandFuss{padding:0 20px 14px;font:400 10px/1.5 'Jost',sans-serif;letter-spacing:.18em;
+ text-transform:uppercase;color:var(--mC);
+ font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 .mBand>span{flex:1;min-width:0}
 .mBand .k{display:block;font:400 9.5px/1 'Jost',sans-serif;letter-spacing:.24em;
  text-transform:uppercase;color:var(--mC)}
@@ -541,11 +565,14 @@ tr.ziel td{box-shadow:inset 0 2px 0 var(--tinte)}
 body[data-mobil="1"] #rollfeld{display:contents}
 body[data-mobil="1"] .blatt{flex:1;min-height:0;overflow:auto;
  padding:0;display:flex;flex-direction:column}
-body[data-mobil="1"] .fusszeile{justify-content:space-between;padding:0 20px;height:62px;gap:14px}
+body[data-mobil="1"] .fusszeile{justify-content:space-between;padding:0 20px;height:62px;gap:14px;
+ /* Auf Geraeten mit Home-Anzeige sitzt die Zeile sonst auf dem Balken. */
+ padding-bottom:env(safe-area-inset-bottom,0);
+ height:calc(62px + env(safe-area-inset-bottom,0))}
 body[data-mobil="1"] .leerraum{padding:32px 20px}
 body[data-mobil="1"] .fusszeile .k{font:400 11px/1 'Jost',sans-serif;letter-spacing:.24em;text-transform:uppercase;
  color:var(--mC)}
-body[data-mobil="1"] .fusszeile .v{font:500 24px/1 'Jost',sans-serif;color:var(--tinte);
+body[data-mobil="1"] .fusszeile .v{font:400 30px/1 'Jost',sans-serif;color:var(--tinte);
  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 
 /* ---------------------------------------------------------------------------
@@ -660,7 +687,7 @@ body[data-mobil="1"] .fusszeile .v{font:500 24px/1 'Jost',sans-serif;color:var(-
 
 /* Die Version steht genau hier. Fusszeile, Handbuch, HTML-Export und CSV lesen sie —
    abgeschrieben wird sie nirgends. */
-const VERSION = '3.3.0';
+const VERSION = '3.4.0';
 const RUNDE = 10;   /* Verteilen rundet auf volle Zehner, immer aufwaerts. */
 
 const MK = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
@@ -702,7 +729,7 @@ const S = {
   korr: null, korrWarn: null, basis: null, hb: false,
   stichmonat: monatJetzt(), stichFest: false,
   sync: 'nicht verbunden', syncText: '',
-  geladen: false, mobil: false, mMonat: null, trennFrage: false
+  geladen: false, mobil: false, mMonat: null, mJahrWahl: false, trennFrage: false
 };
 
 /* Anzeigezustand (auf, nullen, theme, jahr, ansicht) geht nie in die Datendatei. */
@@ -1407,14 +1434,38 @@ function mobilKopf() {
     + '<button data-exp="1" title="Export"><span class="z-quadrat"></span></button>'
     + '<button data-hb="1" title="Handbuch"><span class="z-kreis"></span></button>'
     + '</span></div>'
-    + (S.geladen ? mobilSchiene() + mobilNav() : '');
+    + (S.geladen ? mobilSchiene() : '');
 }
+/* Bis 3.4.0 standen hier zwei Zeilen: Monate mit der Jahreszahl, darunter die
+   Jahrgaenge und der Ansichtswechsel. Zusammen ein Fuenftel der Hoehe fuer
+   etwas, das man selten braucht — den Jahrgang wechselt man ein paarmal im
+   Jahr, den Monat taeglich. Jetzt traegt die Jahreszahl die Jahrgangswahl
+   (tippen oeffnet sie), und die Ansicht ist ein Umschalter wie im
+   Korrekturfenster: das Wort nennt, worauf man schaut. */
 function mobilSchiene() {
-  const m = mMonat();
+  const m = mMonat(), was = mobilWas();
   return '<div class="mSchiene"><span class="mMonate">'
     + MZ.map((x,i) => '<button class="' + (i === m ? 'an' : '') + '" data-m-monat="' + i + '">'
         + x + '</button>').join('')
-    + '</span><span class="mJahr">' + S.jahr + '</span></div>';
+    + '</span>'
+    + '<button class="mJahr" data-m-jahr-auf="1" title="Jahrgang wählen">'
+    + S.jahr + '</button>'
+    + '<span class="mAns"><button class="ans umschalt" data-m-ans="1" '
+    + 'title="Umschalten: Budget oder Rechnungen">'
+    + (was === 'rechnung' ? 'Rechnungen' : 'Budget') + '</button></span>'
+    + '</div>';
+}
+/* Die Jahrgangswahl. Sie ersetzt die gestrichene Zeile und traegt dieselben
+   Knoepfe — data-geh-jahr —, damit es nur einen Weg in einen Jahrgang gibt. */
+function mobilJahrDialog() {
+  const js = jahre();
+  return dialogRahmen('mjahr',
+    dtitel('Jahrgang', S.jahr + '')
+    + '<div class="mJgs gross">'
+    + js.map(j => '<button class="jg' + (S.jahr === j ? ' an' : '')
+        + '" data-geh-jahr="' + j + '">' + j + '</button>').join('')
+    + '</div>',
+    dfuss(['<button class="ab" data-zu="mjahr">Schliessen</button>']));
 }
 /* Der Entwurf zeigt mobil nur ein Blatt. Ohne einen Weg zum Jahrgang und zur
    Ansicht waere das Telefon aber eine Sackgasse: man kaeme weder ins Vorjahr
@@ -1430,13 +1481,25 @@ function mobilNav() {
     + '<button class="ans' + (hell('rechnung') ? ' an' : '') + '" data-geh-ansicht="rechnung">Rechnungen</button>'
     + '</span></div>';
 }
+/* Am Telefon standen bis 3.4.0 nur zwei Zahlen: die Restschuld und der Tag,
+   an dem sie null ist. Wo es angefangen hat und was schon geflossen ist, war
+   nur am Schreibtisch zu sehen — dabei ist das Telefon das Geraet, das man
+   dabei hat. Drei grosse Zahlen nebeneinander passen auf 390 Punkte nicht;
+   darum bleiben zwei gross und die uebrigen stehen als Zeile darunter. */
 function mobilBand() {
   if (!S.geladen || mobilWas() !== 'budget') return '';
   const k = kennzahlen(); if (!k) return '';
   const frei = k.frei ? MK[k.frei.m] + ' ' + String(k.frei.j).slice(2) : '—';
-  return '<div class="mBand">'
+  const unten = [];
+  if (k.anfang > 0) unten.push('von ' + fmt(k.anfang, true));
+  if (k.bezahlt) unten.push(fmt(k.bezahlt, true) + ' getilgt');
+  if (k.erlassen) unten.push(fmt(k.erlassen, true) + ' erlassen');
+  return '<div class="mBandBox">'
+    + '<div class="mBand">'
     + '<span><span class="k">Restschuld</span><span class="v">' + esc(fmt(k.rest, true)) + '</span></span>'
     + '<span><span class="k">Schuldenfrei</span><span class="v">' + esc(k.unstimmig ? '—' : frei) + '</span></span>'
+    + '</div>'
+    + (unten.length ? '<div class="mBandFuss">' + esc(unten.join(' · ')) + '</div>' : '')
     + '</div>';
 }
 function mobilWas() { return S.ansicht === 'alle' ? S.alleWas : S.ansicht; }
@@ -1524,11 +1587,14 @@ function mobilRechnungen() {
   else teile.push(mZeile('mSum stark', 'Rechnungen ' + MZ[m], tot, false));
   return '<div class="mListe">' + teile.join('') + '</div>';
 }
+/* Unten steht die Zahl, die im Alltag zaehlt: komme ich durch den Monat? Sie
+   trug bis 3.4.0 nur das Wort «Saldo» und eine Monatsziffer. Jetzt sagt sie,
+   was die Zahl bedeutet — und ist so gross wie ihre Bedeutung. */
 function mobilFuss() {
   if (!S.geladen) return '';
-  const m = mMonat(), b = bau(S.jahr);
-  return '<span class="k">Saldo ' + MZ[m] + '</span>'
-    + '<span class="v">' + fmt(b.saldo[m], true) + '</span>';
+  const m = mMonat(), b = bau(S.jahr), v = b.saldo[m];
+  return '<span class="k">' + esc(ML[m]) + ' · ' + (v < 0 ? 'fehlt' : 'bleibt') + '</span>'
+    + '<span class="v">' + fmt(v, true) + '</span>';
 }
 
 /* ------------------------------------------------------------ Das Blatt */
@@ -1909,6 +1975,7 @@ function dialoge() {
   if (S.korr)  h += korrDialog();
   if (S.korrWarn) h += korrWarnDialog();
   if (S.hb)    h += handbuchDialog();
+  if (S.mJahrWahl) h += mobilJahrDialog();
   return h;
 }
 
@@ -2891,7 +2958,14 @@ document.addEventListener('click', e => {
   /* Der Wechsel zwischen einem Jahr und «Alle» behaelt, worauf man gerade schaut —
      wer in den Rechnungen ist, landet in «Alle» auch in den Rechnungen. */
   if ((x = tref('gehJahr')))    { S.jahr = parseInt(x.dataset.gehJahr,10);
+                                  /* Aus der mobilen Wahl heraus: sie hat ihren
+                                     Zweck erfuellt und schliesst sich. */
+                                  S.mJahrWahl = false;
                                   if (S.ansicht === 'alle') S.ansicht = S.alleWas; return neu(); }
+  if ((x = tref('mJahrAuf')))   { S.mJahrWahl = true; return zeichne(); }
+  if ((x = tref('mAns')))       { const w = mobilWas() === 'rechnung' ? 'budget' : 'rechnung';
+                                  if (S.ansicht === 'alle') S.alleWas = w; else S.ansicht = w;
+                                  return neu(); }
   if ((x = tref('gehAnsicht'))) { if (S.ansicht === 'alle') S.alleWas = x.dataset.gehAnsicht;
                                   else S.ansicht = x.dataset.gehAnsicht; return neu(); }
   if ((x = tref('hb')))         { S.hb = true; return zeichne(); }
@@ -2945,12 +3019,19 @@ document.addEventListener('click', e => {
   if ((x = tref('repoHolen')))  return repoLesen();
   if ((x = tref('repoSichern'))){ return insRepo(); }
   if ((x = tref('zu')))         { dialogFokus(x.dataset.zu); S.trennFrage = false;
-                                  S[x.dataset.zu === 'sync' ? 'syncAuf' : x.dataset.zu] =
-                                    x.dataset.zu === 'sync' ? false : null; return zeichne(); }
+                                  /* Zwei Fenster tragen einen Schalter statt
+                                     eines Gegenstands — sie werden aus, nicht
+                                     leer. */
+                                  const zuName = x.dataset.zu;
+                                  if (zuName === 'sync') S.syncAuf = false;
+                                  else if (zuName === 'mjahr') S.mJahrWahl = false;
+                                  else S[zuName] = null;
+                                  return zeichne(); }
   if ((x = tref('schleier')) && t === x) { dialogFokus(x.dataset.schleier);
                                     S.ueb = null; S.neu = null; S.exp = null;
                                     S.wegJahr = null; S.syncAuf = false; S.hb = false;
                                     S.korr = null; S.korrWarn = null; S.basis = null;
+                                    S.mJahrWahl = false;
                                     wartetTat = null; return zeichne(); }
   if ((x = tref('neuJahr')))    { S.neu = { jahr: Math.max.apply(null, jahre()) + 1, budget:true, raten:false }; return zeichne(); }
   if ((x = tref('wegJahrAn')))  { jahrLoeschen(S.wegJahr); return neu(); }
