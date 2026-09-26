@@ -652,7 +652,7 @@ body[data-mobil="1"] .fusszeile .v{font:500 24px/1 'Jost',sans-serif;color:var(-
 
 /* Die Version steht genau hier. Fusszeile, Handbuch, HTML-Export und CSV lesen sie —
    abgeschrieben wird sie nirgends. */
-const VERSION = '3.0.0';
+const VERSION = '3.1.0';
 const RUNDE = 10;   /* Verteilen rundet auf volle Zehner, immer aufwaerts. */
 
 const MK = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
@@ -663,6 +663,22 @@ const ML = ['Januar','Februar','März','April','Mai','Juni','Juli','August',
             'September','Oktober','November','Dezember'];
 const STAENDE = ['Offen','Bank','Bezahlt','Nicht eingetroffen'];
 const N12 = () => new Array(12).fill(0);
+
+/* ------------------------------------------------------- Der laufende Monat
+   Der Stichmonat ist der Monat, bis zu dem gerechnet wird: «Restschuld heute»
+   zieht die Raten bis zu ihm ab, «Offen im ...» nennt ihn, und im Tabellenkopf
+   steht er halbfett. Bis Fassung 3.0.0 stand er fest im Zustand und ging beim
+   Sichern in die Datendatei; beim naechsten Laden kam er von dort zurueck.
+   Damit blieb GÄPP in dem Monat stehen, in dem zuletzt gesichert wurde — im
+   August, waehrend draussen der September lief. Das ist derselbe Fall wie F-16:
+   ein abgeschriebener Wert, der veraltet, waehrend der Code weiterlaeuft.
+   Jetzt gibt der Kalender des Rechners ihn vor. Eine Datei darf ihn festsetzen
+   (meta.stichFest) — dann und nur dann gilt ihr Wert. Das braucht der
+   Pruefvorrat, dessen Zahlen sich nicht mit dem Kalender verschieben duerfen,
+   und es taugt fuer einen abgelegten Stand, der einen Monat festhalten soll. */
+const monatVon = d => d.getFullYear() + '-'
+  + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
+const monatJetzt = () => monatVon(new Date());
 
 let ZAEHLER = 0;
 const neueId = () => 'p' + (++ZAEHLER);
@@ -676,15 +692,23 @@ const S = {
   auf: [], haken: {}, jahre: [], daten: {}, rechnungen: {},
   neu: null, ueb: null, exp: null, wegJahr: null, zieht: null, ziel: null,
   korr: null, korrWarn: null, basis: null, hb: false,
-  stichmonat: '2026-08', sync: 'nicht verbunden', syncText: '',
+  stichmonat: monatJetzt(), stichFest: false,
+  sync: 'nicht verbunden', syncText: '',
   geladen: false, mobil: false, mMonat: null, trennFrage: false
 };
 
 /* Anzeigezustand (auf, nullen, theme, jahr, ansicht) geht nie in die Datendatei. */
 function nutzdaten() {
+  const meta = { waehrung:'CHF', stichmonat:S.stichmonat,
+    geaendert:new Date().toISOString() };
+  /* Der Stichmonat wird mitgeschrieben, weil er zum Stand gehoert — aber die
+     Marke traegt nur eine Datei, die ihn ausdruecklich festsetzt. Ohne diese
+     Unterscheidung wuerde das erste Sichern den heutigen Monat fuer immer
+     festschreiben, und wir haetten den alten Fehler zurueck. */
+  if (S.stichFest) meta.stichFest = true;
   return {
     schemaVersion: 1,
-    meta: { waehrung:'CHF', stichmonat:S.stichmonat, geaendert:new Date().toISOString() },
+    meta: meta,
     jahre: S.jahre.slice().sort((a,b) => a-b),
     daten: S.daten, rechnungen: S.rechnungen, haken: S.haken
   };
@@ -697,6 +721,10 @@ const zw12 = r => { const a = Array.isArray(r) ? r.slice(0,12) : [];
   return a.map(x => { const n = Number(x); return isFinite(n) ? Math.round(n) : 0; }); };
 const zGanz = x => { const n = Number(x); return isFinite(n) ? Math.round(n) : 0; };
 const zText = x => (x == null ? '' : String(x));
+/* «2026-8», «August» oder ein leeres Feld sind kein Monat. Was die Form nicht
+   hat, wird zu null — sonst rechnet parseInt daraus ein NaN und das Blatt
+   steht leer da, wegen eines Feldes, auf das es verzichten koennte. */
+const zMonat = x => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(x)) ? String(x) : null;
 
 function uebernimm(d) {
   if (!d || typeof d !== 'object') throw new Error('Keine gültige Datei.');
@@ -726,7 +754,11 @@ function uebernimm(d) {
         r.zweck = zText(r.zweck); r.datum = zText(r.datum);
         if (STAENDE.indexOf(r.stand) < 0) r.stand = STAENDE[0]; }); });
   });
-  if (d.meta && d.meta.stichmonat) S.stichmonat = d.meta.stichmonat;
+  /* Der Monat aus der Datei gilt nur, wenn sie ihn festsetzt. Sonst zaehlt der
+     Kalender — auch wenn die Datei aus dem August stammt. */
+  const fest = (d.meta && d.meta.stichFest) ? zMonat(d.meta.stichmonat) : null;
+  S.stichFest = !!fest;
+  S.stichmonat = fest || monatJetzt();
   /* Zähler über alle vergebenen Ids heben, damit neue Ids nie kollidieren. */
   let hoch = 0;
   const merke = id => { const m = /^p(\d+)$/.exec(String(id||'')); if (m) hoch = Math.max(hoch, +m[1]); };
@@ -1084,6 +1116,14 @@ let zeichnet = false, nachzug = 0;
 let fokusWunsch = null;
 function zeichne() {
   if (zeichnet) { nachzug++; return; }
+  /* Eine Seite, die ueber die Mitternacht des Ersten offen stehen bleibt, darf
+     nicht im alten Monat weiterrechnen. Ein Vergleich zweier Zeichenketten je
+     Zeichnen kostet nichts; ein Zeitgeber, der um Mitternacht zuschlaegt, waere
+     eine zweite Wahrheit ueber denselben Wert. */
+  if (!S.stichFest) {
+    const jetzt = monatJetzt();
+    if (jetzt !== S.stichmonat) S.stichmonat = jetzt;
+  }
   zeichnet = true;
   try {
     let runden = 0;

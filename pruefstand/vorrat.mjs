@@ -19,7 +19,13 @@ const BESTAND = {
  "schemaVersion": 1,
  "meta": {
   "waehrung": "CHF",
+  /* Festgesetzt, und das mit Absicht: seit Fassung 3.1.0 nimmt GÄPP den
+     Stichmonat aus dem Kalender des Rechners. Ein Vorrat, der das mitmacht,
+     wuerde am ersten jedes Monats andere Zahlen ergeben — «Restschuld heute»,
+     «Getilgt bisher», die halbfette Spalte. Die Marke haelt den Vorrat fest;
+     dass der Kalender im Normalfall gilt, prueft kanal.mjs. */
   "stichmonat": "2026-08",
+  "stichFest": true,
   "geaendert": "2026-08-23T09:00:00Z"
  },
  "jahre": [

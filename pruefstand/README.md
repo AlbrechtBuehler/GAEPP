@@ -1,8 +1,14 @@
 # GÄPP — Prüfstand
 
-**Nachgeführt am 23.08.2026**, nach dem Bauhaus-Umbau auf Fassung 3.0.0. Was hier
-steht, prüft die heutige `index.html` — Version, Stände und Farben werden dabei aus
-ihrem Quelltext gelesen, nie abgeschrieben (Hausregel 4).
+**Nachgeführt am 26.09.2026**, zu Fassung 3.1.0 (Stichmonat aus dem Kalender). Was
+hier steht, prüft die heutige `index.html` — Version, Stände und Farben werden dabei
+aus ihrem Quelltext gelesen, nie abgeschrieben (Hausregel 4).
+
+> Die Fassung vom 23.08.2026 stand zu 3.0.0 und nannte in Hausregel 8 einen
+> «gestellten Tag». Gestellt war nie etwas: `hilfe.mjs` setzte Sprache und Zeitzone,
+> den Kalender liess es laufen. Solange der Stichmonat fest im Zustand stand, fiel
+> das nicht auf — **und genau deshalb blieb GÄPP im August stehen.** Beides ist
+> unten richtiggestellt.
 
 > Die Fassung dieser Datei vom 22.08.2026 beschrieb einen anderen Prüfstand: drei
 > Läufe statt zehn, drei Jahrgänge im Vorrat statt sechs, «hell» als Vorgabeschema,
@@ -59,7 +65,7 @@ ohne die Variable holt sich Playwright seinen eigenen.
 | `befunde.mjs` | Die Befunde der unabhängigen Nachkontrolle vom 22.08.2026, auf den Neubau nachgezogen — Rest und Basis unter null ohne Kappung, Korrekturfenster, Kennzahlenband bei unstimmigem Plan, Rappenrundung, die Aufgliederung in «Alle Jahre», der Zähler am Steller, `zahl()`, der HTML-Export. | 8744 | ja |
 | `haerte.mjs` | Grenzfälle: Ziehen und Ablegen über Sektionsgrenzen, Verschieben mit der Tastatur, Escape schliesst je Fenster nur das oberste, eine kaputte `gaepp-daten.json` legt die App nicht still, «Übertragen» fasst keine gleichnamige Zeile einer anderen Kategorie an, Quote ausserhalb 0–100 %, negative Rate bei Basis null, Einzahl und Mehrzahl. | 8745 | ja |
 | `mobil.mjs` | Das Telefon: 390 × 844, ein Monat untereinander statt zwölf nebeneinander. Eigene Fassung, eigene Fehler — einen hatte sie. | 8734 | ja |
-| `kanal.mjs` | Der Datenkanal beim Start: ob GÄPP im Repo nachsieht, wie es entscheidet, welcher Stand gilt, und ob es den Zustand ehrlich meldet. Fährt nie gegen ein echtes Repo — jede Anfrage an GitHub wird abgefangen, ein Zähler belegt, dass sie gestellt wurde. | 8747 | ja |
+| `kanal.mjs` | Der Datenkanal beim Start: ob GÄPP im Repo nachsieht, wie es entscheidet, welcher Stand gilt, und ob es den Zustand ehrlich meldet. Dazu der **Stichmonat**: dass er aus dem Kalender kommt, dass nur eine Datei mit `meta.stichFest` ihn hält, dass Sichern ihn nicht festschreibt und ein krummer Wert die Anzeige nicht stilllegt. Fährt nie gegen ein echtes Repo — jede Anfrage an GitHub wird abgefangen, ein Zähler belegt, dass sie gestellt wurde. | 8747 | ja |
 
 **Die Gesamtzahl steht hier nicht.** Sie wird nachgerechnet und erscheint unten im
 Ergebnis des Sammellaufs (Hausregel 3). Wer sie in einem Dokument liest und hier eine
@@ -68,7 +74,11 @@ andere findet, glaubt dem Sammellauf.
 ## Der Prüfvorrat
 
 `vorrat.mjs` hält einen **konstruierten** Datenstand: sechs Jahrgänge 2024–2029,
-Stichmonat 2026-08. **Albrechts echte Zahlen und Namen kommen hier nicht vor** —
+Stichmonat 2026-08 — **festgesetzt** mit `meta.stichFest`. Seit 3.1.0 nimmt GÄPP den
+Stichmonat sonst aus dem Kalender des Rechners; ein Vorrat ohne diese Marke ergäbe am
+Ersten jedes Monats andere Zahlen («Restschuld heute», «Getilgt bisher», die
+halbfette Spalte). Dass der Kalender im Normalfall gilt, prüft `kanal.mjs` —
+ausdrücklich gegen den laufenden Monat und nicht gegen den Vorrat. **Albrechts echte Zahlen und Namen kommen hier nicht vor** —
 weder Beträge noch Kontonummern noch Gläubiger noch Rechnungssteller — und dürfen es
 nie: das ist derselbe Grundsatz wie A-78, nur auf den Prüfstand selbst angewandt.
 
@@ -108,10 +118,14 @@ den Vorrat und nicht über die App.
    Stimmt die **Erwartung**? Stimmt die **Umgebung** des Laufs? Stimmt der
    **Messpunkt**? Und erst dann: ist die **Rechnung** falsch — oder nur die
    **Anzeige** unvollständig?
-8. **Ein echter Origin, nie `file://`**, und **ein gestellter Tag, nie der Kalender.**
-   Beides ist teuer erkauft: Chromium verwirft den Browserspeicher eines
-   file-Origins beim Neuladen, und ein Lauf am Kalender wird am 1. September von
-   selbst rot, ohne dass sich etwas geändert hätte.
+8. **Ein echter Origin, nie `file://`** — Chromium verwirft den Browserspeicher eines
+   file-Origins beim Neuladen, und wer Persistenz prüft, braucht einen echten Origin.
+   **Der Kalender läuft; festgehalten wird der Stichmonat, nicht der Tag.** Ein Lauf,
+   dessen Erwartung am Kalender hängt, wird am Ersten des Monats von selbst rot —
+   deshalb setzt `vorrat.mjs` den Stichmonat fest (`meta.stichFest`). Wer eine
+   Erwartung am laufenden Monat messen muss, rechnet ihn im Lauf aus und schreibt
+   ihn nicht hin (Hausregel 4). *Bis zum 23.08.2026 stand hier «ein gestellter Tag,
+   nie der Kalender» — gestellt war nie etwas.*
 9. **`node_modules` gehört nie ins Repo.** Der Ordner entsteht bei `npm install`.
 
 ## Was er ausdrücklich nicht prüft

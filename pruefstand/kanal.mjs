@@ -189,5 +189,64 @@ gleich('im Datenkanal steht der Schluessel', felder.token, SCHLUESSEL_TEXT);
 pruef('Gegenprobe: das Fenster hat ueberhaupt Felder', Object.keys(felder).length >= 4,
   Object.keys(felder).join(','));
 
+/* ============================================ 7. Der Stichmonat ========== */
+/* Befund vom 26.09.2026: GÄPP stand im August. Der Stichmonat lag fest im
+   Zustand, ging beim Sichern in die Datendatei und kam beim Laden von dort
+   zurueck — «Restschuld heute» zog die Raten bis August ab, waehrend draussen
+   der September lief. Seit 3.1.0 gibt der Kalender ihn vor; nur eine Datei mit
+   «stichFest» darf ihn halten. Dieser Abschnitt bewacht beide Haelften. */
+console.log('\n7. Der Stichmonat kommt aus dem Kalender — festgesetzt aus der Datei');
+
+const kalenderMonat = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
+};
+const stichLesen = () => seite.evaluate(() => ({ monat: S.stichmonat, fest: S.stichFest }));
+
+/* a) Der Vorrat setzt fest — sonst verschoeben sich seine Zahlen jeden Monat. */
+await trennen();
+lage = { art: 'aus' };
+await seite.evaluate(() => localStorage.removeItem('gaepp.tabelle.v1'));
+await neuLaden();
+const vorratStich = await stichLesen();
+gleich('die Datei mit Marke setzt den Monat', vorratStich.monat, '2026-08');
+gleich('und GÄPP weiss, dass er festgesetzt ist', vorratStich.fest, true);
+
+/* b) Dieselbe Datei ohne Marke — jetzt zaehlt der Kalender, nicht der August.
+   Der Weg fuehrt absichtlich durch das Repo: so wird geprueft, was ein
+   gesicherter Stand bewirkt, und nicht bloss, was uebernimm() tut. */
+await anbinden();
+const ohneMarke = daten();
+delete ohneMarke.meta.stichFest;
+ohneMarke.meta.geaendert = '2026-09-26T09:00:00.000Z';
+lage = { art: 'da', stand: ohneMarke };
+await seite.evaluate(() => localStorage.removeItem('gaepp.tabelle.v1'));
+await neuLaden();
+const freiStich = await stichLesen();
+gleich('ohne Marke gilt der laufende Monat', freiStich.monat, kalenderMonat());
+gleich('und nichts ist festgesetzt', freiStich.fest, false);
+pruef('Gegenprobe: die Datei nennt trotzdem den August',
+  ohneMarke.meta.stichmonat === '2026-08', ohneMarke.meta.stichmonat);
+
+/* c) Was gesichert wird, schreibt den heutigen Monat nicht fuer immer fest —
+   sonst waere der alte Fehler beim naechsten Laden zurueck. */
+const rueck = await seite.evaluate(() => nutzdaten().meta);
+gleich('der gesicherte Stand nennt den laufenden Monat', rueck.stichmonat, kalenderMonat());
+gleich('und traegt keine Marke', rueck.stichFest, undefined);
+
+/* d) Ein unbrauchbarer Monat legt die Anzeige nicht still. */
+const kaputterMonat = daten();
+kaputterMonat.meta.stichFest = true;
+kaputterMonat.meta.stichmonat = '2026-8';
+kaputterMonat.meta.geaendert = '2026-09-26T10:00:00.000Z';
+lage = { art: 'da', stand: kaputterMonat };
+await seite.evaluate(() => localStorage.removeItem('gaepp.tabelle.v1'));
+await neuLaden();
+const krumm = await stichLesen();
+gleich('«2026-8» ist kein Monat — der Kalender uebernimmt', krumm.monat, kalenderMonat());
+gleich('und festgesetzt ist nichts', krumm.fest, false);
+pruef('das Blatt steht trotzdem da (Gegenprobe)',
+  await seite.evaluate(() => document.querySelectorAll('table').length > 0), true);
+
 await b.close(); server.close();
 ende(fehler);

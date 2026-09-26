@@ -39,8 +39,10 @@ export async function serve(port) {
   return server;
 }
 
-/* Ein gestellter Tag statt des Kalenders — sonst wird ein Lauf am 1. September
-   von selbst rot, ohne dass sich etwas geaendert haette. */
+/* Sprache und Zeitzone stehen fest, der Kalender laeuft. Ein gestellter Tag stand
+   hier lange im Kommentar, war aber nie gesetzt; festgehalten wird stattdessen der
+   Stichmonat im Vorrat (meta.stichFest). Wer eine Erwartung am laufenden Monat
+   messen muss, rechnet ihn im Lauf aus — siehe kanal.mjs, Abschnitt 7. */
 export async function browser(port, ort) {
   /* GAEPP_CHROME erlaubt einen bereits vorhandenen Chromium. Ohne die Variable
      nimmt Playwright seinen eigenen — so laeuft der Lauf auf jedem Rechner. */
