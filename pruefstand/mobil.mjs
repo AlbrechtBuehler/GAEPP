@@ -530,5 +530,228 @@ pruef('der Fuss haelt Abstand zur Home-Anzeige (safe-area)',
   /\.fusszeile\{[^}]*safe-area-inset-bottom/.test(quelle.replace(/\s+/g, ' ')),
   'geprueft');
 
+/* ===================================================== Aendern (3.5.0) ===== */
+/* Bis 3.4.0 liess sich am Telefon nur lesen. Albrecht am 24.10.2026: «nichts
+   aenderbar, Bedienung zaeh». Geprueft wird in einem eigenen Kontext MIT
+   Beruehrung — Wischen gibt es ohne nicht —, frisch aus der Startdatei, damit
+   nichts aus dem Lauf oben hineinwirkt. Erwartet wird aus vorrat.mjs. */
+console.log('\nAendern am Telefon — Tippflaechen, Wertfenster, Wischen');
+const tk = await b.newContext({ viewport: { width: SCHMAL, height: HOCH },
+  locale: 'de-CH', timezoneId: 'Europe/Zurich', hasTouch: true, isMobile: true });
+const tp = await tk.newPage();
+tp.on('pageerror', e => fehler.push('beruehrt: ' + String(e)));
+tp.on('console', m => { if (m.type() === 'error' && !belanglos(m.text()))
+  fehler.push('beruehrt, console: ' + m.text()); });
+await tp.goto('http://127.0.0.1:' + PORT + '/index.html');
+await tp.waitForFunction(() => document.querySelectorAll('.mListe .mZeile').length > 0,
+  null, { timeout: 8000 });
+const tRuhe = () => tp.waitForTimeout(150);
+const tText = w => tp.evaluate(x => { const e = document.querySelector(x);
+  return e ? (e.textContent || '').trim() : null; }, w);
+const tZaehl = w => tp.evaluate(x => document.querySelectorAll(x).length, w);
+
+/* Tippflaechen. Gemessen wird nicht die Regel im Quelltext, sondern was der
+   Finger trifft: elementFromPoint 20 Punkte ueber und unter der Mitte muss
+   noch denselben Knopf liefern. 44 Punkte Hoehe heisst 22 je Seite. */
+const flaeche = await tp.evaluate(() => {
+  const trifft = (sel) => { const e = document.querySelector(sel); if (!e) return null;
+    const r = e.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const bei = (dy) => { const t = document.elementFromPoint(cx, cy + dy);
+      return !!t && (t === e || e.contains(t)); };
+    return { oben: bei(-20), unten: bei(20), weit: bei(60), sichtbarH: Math.round(r.height) }; };
+  return { monat: trifft('.mMonate button.an'), jahr: trifft('.mJahr'),
+    ans: trifft('.mSchiene .ans'), zeichen: trifft('.mKopf .zeichen button') };
+});
+for (const [n, f] of Object.entries(flaeche)) {
+  pruef('Tippflaeche «' + n + '»: 20 Punkte ueber und unter der Mitte trifft noch',
+    !!f && f.oben && f.unten, JSON.stringify(f));
+  pruef('Gegenprobe «' + n + '»: 60 Punkte daneben trifft nicht mehr',
+    !!f && !f.weit, JSON.stringify(f));
+}
+pruef('der Monatsknopf sieht aus wie vorher (Bild unveraendert, kleiner als die Flaeche)',
+  !!flaeche.monat && flaeche.monat.sichtbarH < 40, flaeche.monat && flaeche.monat.sichtbarH);
+
+/* Die Fixkosten aufklappen, die groesste Zeile aendern. Die groesste wird nie
+   gefaltet — sie ist kein Kleinbetrag. */
+const tFix = sekVon(STICHJAHR, 'fixkosten');
+const gross = (tFix.pos || []).slice().sort((a, c) => posWert(c, STICHM) - posWert(a, STICHM))[0];
+await tp.locator('.mKat', { hasText: tFix.name }).first().tap();
+await tRuhe();
+const tZeilen = await tp.evaluate(() => [...document.querySelectorAll('.mListe .mPos')]
+  .map(x => ({ pos: x.dataset.mwPos != null, falt: x.dataset.mEntfalten != null,
+    h: Math.round(x.getBoundingClientRect().height), knopf: x.tagName === 'BUTTON' })));
+pruef('jede Zeile unter «' + tFix.name + '» ist antippbar (Wert oder Aufklappen)',
+  tZeilen.length > 0 && tZeilen.every(z => (z.pos || z.falt) && z.knopf),
+  JSON.stringify(tZeilen));
+pruef('und mindestens 44 Punkte hoch', tZeilen.every(z => z.h >= 44),
+  tZeilen.map(z => z.h).join(','));
+/* Die gefaltete Zeile klappt auf: danach steht jede Position einzeln da. */
+if (tZeilen.some(z => z.falt)) {
+  await tp.locator('[data-m-entfalten]').first().tap();
+  await tRuhe();
+  gleich('die gefaltete Zeile klappt auf — jede Position einzeln antippbar',
+    await tZaehl('.mListe [data-mw-pos]'), (tFix.pos || []).length);
+  gleich('und eine gefaltete Zeile gibt es danach nicht mehr',
+    await tZaehl('.mListe [data-m-entfalten]'), 0);
+} else pruef('Pruefvorrat faltet unter «' + tFix.name + '» etwas (sonst fehlt die Probe)', false);
+
+const zeileWert = name => tp.evaluate(n => { const z = [...document.querySelectorAll('.mListe .mPos')]
+  .find(x => x.querySelector('.n').textContent.trim() === n);
+  return z ? { w: z.querySelector('.w').textContent.trim(), hak: z.classList.contains('hak') } : null; }, name);
+const katWert = name => tp.evaluate(n => { const z = [...document.querySelectorAll('.mListe .mKat')]
+  .find(x => x.querySelector('.n').textContent.trim() === n);
+  return z ? z.querySelector('.w').textContent.trim() : null; }, name);
+const oeffne = async name => { await tp.locator('.mListe [data-mw-pos]', { hasText: name }).first().tap();
+  await tRuhe(); };
+const alt = posWert(gross, STICHM), neuW = alt + 100;
+const vz = tFix.vz === 1 ? 1 : -1;
+
+gleich('vor dem Tippen ist kein Wertfenster offen', await tZaehl('[data-schleier="mWert"]'), 0);
+await oeffne(gross.name);
+gleich('Antippen oeffnet das Wertfenster', await tZaehl('[data-schleier="mWert"]'), 1);
+gleich('es nennt die Zeile', await tText('[data-schleier="mWert"] .dtitel h2'), gross.name);
+gleich('und den Monat mit Jahrgang', await tText('[data-schleier="mWert"] .dbei'),
+  ML[STICHM] + ' ' + STICHJAHR);
+gleich('das Feld traegt den Betrag aus dem Datenstand',
+  await tp.inputValue('[data-mw-betrag]'), schreib(alt, true));
+gleich('das Feld hat den Fokus — die Tastatur kommt sofort',
+  await tp.evaluate(() => document.activeElement && document.activeElement.dataset.mwBetrag), '1');
+gleich('das Feld verlangt die Zahlentastatur',
+  await tp.getAttribute('[data-mw-betrag]', 'inputmode'), 'decimal');
+
+/* Abbrechen laesst alles stehen. */
+await tp.fill('[data-mw-betrag]', '999999');
+await tp.locator('[data-zu="mWert"]').tap(); await tRuhe();
+gleich('Abbrechen schliesst das Fenster', await tZaehl('[data-schleier="mWert"]'), 0);
+gleich('und laesst den Betrag stehen', (await zeileWert(gross.name)).w, schreib(alt));
+
+/* Aendern: Zeile, Kategorie und Saldo folgen — gerechnet aus dem Vorrat. */
+await oeffne(gross.name);
+await tp.fill('[data-mw-betrag]', String(neuW));
+await tp.locator('[data-mw-an]').tap(); await tRuhe();
+gleich('Uebernehmen schliesst das Fenster', await tZaehl('[data-schleier="mWert"]'), 0);
+gleich('die Zeile zeigt den neuen Betrag', (await zeileWert(gross.name)).w, schreib(neuW));
+gleich('die Kategorie rechnet mit', await katWert(tFix.name),
+  schreib(sekWert(tFix, STICHM) + 100));
+gleich('der Saldo unten rechnet mit', await tText('.fusszeile .v'),
+  schreib(saldoVon(STICHJAHR, STICHM) + vz * 100, true));
+
+/* Der getippte Betrag ueberlebt das Antippen eines Hakens — das zeichnet neu,
+   bevor das Feld verlassen wird. */
+await oeffne(gross.name);
+await tp.fill('[data-mw-betrag]', String(neuW + 1));
+await tp.locator('[data-mw-hak]').tap(); await tRuhe();
+gleich('ein getippter Betrag ueberlebt das Antippen des Hakens',
+  await tp.inputValue('[data-mw-betrag]'), String(neuW + 1));
+await tp.fill('[data-mw-betrag]', String(neuW));
+await tp.locator('[data-mw-an]').tap(); await tRuhe();
+pruef('«Erledigt» hakt den Monat ab — die Zeile steht halbfett',
+  (await zeileWert(gross.name)).hak, JSON.stringify(await zeileWert(gross.name)));
+gleich('Gegenprobe: der Betrag ist derselbe geblieben', (await zeileWert(gross.name)).w, schreib(neuW));
+
+/* Ein Haken haengt an einem Betrag: wer auf null setzt, verliert ihn. */
+await oeffne(gross.name);
+await tp.fill('[data-mw-betrag]', '');
+await tp.locator('[data-mw-an]').tap(); await tRuhe();
+const leer = await zeileWert(gross.name);
+pruef('Betrag geloescht: der Haken faellt mit', !!leer && !leer.hak && leer.w === '',
+  JSON.stringify(leer));
+const hakenRest = await tp.evaluate(() => Object.keys(S.haken).length);
+await oeffne(gross.name);
+pruef('und das Fenster zeigt den Haken danach leer',
+  !(await tp.evaluate(() => document.querySelector('[data-mw-hak]').classList.contains('an'))));
+await tp.locator('[data-zu="mWert"]').tap(); await tRuhe();
+
+/* «Gleicher Betrag bis Dezember»: der Vormonat bleibt, die Folgemonate folgen. */
+await oeffne(gross.name);
+await tp.fill('[data-mw-betrag]', '777');
+await tp.locator('[data-mw-folge]').tap(); await tRuhe();
+await tp.locator('[data-mw-an]').tap(); await tRuhe();
+const bisDez = await tp.evaluate(id => { const f = findePos(id); return f ? f.p.reihe.slice() : null; },
+  gross.id);
+pruef('«bis Dezember» setzt den Monat und alle folgenden',
+  !!bisDez && bisDez.slice(STICHM).every(v => v === 777), JSON.stringify(bisDez));
+pruef('und laesst die Monate davor stehen',
+  !!bisDez && bisDez.slice(0, STICHM).every((v, i) => v === posWert(gross, i)),
+  JSON.stringify(bisDez && bisDez.slice(0, STICHM)) + ' gegen '
+  + JSON.stringify((gross.reihe || []).slice(0, STICHM)));
+gleich('Gegenprobe: die Haken anderer Zeilen sind unberuehrt',
+  await tp.evaluate(() => Object.keys(S.haken).length), hakenRest);
+
+/* Es bleibt gespeichert: neu laden, derselbe Betrag. */
+await tp.reload();
+await tp.waitForFunction(() => document.querySelectorAll('.mListe .mZeile').length > 0,
+  null, { timeout: 8000 });
+await tRuhe();
+/* Nach dem Neuladen kommt der Stand aus dem Browserspeicher — gelesen wird er
+   am Stichmonat, nicht am angezeigten: der Monat ist Anzeige und reist nicht mit. */
+const gespeichert = await tp.evaluate((a) => { let w = null; (S.daten[a.j] || []).forEach(b => (b.pos || [])
+  .forEach(p => { if (p.name === a.n && w == null) w = p.reihe[a.m]; })); return w; },
+  { j: STICHJAHR, n: gross.name, m: STICHM });
+gleich('der geaenderte Betrag ist im Browserspeicher angekommen', gespeichert, 777);
+
+/* Die feste Zeile (Gegenposten Tilgung) nimmt keinen Finger an. */
+const fixTipp = await tp.evaluate(() => [...document.querySelectorAll('[data-mw-pos]')]
+  .filter(e => { const f = findePos(e.dataset.mwPos); return !f || f.p.fix; }).length);
+gleich('keine feste Zeile ist antippbar', fixTipp, 0);
+
+/* Rechnungen: Antippen, «Bezahlt», Steller im Titel. */
+const rechJahr = (D.rechnungen[STICHJAHR] || []);
+const mitWert = rechJahr.map(g => ({ g, r: (g.rechnungen || []).find(r => ((r.reihe || [])[STICHM] || 0) !== 0) }))
+  .find(x => x.r);
+if (mitWert) {
+  await tp.locator('[data-m-ans]').tap(); await tRuhe();
+  await tp.locator('.mKat', { hasText: mitWert.g.name }).first().tap(); await tRuhe();
+  await tp.locator('[data-mw-rech="' + mitWert.r.id + '"]').tap(); await tRuhe();
+  gleich('Rechnung: Antippen oeffnet das Wertfenster', await tZaehl('[data-schleier="mWert"]'), 1);
+  pruef('Rechnung: der Beisatz nennt den Steller',
+    (await tText('[data-schleier="mWert"] .dbei') || '').indexOf(mitWert.g.name.toUpperCase()) >= 0
+    || (await tText('[data-schleier="mWert"] .dbei') || '').indexOf(mitWert.g.name) >= 0,
+    await tText('[data-schleier="mWert"] .dbei'));
+  gleich('Rechnung: der Haken heisst «Bezahlt»',
+    (await tText('[data-mw-hak]') || '').replace(/\s+/g, ' '), 'Bezahlt in diesem Monat');
+  const vorBez = await tp.evaluate(() => document.querySelector('[data-mw-hak]').classList.contains('an'));
+  await tp.locator('[data-mw-hak]').tap(); await tRuhe();
+  await tp.locator('[data-mw-an]').tap(); await tRuhe();
+  const nachBez = await tp.evaluate(id => { const z = document.querySelector('[data-mw-rech="' + id + '"]');
+    return z ? z.classList.contains('hak') : null; }, mitWert.r.id);
+  gleich('Rechnung: «Bezahlt» schaltet den Monat um', nachBez, !vorBez);
+  gleich('Rechnung: kein Fenster bleibt offen', await tZaehl('[data-schleier="mWert"]'), 0);
+  await tp.locator('[data-m-ans]').tap(); await tRuhe();
+} else pruef('Pruefvorrat hat im Stichmonat eine Rechnung mit Betrag', false);
+
+/* Wischen. Echte Beruehrungen ueber das Chrome-Protokoll — ein synthetisches
+   Ereignis aus dem Seitenskript haette nichts bewiesen. */
+const cdp = await tk.newCDPSession(tp);
+const wisch = async (x1, y1, x2, y2) => {
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x1, y: y1 }] });
+  for (let i = 1; i <= 6; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove',
+    touchPoints: [{ x: x1 + (x2 - x1) * i / 6, y: y1 + (y2 - y1) * i / 6 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await tRuhe();
+};
+const monatJetzt = () => tText('.mMonate button.an');
+const yListe = await tp.evaluate(() => { const r = document.querySelector('#blatt').getBoundingClientRect();
+  return Math.round(r.top + Math.min(r.height / 2, 200)); });
+const startM = await monatJetzt();
+await wisch(320, yListe, 80, yListe);
+gleich('nach links wischen: der naechste Monat', await monatJetzt(), MZ[STICHM + 1]);
+gleich('und der Saldo unten folgt', await tText('.fusszeile .k'),
+  ML[STICHM + 1] + ' · ' + (saldoVon(STICHJAHR, STICHM + 1) < 0 ? 'fehlt' : 'bleibt'));
+await wisch(80, yListe, 320, yListe);
+gleich('nach rechts wischen: zurueck', await monatJetzt(), startM);
+await wisch(200, yListe, 170, yListe);
+gleich('Gegenprobe: eine kurze Bewegung wechselt nichts', await monatJetzt(), startM);
+await wisch(200, yListe - 120, 290, yListe + 120);
+gleich('Gegenprobe: eine schraege Rollbewegung wechselt nichts', await monatJetzt(), startM);
+/* Am Jahresrand: in den Nachbarjahrgang, wenn es ihn gibt. */
+await tp.locator('[data-m-monat="11"]').tap(); await tRuhe();
+const hatFolge = JAHRE.indexOf(STICHJAHR + 1) >= 0;
+await wisch(320, yListe, 80, yListe);
+gleich('im Dezember nach links: ' + (hatFolge ? 'Januar des Folgejahrs' : 'bleibt stehen'),
+  (await monatJetzt()) + ' ' + (await tText('.mJahr')),
+  hatFolge ? MZ[0] + ' ' + (STICHJAHR + 1) : MZ[11] + ' ' + STICHJAHR);
+await tk.close();
+
 await b.close(); server.close();
 ende(fehler);

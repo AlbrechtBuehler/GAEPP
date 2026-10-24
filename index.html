@@ -559,6 +559,37 @@ tr.ziel td{box-shadow:inset 0 2px 0 var(--tinte)}
 .mSum.stark{padding:18px 0 30px;border-top:1px solid var(--tinte)}
 .mSum.stark .n{font:500 15px/1 'Jost',sans-serif;letter-spacing:.22em;color:var(--tinte)}
 .mSum.stark .w{font-size:17px}
+/* Tippflaechen. Gemessen am 24.10.2026: Monatsziffern 17 x 15 Punkte, der
+   Umschalter 49 x 10 — fuer einen Finger zu klein, empfohlen sind 44. Das Bild
+   bleibt, wie es ist; vergroessert wird nur die Flaeche, die den Finger annimmt,
+   ueber ein unsichtbares Feld um den Knopf. Die rollende Schiene bekommt dafuer
+   oben und unten Luft, die sie mit einem negativen Rand wieder abgibt — sonst
+   schnitte das Rollfeld die Flaeche ab. */
+.mMonate{padding:15px 0;margin:-15px 0}
+.mSchiene button,.mKopf .zeichen button{position:relative}
+.mSchiene button::after{content:'';position:absolute;inset:-15px -7px}
+.mSchiene .ans::after{inset:-17px -7px}
+.mKopf .zeichen button::after{content:'';position:absolute;inset:-9px}
+.mPos{padding:13px 0 12px 16px}
+.mGrp{padding:14px 0 13px 10px}
+/* Eine Zeile, die sich aendern laesst, nimmt den Finger an. Die feste Zeile
+   (Gegenposten Tilgung) und die Summen nicht — dort gibt es nichts zu tippen. */
+button.mPos{width:100%;background:none;border-left:none;border-right:none;border-bottom:none;
+ border-top:1px solid var(--rLeise);text-align:left;cursor:pointer;color:inherit}
+/* Das Wertfenster sitzt am Telefon unten, wo der Daumen ist, und nicht in der
+   Mitte, wo es die Tastatur verdeckt. */
+.schleier[data-schleier="mWert"]{align-items:flex-end;padding:0}
+.schleier[data-schleier="mWert"] .dialog{border-left:none;border-right:none;border-bottom:none;
+ max-height:100%;padding-bottom:env(safe-area-inset-bottom,0)}
+.mWertFeld{width:100%;box-sizing:border-box;background:none;border:none;
+ border-bottom:1px solid var(--rStark);border-radius:0;padding:4px 0 8px;margin-bottom:24px;
+ font:200 40px/1.1 'Jost',sans-serif;color:var(--tinte);outline:none;
+ font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mWertFeld:focus{border-bottom-color:var(--tinte)}
+.schleier[data-schleier="mWert"] .haken{min-height:44px}
+.schleier[data-schleier="mWert"] .dfuss{padding:10px 28px}
+.schleier[data-schleier="mWert"] .dfuss .ab{min-height:44px}
+.schleier[data-schleier="mWert"] .tat{height:44px}
 /* Das Telefon hat seine eigene Hoehenkette: die Monatsschiene steht fest, die
    Liste rollt. Das Rollfeld wird darum aufgeloest und das Blatt rollt wieder
    selbst — sonst laegen zwei Rollfelder ineinander. */
@@ -687,7 +718,7 @@ body[data-mobil="1"] .fusszeile .v{font:400 30px/1 'Jost',sans-serif;color:var(-
 
 /* Die Version steht genau hier. Fusszeile, Handbuch, HTML-Export und CSV lesen sie —
    abgeschrieben wird sie nirgends. */
-const VERSION = '3.4.0';
+const VERSION = '3.5.0';
 const RUNDE = 10;   /* Verteilen rundet auf volle Zehner, immer aufwaerts. */
 
 const MK = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
@@ -729,7 +760,8 @@ const S = {
   korr: null, korrWarn: null, basis: null, hb: false,
   stichmonat: monatJetzt(), stichFest: false,
   sync: 'nicht verbunden', syncText: '',
-  geladen: false, mobil: false, mMonat: null, mJahrWahl: false, trennFrage: false
+  geladen: false, mobil: false, mMonat: null, mJahrWahl: false, trennFrage: false,
+  mWert: null, mEntfaltet: []
 };
 
 /* Anzeigezustand (auf, nullen, theme, jahr, ansicht) geht nie in die Datendatei. */
@@ -1508,7 +1540,11 @@ function mobilWas() { return S.ansicht === 'alle' ? S.alleWas : S.ansicht; }
    weniger als ein Zwanzigstel seiner Sektion ausmacht, steht mit den anderen
    Kleinen in einer Zeile. Erst ab zwei solchen — eine einzelne zusammenzufassen
    brauchte niemand. */
-function mobilFalten(kinder, summe) {
+function mobilFalten(kinder, summe, id) {
+  /* Seit 3.5.0 laesst sich am Telefon ein Betrag aendern — eine gefaltete Zeile
+     muss sich darum aufmachen lassen, sonst kaeme man an die Kleinen nicht heran.
+     Einmal angetippt, bleibt die Sektion offen, bis sie zugeklappt wird. */
+  if (id && S.mEntfaltet.indexOf(id) >= 0) return { zeilen: kinder, gefaltet: null };
   const grenze = Math.abs(summe) / 20;
   const klein = kinder.filter(x => x.wert !== 0 && Math.abs(x.wert) < grenze);
   if (klein.length < 2) return { zeilen: kinder, gefaltet: null };
@@ -1517,10 +1553,14 @@ function mobilFalten(kinder, summe) {
     name: klein.map(x => x.name).join(' · '),
     wert: klein.reduce((a,x) => a + x.wert, 0) } };
 }
-function mZeile(kl, name, wert, hak) {
-  return '<div class="' + kl + ' mZeile' + (hak ? ' hak' : '') + '">'
+/* Mit «tipp» wird die Zeile ein Knopf: data-Kennung und Titel stehen darin.
+   Ohne bleibt sie, was sie war — eine Anzeige. */
+function mZeile(kl, name, wert, hak, tipp) {
+  const tag = tipp ? 'button' : 'div';
+  return '<' + tag + ' class="' + kl + ' mZeile' + (hak ? ' hak' : '') + '"'
+    + (tipp ? ' ' + tipp : '') + '>'
     + '<span class="n">' + esc(name) + '</span>'
-    + '<span class="w">' + F(wert) + '</span></div>';
+    + '<span class="w">' + F(wert) + '</span></' + tag + '>';
 }
 function mobilListe() {
   if (!S.geladen) return leerText();
@@ -1535,9 +1575,11 @@ function mobilBudget() {
   let sammler = null, sumFuer = 0;
   const spuele = () => {
     if (!sammler) return;
-    const g = mobilFalten(sammler.kinder, sumFuer);
-    g.zeilen.forEach(x => teile.push(mZeile(sammler.kl, x.name, x.wert, x.hak)));
-    if (g.gefaltet) teile.push(mZeile(sammler.kl, g.gefaltet.name, g.gefaltet.wert, false));
+    const g = mobilFalten(sammler.kinder, sumFuer, sammler.id);
+    g.zeilen.forEach(x => teile.push(mZeile(sammler.kl, x.name, x.wert, x.hak,
+      x.fix ? '' : 'data-mw-pos="' + esc(x.id) + '" title="Betrag ändern"')));
+    if (g.gefaltet) teile.push(mZeile(sammler.kl, g.gefaltet.name, g.gefaltet.wert, false,
+      'data-m-entfalten="' + esc(sammler.id) + '" title="Einzeln zeigen"'));
     sammler = null;
   };
   b.zeilen.forEach(z => {
@@ -1546,7 +1588,7 @@ function mobilBudget() {
       teile.push('<button class="mKat mZeile" data-klapp="' + z.id + '">'
         + '<span class="n">' + esc(z.name) + '</span>'
         + '<span class="w">' + F(z.reihe[m]) + '</span></button>');
-      if (z.auf) { sammler = { kl:'mPos', kinder:[] }; sumFuer = z.reihe[m]; }
+      if (z.auf) { sammler = { kl:'mPos', kinder:[], id:z.id }; sumFuer = z.reihe[m]; }
       return;
     }
     if (z.typ === 'gkopf') {
@@ -1554,12 +1596,12 @@ function mobilBudget() {
       teile.push('<button class="mGrp mZeile" data-klapp="' + z.id + '">'
         + '<span class="n">' + esc(z.name) + '</span>'
         + '<span class="w">' + F(z.reihe[m]) + '</span></button>');
-      if (z.auf) { sammler = { kl:'mPos tief', kinder:[] }; sumFuer = z.reihe[m]; }
+      if (z.auf) { sammler = { kl:'mPos tief', kinder:[], id:z.id }; sumFuer = z.reihe[m]; }
       return;
     }
     if (z.typ === 'pos') {
       if (!sammler) return;
-      sammler.kinder.push({ name:z.name, wert:z.reihe[m],
+      sammler.kinder.push({ id:z.id, fix:!!z.fix, name:z.name, wert:z.reihe[m],
         hak: hakenAn(z.id, m) && z.reihe[m] !== 0 });
       return;
     }
@@ -1581,7 +1623,8 @@ function mobilRechnungen() {
       + '<span class="w">' + F(mon) + '</span></button>');
     if (!auf) return;
     liste.forEach(r => teile.push(mZeile('mPos', r.zweck, (r.reihe||[])[m] || 0,
-      monatBezahlt(r,m) && ((r.reihe||[])[m] || 0) !== 0)));
+      monatBezahlt(r,m) && ((r.reihe||[])[m] || 0) !== 0,
+      'data-mw-rech="' + esc(r.id) + '" title="Betrag ändern"')));
   });
   if (!gruppen.length) teile.push('<div class="leerraum"><p>In diesem Jahrgang steht keine Rechnung.</p></div>');
   else teile.push(mZeile('mSum stark', 'Rechnungen ' + MZ[m], tot, false));
@@ -1596,6 +1639,104 @@ function mobilFuss() {
   return '<span class="k">' + esc(ML[m]) + ' · ' + (v < 0 ? 'fehlt' : 'bleibt') + '</span>'
     + '<span class="v">' + fmt(v, true) + '</span>';
 }
+
+/* ------------------------------------------------------- Mobil: aendern ---
+   Bis 3.4.0 liess sich am Telefon nur lesen. Albrecht am 24.10.2026: «nichts
+   aenderbar, Bedienung zaeh». Jetzt oeffnet eine angetippte Zeile ein Fenster
+   mit dem Betrag dieses Monats und dem Haken. Geschrieben wird ueber dieselben
+   Wege wie am Schreibtisch — mitPos, inRechnung, rechnungHakenUm —, damit die
+   Regeln (Haken nur auf einem Betrag, Stand kippt mit) an einer Stelle bleiben.
+   Anlegen, Loeschen, Umbenennen, Basis und Korrekturen bleiben am Schreibtisch:
+   dafuer braucht es die ganze Zeile, und die steht nur dort. */
+function mRechnungVon(id) {
+  let out = null;
+  (S.rechnungen[S.jahr]||[]).forEach(g => (g.rechnungen||[]).forEach(r => {
+    if (r.id === id) out = { r, g }; }));
+  return out;
+}
+function mWertOeffnen(art, id) {
+  const m = mMonat();
+  if (art === 'pos') {
+    const f = findePos(id); if (!f || f.p.fix) return;
+    const w = (f.p.reihe||[])[m] || 0;
+    S.mWert = { art, id, m, name:f.p.name, betrag: w ? fmt(w, true) : '',
+      hak: hakenAn(id, m) && w !== 0, folge:false };
+  } else {
+    const f = mRechnungVon(id); if (!f) return;
+    const w = (f.r.reihe||[])[m] || 0;
+    S.mWert = { art, id, m, name:f.r.zweck || f.g.name, bei:f.g.name,
+      betrag: w ? fmt(w, true) : '', hak: monatBezahlt(f.r, m) && w !== 0, folge:false };
+  }
+  fokusWunsch = '[data-mw-betrag]';
+  zeichne();
+}
+function mWertAnwenden() {
+  const u = S.mWert; if (!u) return;
+  const w = zahl(u.betrag), schl = u.id + ':' + u.m;
+  if (u.art === 'pos') {
+    mitPos(u.id, p => {
+      p.reihe[u.m] = w;
+      if (u.folge) for (let k = u.m + 1; k < 12; k++) p.reihe[k] = w;
+    });
+    /* Ein Haken haengt an einem Betrag — ohne Betrag faellt er, wie in der Zelle. */
+    if (w !== 0 && u.hak) S.haken[schl] = true; else delete S.haken[schl];
+  } else {
+    inRechnung(u.id, r => { r.reihe[u.m] = w; });
+    if (w === 0) delete S.haken[schl];
+    else {
+      const f = mRechnungVon(u.id);
+      if (f && monatBezahlt(f.r, u.m) !== u.hak) rechnungHakenUm(u.id, u.m);
+    }
+  }
+  S.mWert = null;
+  merke(); neu();
+}
+function mobilWertDialog() {
+  const u = S.mWert;
+  const jahr = S.jahr + (u.art === 'rech' && u.bei ? ' · ' + u.bei : '');
+  return dialogRahmen('mWert',
+    dtitel(u.name, ML[u.m] + ' ' + jahr)
+    + '<span class="mlabel">Betrag CHF</span>'
+    + '<input class="mWertFeld" data-mw-betrag="1" inputmode="decimal" '
+    + 'enterkeyhint="done" autocomplete="off" placeholder="0" value="' + esc(u.betrag) + '">'
+    + '<div class="hakenliste">'
+    + haken(u.hak, 'data-mw-hak="1"', u.art === 'rech' ? 'Bezahlt in diesem Monat' : 'Erledigt in diesem Monat')
+    + (u.art === 'pos' ? haken(u.folge, 'data-mw-folge="1"',
+        'Gleicher Betrag bis Dezember' + (u.m === 11 ? ' — Dezember ist schon der letzte' : ''))
+       : '')
+    + '</div>',
+    dfuss(['<button class="ab" data-zu="mWert">Abbrechen</button>',
+      '<button class="tat rechtsweg" data-mw-an="1">Übernehmen</button>']));
+}
+
+/* Wischen wechselt den Monat: nach links der naechste, nach rechts der vorige.
+   Am Jahresrand geht es in den Nachbarjahrgang, wenn es ihn gibt — sonst bleibt
+   der Monat stehen. Als Wischen zaehlt nur eine klar waagrechte, zuegige Bewegung;
+   wer die Liste rollt, soll nicht nebenbei den Monat verlieren. */
+function mMonatSchritt(richtung) {
+  const m = mMonat() + richtung, js = jahre();
+  if (m >= 0 && m <= 11) { S.mMonat = m; return neu(); }
+  const ziel = S.jahr + richtung;
+  if (js.indexOf(ziel) < 0) return;
+  S.jahr = ziel; S.mMonat = richtung > 0 ? 0 : 11;
+  if (S.ansicht === 'alle') S.ansicht = S.alleWas;
+  neu();
+}
+let wischStart = null;
+document.addEventListener('touchstart', e => {
+  wischStart = null;
+  if (!S.mobil || !S.geladen || e.touches.length !== 1) return;
+  if (!e.target.closest || !e.target.closest('#blatt')) return;
+  const t = e.touches[0];
+  wischStart = { x:t.clientX, y:t.clientY, zeit:Date.now() };
+}, { passive:true });
+document.addEventListener('touchend', e => {
+  const s = wischStart; wischStart = null;
+  if (!s || !e.changedTouches.length) return;
+  const t = e.changedTouches[0], dx = t.clientX - s.x, dy = t.clientY - s.y;
+  if (Date.now() - s.zeit > 700 || Math.abs(dx) < 60 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+  mMonatSchritt(dx < 0 ? 1 : -1);
+}, { passive:true });
 
 /* ------------------------------------------------------------ Das Blatt */
 function blatt() {
@@ -1976,6 +2117,7 @@ function dialoge() {
   if (S.korrWarn) h += korrWarnDialog();
   if (S.hb)    h += handbuchDialog();
   if (S.mJahrWahl) h += mobilJahrDialog();
+  if (S.mWert) h += mobilWertDialog();
   return h;
 }
 
@@ -2283,6 +2425,15 @@ function handbuchDialog() {
     + STAENDE.slice(0,-1).join('</b>, <b>') + '</b> und <b>' + STAENDE[STAENDE.length-1] + '</b>. '
     + 'Nur <b>Bezahlt</b> rechnet GÄPP als erledigt — die drei anderen sind Notizen für dich '
     + 'und ändern an der Rechnung nichts.</p>'
+
+    + '<h3>Am Telefon</h3>'
+    + '<p>Das Telefon zeigt einen Monat. <b>Wischen</b> nach links bringt den nächsten, nach rechts '
+    + 'den vorigen; am Jahresende geht es in den nächsten Jahrgang, wenn es ihn gibt.</p>'
+    + '<p><b>Antippen einer Zeile</b> öffnet ein Fenster: Betrag dieses Monats, <b>Erledigt</b> '
+    + '(bei Rechnungen <b>Bezahlt</b>) und wahlweise <b>gleicher Betrag bis Dezember</b>. '
+    + 'Eine Zeile mit mehreren kleinen Beträgen klappt sich beim Antippen auf, damit jeder '
+    + 'einzeln erreichbar ist. Zeilen anlegen, löschen und umbenennen und alles, was die Basis '
+    + 'betrifft, gibt es nur am Schreibtisch.</p>'
 
     + '<h3>Die drei Zeichen oben rechts</h3>'
     + '<ul>'
@@ -2988,7 +3139,16 @@ document.addEventListener('click', e => {
                                   S.ansicht = 'alle'; return neu(); }
   if ((x = tref('mMonat')))     { S.mMonat = parseInt(x.dataset.mMonat,10); return neu(); }
   if ((x = tref('klapp')))      { const id = x.dataset.klapp;
+                                  /* Wer zuklappt, bekommt beim naechsten Aufklappen
+                                     wieder die gefaltete Ansicht. */
+                                  if (offen(id)) S.mEntfaltet = S.mEntfaltet.filter(y => y !== id);
                                   S.auf = offen(id) ? S.auf.filter(y => y !== id) : S.auf.concat([id]); return neu(); }
+  if ((x = tref('mEntfalten'))) { S.mEntfaltet = S.mEntfaltet.concat([x.dataset.mEntfalten]); return zeichne(); }
+  if ((x = tref('mwPos')))      { return mWertOeffnen('pos', x.dataset.mwPos); }
+  if ((x = tref('mwRech')))     { return mWertOeffnen('rech', x.dataset.mwRech); }
+  if ((x = tref('mwHak')))      { if (S.mWert) S.mWert.hak = !S.mWert.hak; return zeichne(); }
+  if ((x = tref('mwFolge')))    { if (S.mWert) S.mWert.folge = !S.mWert.folge; return zeichne(); }
+  if ((x = tref('mwAn')))       { return mWertAnwenden(); }
   if ((x = tref('drucken')))    { window.print(); return; }
   if ((x = tref('exp')))        { S.exp = { jahre: S.ansicht === 'alle' ? jahre() : [S.jahr],
                                     rech:true, uebersicht:true, navi:true, nullen:S.nullen };
@@ -3031,7 +3191,7 @@ document.addEventListener('click', e => {
                                     S.ueb = null; S.neu = null; S.exp = null;
                                     S.wegJahr = null; S.syncAuf = false; S.hb = false;
                                     S.korr = null; S.korrWarn = null; S.basis = null;
-                                    S.mJahrWahl = false;
+                                    S.mJahrWahl = false; S.mWert = null;
                                     wartetTat = null; return zeichne(); }
   if ((x = tref('neuJahr')))    { S.neu = { jahr: Math.max.apply(null, jahre()) + 1, budget:true, raten:false }; return zeichne(); }
   if ((x = tref('wegJahrAn')))  { jahrLoeschen(S.wegJahr); return neu(); }
@@ -3054,6 +3214,7 @@ document.addEventListener('click', e => {
 /* ---------- Werte tippen: neu gerechnet wird beim Verlassen der Zelle ---------- */
 document.addEventListener('change', e => {
   const d = e.target.dataset || {};
+  if (d.mwBetrag !== undefined) { if (S.mWert) S.mWert.betrag = e.target.value; return; }
   /* Die Felder im Korrekturfenster zuerst — sie tragen eigene Kennungen. */
   if (d.korrBetrag !== undefined) { if (S.korr) S.korr.betrag = e.target.value; return; }
   if (d.korrNotiz !== undefined)  { if (S.korr) S.korr.notiz = e.target.value; return; }
@@ -3160,16 +3321,31 @@ document.addEventListener('keydown', e => {
   springeZu(el, ziel);
 });
 
+/* ---------- Wertfenster am Telefon: mittippen, Enter uebernimmt ----------
+   «change» kommt erst beim Verlassen des Feldes. Wer den Haken antippt, ohne
+   vorher das Feld zu verlassen, verloere sonst den getippten Betrag beim
+   Neuzeichnen. */
+document.addEventListener('input', e => {
+  const d = e.target.dataset || {};
+  if (d.mwBetrag !== undefined && S.mWert) S.mWert.betrag = e.target.value;
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !S.mWert) return;
+  const d = e.target.dataset || {};
+  if (d.mwBetrag === undefined) return;
+  e.preventDefault(); S.mWert.betrag = e.target.value; mWertAnwenden();
+});
+
 /* ---------- Escape schliesst das oberste Fenster ---------- */
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!(S.ueb || S.neu || S.exp || S.wegJahr || S.syncAuf || S.korr || S.korrWarn
-        || S.basis || S.hb)) return;
+        || S.basis || S.hb || S.mWert)) return;
   e.preventDefault();
   if (S.korrWarn) return korrWarnAntwort('ab');
   dialogFokus(S.ueb ? 'ueb' : (S.basis ? 'basis' : ''));
   S.ueb = null; S.neu = null; S.exp = null; S.wegJahr = null; S.syncAuf = false;
-  S.korr = null; S.basis = null; S.hb = false; wartetTat = null;
+  S.korr = null; S.basis = null; S.hb = false; S.mWert = null; wartetTat = null;
   zeichne();
 });
 

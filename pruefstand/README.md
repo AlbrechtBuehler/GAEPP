@@ -1,6 +1,6 @@
 # GÄPP — Prüfstand
 
-**Nachgeführt am 26.09.2026**, zu Fassung 3.4.0 (Stichmonat aus dem Kalender, Erlass getrennt von Tilgung, Anfangsstand im Band, Telefon aufgeräumt). Was
+**Nachgeführt am 24.10.2026**, zu Fassung 3.5.0 (am Telefon ändern: Wertfenster, Wischen, Tippflächen; davor 3.4.0: Stichmonat aus dem Kalender, Erlass getrennt von Tilgung, Anfangsstand im Band, Telefon aufgeräumt). Was
 hier steht, prüft die heutige `index.html` — Version, Stände und Farben werden dabei
 aus ihrem Quelltext gelesen, nie abgeschrieben (Hausregel 4).
 
@@ -64,7 +64,7 @@ ohne die Variable holt sich Playwright seinen eigenen.
 | `ausgabe.mjs` | HTML-Export (alle gewählten Jahrgänge in einer Datei, Navigation bedienbar, Eingabe eingefroren), CSV je Jahrgang, und das Papier samt eigenem Druckkopf. | 8733 / 8743 | ja |
 | `befunde.mjs` | Die Befunde der unabhängigen Nachkontrolle vom 22.08.2026, auf den Neubau nachgezogen — Rest und Basis unter null ohne Kappung, Korrekturfenster, Kennzahlenband bei unstimmigem Plan, Rappenrundung, die Aufgliederung in «Alle Jahre», der Zähler am Steller, `zahl()`, der HTML-Export. | 8744 | ja |
 | `haerte.mjs` | Grenzfälle: Ziehen und Ablegen über Sektionsgrenzen, Verschieben mit der Tastatur, Escape schliesst je Fenster nur das oberste, eine kaputte `gaepp-daten.json` legt die App nicht still, «Übertragen» fasst keine gleichnamige Zeile einer anderen Kategorie an, Quote ausserhalb 0–100 %, negative Rate bei Basis null, Einzahl und Mehrzahl. | 8745 | ja |
-| `mobil.mjs` | Das Telefon: 390 × 844, ein Monat untereinander statt zwölf nebeneinander. Eigene Fassung, eigene Fehler — einen hatte sie. Dazu die **eine Kopfzeile** (Monate, Jahrgangswahl hinter der Jahreszahl, Ansicht als Umschalter), die Zahlen unter dem Band und der **Fuss bei gekapptem Fenster**: bei 844, 664 und 560 Punkten Höhe muss die Saldozeile ganz im Bild stehen. | 8734 | ja |
+| `mobil.mjs` | Das Telefon: 390 × 844, ein Monat untereinander statt zwölf nebeneinander. Eigene Fassung, eigene Fehler — einen hatte sie. Dazu die **eine Kopfzeile** (Monate, Jahrgangswahl hinter der Jahreszahl, Ansicht als Umschalter), die Zahlen unter dem Band und der **Fuss bei gekapptem Fenster**: bei 844, 664 und 560 Punkten Höhe muss die Saldozeile ganz im Bild stehen. Seit 3.5.0 in einem zweiten Kontext **mit Berührung**: Tippflächen (was der Finger 20 Punkte neben der Mitte trifft), das **Wertfenster** (öffnen, abbrechen, übernehmen, Haken, «bis Dezember», gespeichert nach dem Neuladen, Rechnung mit «Bezahlt») und **Wischen** über echte Berührungen aus dem Chrome-Protokoll, mit Gegenproben für kurze und schräge Bewegungen. | 8734 | ja |
 | `kanal.mjs` | Der Datenkanal beim Start: ob GÄPP im Repo nachsieht, wie es entscheidet, welcher Stand gilt, und ob es den Zustand ehrlich meldet. Dazu der **Stichmonat**: dass er aus dem Kalender kommt, dass nur eine Datei mit `meta.stichFest` ihn hält, dass Sichern ihn nicht festschreibt und ein krummer Wert die Anzeige nicht stilllegt. Fährt nie gegen ein echtes Repo — jede Anfrage an GitHub wird abgefangen, ein Zähler belegt, dass sie gestellt wurde. | 8747 | ja |
 
 **Die Gesamtzahl steht hier nicht.** Sie wird nachgerechnet und erscheint unten im
