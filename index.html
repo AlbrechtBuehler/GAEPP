@@ -718,7 +718,7 @@ body[data-mobil="1"] .fusszeile .v{font:400 30px/1 'Jost',sans-serif;color:var(-
 
 /* Die Version steht genau hier. Fusszeile, Handbuch, HTML-Export und CSV lesen sie —
    abgeschrieben wird sie nirgends. */
-const VERSION = '3.5.0';
+const VERSION = '3.6.0';
 const RUNDE = 10;   /* Verteilen rundet auf volle Zehner, immer aufwaerts. */
 
 const MK = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
@@ -729,6 +729,29 @@ const ML = ['Januar','Februar','März','April','Mai','Juni','Juli','August',
             'September','Oktober','November','Dezember'];
 const STAENDE = ['Offen','Bank','Bezahlt','Nicht eingetroffen'];
 const N12 = () => new Array(12).fill(0);
+/* Seit 3.6.0: eine eigene Sektion fuer Geld, das zurueckkommt — eine
+   Rueckerstattung aus der Nebenkostenabrechnung, ein zurueckgezahltes Darlehen.
+   Bis dahin stand so etwas als Minus bei den Rechnungen und machte deren Summe
+   kleiner, als in Rechnung gestellt war. Die Sektion steht unter den Einnahmen,
+   zaehlt im Saldo mit, bleibt aber in der Jahresuebersicht eine eigene Zeile:
+   weder das Einkommen noch die Rechnungen werden dadurch verwaessert.
+   Erkannt wird sie am Schluessel, nicht am Namen. */
+const DIVERS = { key:'diverse-einnahmen', name:'Diverse Einnahmen' };
+const istDivers = b => !!b && b.art === 'block' && b.key === DIVERS.key;
+/* Jeder Jahrgang fuehrt die Sektion genau einmal, direkt nach der letzten
+   Einnahmen-Sektion. Fehlt sie (jede Datei vor 3.6.0), wird sie leer angelegt.
+   Die Id ist an den Jahrgang gebunden statt gezaehlt: solange die Datei die
+   Sektion noch nicht traegt, entsteht sie bei jedem Laden neu — mit derselben Id,
+   damit eine aufgeklappte Sektion aufgeklappt bleibt. */
+function sichereDivers(bl, jahr) {
+  const da = bl.filter(istDivers);
+  da.forEach(b => { b.vz = 1; });
+  if (da.length) return;
+  let nach = -1;
+  bl.forEach((b, i) => { if (b.vz === 1) nach = i; });
+  bl.splice(nach + 1, 0, { id:'divers' + jahr, art:'block', key:DIVERS.key,
+    name:DIVERS.name, vz:1, pos:[] });
+}
 
 /* ------------------------------------------------------- Der laufende Monat
    Der Stichmonat ist der Monat, bis zu dem gerechnet wird: «Restschuld heute»
@@ -835,6 +858,7 @@ function uebernimm(d) {
   S.jahre.forEach(j => (S.rechnungen[j]||[]).forEach(g => { merke(g.id);
     (g.rechnungen||[]).forEach(r => merke(r.id)); }));
   ZAEHLER = Math.max(ZAEHLER, hoch);
+  S.jahre.forEach(j => sichereDivers(S.daten[j], j));
   if (!S.jahr || S.jahre.indexOf(S.jahr) < 0) {
     const hj = parseInt(S.stichmonat.slice(0,4), 10);
     S.jahr = S.jahre.indexOf(hj) >= 0 ? hj : (S.jahre[S.jahre.length - 1] || null);
@@ -972,7 +996,9 @@ function folgeKorrekturen(j, gKey, pKey) {
 function bau(jahr, alles) {
   const bl = S.daten[jahr] || [], out = [];
   const plus = (a,b) => a.map((x,i) => x + b[i]);
-  let einnahmen = N12(), ausgaben = N12();
+  /* «einnahmen» ohne die diversen — die stehen in «divers» und zaehlen erst im
+     Saldo dazu. */
+  let einnahmen = N12(), ausgaben = N12(), divers = N12();
 
   /* Gegenposten Tilgung: Einnahmenseite der Jahre, die nur Schulden führen. */
   const tilgung = N12();
@@ -1018,7 +1044,8 @@ function bau(jahr, alles) {
       bs: b.art === 'schulden' ? bBasis : 0, jw:bRest, schulden: b.art === 'schulden',
       anzahl: b.art === 'schulden' ? (b.gruppen||[]).length : (b.pos||[]).length });
     if (bAuf) kinder.forEach(x => out.push(x));
-    if (b.vz === 1) einnahmen = plus(einnahmen, bsum); else ausgaben = plus(ausgaben, bsum);
+    if (istDivers(b)) divers = plus(divers, bsum);
+    else if (b.vz === 1) einnahmen = plus(einnahmen, bsum); else ausgaben = plus(ausgaben, bsum);
   });
 
   const rech = N12();
@@ -1030,10 +1057,10 @@ function bau(jahr, alles) {
   out.push({ typ:'summe', id:'aus', name:'Ausgaben zusammen', reihe:ausgaben,
     jw:su(ausgaben), stark:true });
 
-  const saldo = einnahmen.map((e,i) => e - ausgaben[i]);
+  const saldo = einnahmen.map((e,i) => e + divers[i] - ausgaben[i]);
   let lauf = 0;
   const kum = saldo.map(s => (lauf += s));
-  return { zeilen:out, saldo, kum, einnahmen, ausgaben, rech };
+  return { zeilen:out, saldo, kum, einnahmen, divers, ausgaben, rech };
 }
 
 /* Kopfzelle grün, wenn jeder Posten darunter in diesem Monat abgehakt ist. */
@@ -2029,7 +2056,12 @@ function alleJahre() {
       (b.gruppen||[]).forEach(g => { if (gruppenNamen.indexOf(g.name) < 0) gruppenNamen.push(g.name); }); }
     else if (b.vz !== 1 && ausgabeNamen.indexOf(b.name) < 0) ausgabeNamen.push(b.name);
   }));
-  const def = [['Einnahmen', b => su(b.einnahmen), 'stark17']]
+  /* Diverse Einnahmen stehen unter den Einnahmen auf eigener Zeile, mit dem Namen
+     aus den Daten — sonst laege eine Rueckerstattung im Einkommen. */
+  let diversName = DIVERS.name;
+  js.forEach(j => (S.daten[j]||[]).forEach(b => { if (istDivers(b) && b.name) diversName = b.name; }));
+  const def = [['Einnahmen', b => su(b.einnahmen), 'stark17'],
+               [diversName,  b => su(b.divers),    'stark17']]
     .concat(ausgabeNamen.map(n => [n, b => kopfW(b,n), 'aufglied']))
     .concat(gruppenNamen.map(n => [n, b => grW(b,n), 'aufglied']))
     .concat([
@@ -2401,6 +2433,14 @@ function handbuchDialog() {
     + '<b>Abgehakt heisst halbfett.</b> Eine Zahl unter null trägt ihr Vorzeichen, sonst nichts '
     + '— ein Minus ist ein Minus.</p>'
 
+    + '<h3>Diverse Einnahmen</h3>'
+    + '<p>Geld, das zurückkommt — eine Rückerstattung aus der Nebenkostenabrechnung, ein '
+    + 'zurückgezahltes Darlehen —, gehört in die Sektion <b>' + DIVERS.name + '</b> unter den '
+    + 'Einnahmen, nicht als Minus zu den Rechnungen. Sie zählt im Saldo mit, steht in '
+    + '<b>Alle Jahre</b> aber auf eigener Zeile: das Einkommen bleibt das Einkommen, die '
+    + 'Rechnungen bleiben, was in Rechnung gestellt wurde. Ein neuer Jahrgang übernimmt die '
+    + 'Sektion leer.</p>'
+
     + '<h3>Zahlen eintragen</h3>'
     + '<ul>'
     + '<li>In eine Zelle tippen und die Zelle verlassen — dann wird neu gerechnet.</li>'
@@ -2539,6 +2579,9 @@ function jahrAnlegen() {
             reihe: S.neu.raten ? p.reihe.slice() : N12() }))
             .filter(p => p.basis !== 0 || S.neu.raten) })) };
     }
+    /* Diverse Einnahmen kommen einmal und nicht wieder: die Sektion geht mit,
+       ihre Zeilen nicht — auch nicht, wenn das Budget mitgenommen wird. */
+    if (istDivers(b)) return { id:neueId(), art:'block', name:b.name, key:b.key, vz:1, pos:[] };
     return { id:neueId(), art:'block', name:b.name, key:b.key, vz:b.vz,
       pos: (b.pos||[]).map(p => ({ id:neueId(), key:p.key, name:p.name, basis:p.basis,
         reihe: S.neu.budget ? p.reihe.slice() : N12(), spiegel:p.spiegel, fix:p.fix })) };

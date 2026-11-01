@@ -37,7 +37,8 @@ const LAEUFE = [
   { datei: 'befunde.mjs',     was: 'Die Befunde der Nachkontrolle vom 22.08.2026, auf den Neubau nachgezogen', browser: true },
   { datei: 'haerte.mjs',      was: 'Ziehen und Ablegen, Escape je Fenster, Notausgang, Klick und Doppelklick, Grenzfaelle', browser: true },
   { datei: 'mobil.mjs',       was: 'Das Telefon: 390 x 844, ein Monat untereinander', browser: true },
-  { datei: 'kanal.mjs',       was: 'Der Datenkanal beim Start: nachsehen, abgleichen, melden', browser: true }
+  { datei: 'kanal.mjs',       was: 'Der Datenkanal beim Start: nachsehen, abgleichen, melden', browser: true },
+  { datei: 'divers.mjs',      was: 'Diverse Einnahmen: eigene Sektion, im Saldo, nicht bei Einkommen oder Rechnungen', browser: true }
 ];
 
 /* Faehrt eine Datei als eigenen Prozess und liest ihre Bilanzzeile aus der

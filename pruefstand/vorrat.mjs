@@ -12,6 +12,8 @@
      - Namen mit Umlaut am Wortanfang, mit Kleinschreibung und mit einer Ziffer
      - gesetzte Haken in einem Teil des Jahres, nicht im ganzen
      - alle vier Rechnungszustaende
+     - «Diverse Einnahmen» (seit 3.6.0) nur im Jahrgang 2025, mit Werten; alle
+       anderen Jahrgaenge fuehren die Sektion nicht und bekommen sie beim Laden
    Wer eine neue Grenze baut, traegt sie hier ein. Sonst ist Gruen eine Aussage
    ueber den Vorrat und nicht ueber die App. */
 
@@ -609,6 +611,29 @@ const BESTAND = {
        0,
        0
       ]
+     }
+    ]
+   },
+   {
+    "id": "p205",
+    "key": "diverse-einnahmen",
+    "name": "Diverse Einnahmen",
+    "art": "block",
+    "vz": 1,
+    "pos": [
+     {
+      "id": "p206",
+      "key": "rueckerstattung-nk",
+      "name": "Rückerstattung Nebenkosten",
+      "basis": 0,
+      "reihe": [0, 0, 0, 214, 0, 0, 0, 0, 0, 0, 0, 0]
+     },
+     {
+      "id": "p207",
+      "key": "darlehen-zurueck",
+      "name": "Darlehen Imboden zurück",
+      "basis": 0,
+      "reihe": [0, 0, 0, 0, 0, 500, 0, 0, 500, 0, 0, 0]
      }
     ]
    },
@@ -3406,3 +3431,5 @@ export const STICHMONAT = BESTAND.meta.stichmonat;
 export const STICHJAHR  = parseInt(STICHMONAT.slice(0,4), 10);
 export const STICHM     = parseInt(STICHMONAT.slice(5,7), 10) - 1;
 export const JAHRE      = BESTAND.jahre.slice();
+/* Der einzige Jahrgang, der «Diverse Einnahmen» im Vorrat fuehrt. */
+export const DIVERSJAHR = 2025;

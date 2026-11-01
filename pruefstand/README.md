@@ -1,6 +1,6 @@
 # GÄPP — Prüfstand
 
-**Nachgeführt am 24.10.2026**, zu Fassung 3.5.0 (am Telefon ändern: Wertfenster, Wischen, Tippflächen; davor 3.4.0: Stichmonat aus dem Kalender, Erlass getrennt von Tilgung, Anfangsstand im Band, Telefon aufgeräumt). Was
+**Nachgeführt am 01.11.2026**, zu Fassung 3.6.0 (Sektion «Diverse Einnahmen»; davor 3.5.0: am Telefon ändern: Wertfenster, Wischen, Tippflächen; davor 3.4.0: Stichmonat aus dem Kalender, Erlass getrennt von Tilgung, Anfangsstand im Band, Telefon aufgeräumt). Was
 hier steht, prüft die heutige `index.html` — Version, Stände und Farben werden dabei
 aus ihrem Quelltext gelesen, nie abgeschrieben (Hausregel 4).
 
@@ -40,7 +40,7 @@ Danach, aus dem Ordner `pruefstand/`:
 npm test
 ```
 
-Das fährt alle elf Läufe nacheinander und rechnet die Bilanz nach. **Ein Befehl** —
+Das fährt alle zwölf Läufe nacheinander und rechnet die Bilanz nach. **Ein Befehl** —
 das ist Absicht. Ein Prüfstand, den man zusammensuchen muss, wird nicht gefahren.
 
 `alles.mjs` startet **keinen eigenen Webserver**: Jeder Lauf, der einen Browser
@@ -51,7 +51,13 @@ wie derselbe Lauf innerhalb von `npm test`.
 Ist ein Chromium schon auf dem Rechner, nimmt ihn `GAEPP_CHROME=/pfad/zu/chrome`;
 ohne die Variable holt sich Playwright seinen eigenen.
 
-## Die elf Läufe
+> **Achtung beim fremden Chromium (01.11.2026):** Mit Chrome for Testing 153 als
+> `GAEPP_CHROME` bricht `mobil.mjs` beim Wischen nach rechts ab — der Browser
+> deutet die Berührung als «Zurück» und verlässt die Seite. Mit Playwrights
+> eigenem Chromium (151) läuft derselbe Lauf grün. Das ist die Umgebung, nicht
+> die App (Hausregel 7) — im Zweifel die Variable weglassen.
+
+## Die zwölf Läufe
 
 | Datei | Was er prüft | Port | Browser |
 | --- | --- | ---: | --- |
@@ -66,6 +72,7 @@ ohne die Variable holt sich Playwright seinen eigenen.
 | `haerte.mjs` | Grenzfälle: Ziehen und Ablegen über Sektionsgrenzen, Verschieben mit der Tastatur, Escape schliesst je Fenster nur das oberste, eine kaputte `gaepp-daten.json` legt die App nicht still, «Übertragen» fasst keine gleichnamige Zeile einer anderen Kategorie an, Quote ausserhalb 0–100 %, negative Rate bei Basis null, Einzahl und Mehrzahl. | 8745 | ja |
 | `mobil.mjs` | Das Telefon: 390 × 844, ein Monat untereinander statt zwölf nebeneinander. Eigene Fassung, eigene Fehler — einen hatte sie. Dazu die **eine Kopfzeile** (Monate, Jahrgangswahl hinter der Jahreszahl, Ansicht als Umschalter), die Zahlen unter dem Band und der **Fuss bei gekapptem Fenster**: bei 844, 664 und 560 Punkten Höhe muss die Saldozeile ganz im Bild stehen. Seit 3.5.0 in einem zweiten Kontext **mit Berührung**: Tippflächen (was der Finger 20 Punkte neben der Mitte trifft), das **Wertfenster** (öffnen, abbrechen, übernehmen, Haken, «bis Dezember», gespeichert nach dem Neuladen, Rechnung mit «Bezahlt») und **Wischen** über echte Berührungen aus dem Chrome-Protokoll, mit Gegenproben für kurze und schräge Bewegungen. | 8734 | ja |
 | `kanal.mjs` | Der Datenkanal beim Start: ob GÄPP im Repo nachsieht, wie es entscheidet, welcher Stand gilt, und ob es den Zustand ehrlich meldet. Dazu der **Stichmonat**: dass er aus dem Kalender kommt, dass nur eine Datei mit `meta.stichFest` ihn hält, dass Sichern ihn nicht festschreibt und ein krummer Wert die Anzeige nicht stilllegt. Fährt nie gegen ein echtes Repo — jede Anfrage an GitHub wird abgefangen, ein Zähler belegt, dass sie gestellt wurde. | 8747 | ja |
+| `divers.mjs` | **Diverse Einnahmen** (seit 3.6.0): jeder Jahrgang führt die Sektion genau einmal, direkt nach den Einnahmen — aus der Datei übernommen oder beim Laden leer angelegt, ohne den Fingerabdruck zu verändern; eine als Ausgabe gezeichnete wird Einnahme. Im Budget zählt sie im Saldo, «Einkommen», «Rechnungen» und «Ausgaben zusammen» bleiben unberührt; in «Alle Jahre» steht sie auf eigener Zeile unter «Einnahmen». Eintragen über die Oberfläche, Neuladen, neuer Jahrgang (Sektion mit, Zeilen nicht), Telefon mit Wertfenster, Handbuch. | 8748 | ja |
 
 **Die Gesamtzahl steht hier nicht.** Sie wird nachgerechnet und erscheint unten im
 Ergebnis des Sammellaufs (Hausregel 3). Wer sie in einem Dokument liest und hier eine
@@ -92,6 +99,8 @@ Kopf dessen, der gerade baut:
 - Namen mit Umlaut am Wortanfang, mit Kleinschreibung und mit einer Ziffer
 - gesetzte Haken in einem Teil des Jahres, nicht im ganzen
 - alle vier Rechnungszustände
+- «Diverse Einnahmen» nur im Jahrgang 2025, mit Werten — alle anderen Jahrgänge
+  führen die Sektion nicht und bekommen sie beim Laden
 
 **Wer eine neue Grenze baut, trägt sie hier ein.** Sonst ist Grün eine Aussage über
 den Vorrat und nicht über die App.
